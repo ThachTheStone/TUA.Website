@@ -46,10 +46,13 @@ export default async function HomePage() {
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Button asChild size="lg">
-              <a href="#cau-chuyen">Câu chuyện của TỰA</a>
+              <Link href="/thiet-ke">Tự thiết kế áo</Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/vinh-danh">Bảng vinh danh</Link>
+              <Link href="/ao-tron">Mua áo trơn</Link>
+            </Button>
+            <Button asChild size="lg" variant="ghost">
+              <a href="#cau-chuyen">Câu chuyện của TỰA</a>
             </Button>
           </div>
         </div>

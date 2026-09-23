@@ -1,8 +1,9 @@
 import Link from "next/link";
 
-// Links are added here as later phases ship their pages (thiết kế, áo trơn, quyên góp, tra cứu).
+// Links are added here as later phases ship their pages (quyên góp, tra cứu).
 const NAV = [
-  { href: "/", label: "Trang chủ" },
+  { href: "/thiet-ke", label: "Thiết kế áo" },
+  { href: "/ao-tron", label: "Áo trơn" },
   { href: "/vinh-danh", label: "Vinh danh" },
 ];
 
