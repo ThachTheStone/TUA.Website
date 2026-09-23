@@ -76,3 +76,49 @@ export interface Donation {
   confirmed_by: string | null;
   created_at: string;
 }
+
+export interface ContentBlock {
+  key: string;
+  title: string | null;
+  body: string | null;
+  image_url: string | null;
+  updated_at: string;
+}
+
+export interface Artwork {
+  id: string;
+  image_url: string;
+  child_name: string | null;
+  description: string | null;
+  sort_order: number;
+}
+
+export interface Promotion {
+  id: string;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+  price_text: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  is_active: boolean;
+}
+
+export interface Sponsor {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  website_url: string | null;
+  tier: string | null;
+  sort_order: number;
+  is_active: boolean;
+}
+
+/** Row of the `public_donations` view (FR09). */
+export interface PublicDonation {
+  id: string;
+  display_name: string;
+  amount: number;
+  message: string | null;
+  created_at: string;
+}

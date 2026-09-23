@@ -45,3 +45,22 @@ export function formatDate(
   const p = parts(dateTimeFormatter, date);
   return `${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute}`;
 }
+
+// Vietnam has no DST, so `<input type="datetime-local">` values map to a fixed +07:00 offset.
+const VN_OFFSET = "+07:00";
+
+/** `2026-10-01T09:00` (Vietnam local time) → ISO string. Returns null for empty or invalid input. */
+export function vnLocalToISO(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const date = new Date(`${value}${value.length === 16 ? ":00" : ""}${VN_OFFSET}`);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+/** ISO string → `2026-10-01T09:00` in Vietnam local time, for `datetime-local` inputs. */
+export function isoToVnLocal(value: string | null | undefined): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const p = parts(dateTimeFormatter, date);
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
