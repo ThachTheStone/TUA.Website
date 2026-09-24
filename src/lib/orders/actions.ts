@@ -3,15 +3,14 @@
 import { after } from "next/server";
 import { z } from "zod";
 import { getCustomer } from "@/lib/customers/session";
-import { sendOrderCreated, siteUrl } from "@/lib/email";
 import { orderCodeSchema, phoneSchema, type CreateOrderInput } from "@/lib/orders/checkout-schema";
 import { createWebOrder } from "@/lib/orders/create";
 import { saveDesignFile } from "@/lib/orders/design-upload";
+import { notifyOrder } from "@/lib/orders/notify";
 import { findOrderIdByToken, isOverdue, lookupOrder, type OrderView } from "@/lib/orders/queries";
 import { transitionOrder } from "@/lib/orders/transition";
 import { getSettings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
-import { vietQrUrl } from "@/lib/vietqr";
 import type { ActionResult } from "@/types/action";
 
 // Public (customer) server actions. Placing an order needs a signed-in buyer (FR26).
@@ -54,8 +53,6 @@ export async function createOrder(input: CreateOrderInput): Promise<ActionResult
     const result = await createWebOrder(input, session.userId);
     if (!result.ok) return result;
     const order = result.data;
-    const settings = await getSettings();
-    const paymentPath = `/thanh-toan/${order.code}?t=${order.accessToken}`;
 
     // FR07/FR24: confirmation email after the response (never fails the order).
     after(async () => {
@@ -69,17 +66,7 @@ export async function createOrder(input: CreateOrderInput): Promise<ActionResult
         if (error) console.error("[orders] save customer phone failed", error.message);
       }
 
-      await sendOrderCreated({
-        to: order.email,
-        customerName: order.customerName,
-        code: order.code,
-        subtotal: order.subtotal,
-        prepayAmount: order.prepayAmount,
-        expiresAt: order.expiresAt,
-        qrUrl: vietQrUrl(settings.bank_sales, order.prepayAmount, order.code),
-        bank: settings.bank_sales,
-        paymentUrl: siteUrl(paymentPath),
-      });
+      await notifyOrder(order.id, { kind: "CREATED" });
     });
 
     return { ok: true, data: { code: order.code, token: order.accessToken } };

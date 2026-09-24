@@ -77,8 +77,8 @@ URLs are Vietnamese slugs without diacritics.
 - Emails on Đã cọc, Đã thanh toán 100%, READY, DELIVERED and CANCELLED.
 **Done when:** printing is blocked until a rejected design is approved, a 50% order goes Đã cọc → … → Đã giao with "Còn nợ" shown, then Đã thanh toán 100% clears it; a 100% order goes straight to FULLY_PAID; history is logged; a STAFF user cannot open accounts or settings.
 
-### Phase 5b — Email templates (FR24, FR30)
-- Migration: `email_templates (key text pk, subject text, body text, is_enabled bool, updated_by uuid → profiles, updated_at)`, seeded with the 9 defaults (Vietnamese). Keep the defaults in code too (`lib/email/templates.ts`) for "Khôi phục mặc định".
+### Phase 5b — Email templates (FR24, FR30) ✅ done
+- Migration 0005: `email_templates (key text pk, subject, body, is_enabled, updated_by → profiles, updated_at)`. Defaults live only in code (`lib/email/templates.ts`); a row exists once an admin edits, and "Khôi phục mặc định" deletes it.
 - `lib/email/templates.ts`: per key, the allowed variables, the required ones, and a sample data object for preview. Rendering: escape every variable value, replace `{bien}`, convert the limited markup (line breaks, **bold**, links) to HTML, wrap in the fixed layout, and add the fixed blocks (QR + bank info for ORDER_CREATED, items/amount table for order emails).
 - `sendTemplate(key, to, data)`: loads the template (cached per request), skips when disabled, never throws (hard rule 7). Move `sendOrderCreated` and every Phase 5 email onto it.
 - Admin `/admin/mau-email` (ADMIN only, checked in every action): list, edit subject/body with clickable variable chips, validation for unknown/missing variables, live preview, "Gửi thử" to the admin's own email, "Khôi phục mặc định", enable toggle.

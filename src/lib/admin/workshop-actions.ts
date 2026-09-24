@@ -2,12 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
-import { sendOrderCreated, siteUrl } from "@/lib/email";
 import { notifyOrder } from "@/lib/orders/notify";
 import { createWorkshopOrder, saveScan, type WorkshopOrderInput } from "@/lib/orders/workshop";
 import { getSettings } from "@/lib/settings";
 import { requireRole } from "@/lib/supabase/auth";
-import { isBankConfigured, vietQrUrl } from "@/lib/vietqr";
+import { isBankConfigured } from "@/lib/vietqr";
 import type { ActionResult } from "@/types/action";
 
 // FR16 server actions. Staff only (hard rule 8).
@@ -33,18 +32,8 @@ export async function submitWorkshopOrder(input: WorkshopOrderInput): Promise<Ac
   after(async () => {
     if (order.method === "CASH") {
       await notifyOrder(order.id, { kind: order.fullyPaid ? "FULLY_PAID" : "DEPOSIT_PAID" });
-    } else if (order.email && order.expiresAt) {
-      await sendOrderCreated({
-        to: order.email,
-        customerName: order.customerName,
-        code: order.code,
-        subtotal: order.subtotal,
-        prepayAmount: order.prepay,
-        expiresAt: order.expiresAt,
-        qrUrl: vietQrUrl(settings.bank_sales, order.prepay, order.code),
-        bank: settings.bank_sales,
-        paymentUrl: siteUrl(`/thanh-toan/${order.code}?t=${order.accessToken}`),
-      });
+    } else {
+      await notifyOrder(order.id, { kind: "CREATED" });
     }
   });
 
