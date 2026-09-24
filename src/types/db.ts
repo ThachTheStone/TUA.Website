@@ -50,6 +50,18 @@ export interface Order {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  /** Secret for the payment page link; never show it in admin lists or Sheets. */
+  access_token: string;
+}
+
+export interface OrderStatusHistory {
+  id: number;
+  order_id: string;
+  from_status: OrderStatus | null;
+  to_status: OrderStatus;
+  note: string | null;
+  changed_by: string | null;
+  changed_at: string;
 }
 
 export interface OrderItem {

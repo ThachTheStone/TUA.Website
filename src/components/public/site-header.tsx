@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { CartLink } from "@/components/public/cart-link";
 
-// Links are added here as later phases ship their pages (quyên góp, tra cứu).
+// Links are added here as later phases ship their pages (quyên góp).
 const NAV = [
   { href: "/thiet-ke", label: "Thiết kế áo" },
   { href: "/ao-tron", label: "Áo trơn" },
+  { href: "/tra-cuu", label: "Tra cứu đơn" },
   { href: "/vinh-danh", label: "Vinh danh" },
 ];
 
@@ -14,12 +16,13 @@ export function SiteHeader() {
         <Link href="/" className="font-bold tracking-tight">
           TỰA <span className="hidden font-normal text-muted-foreground sm:inline">– Nét Vẽ Yêu Thương</span>
         </Link>
-        <nav className="flex items-center gap-1 text-sm">
+        <nav className="flex items-center gap-1 overflow-x-auto text-sm">
           {NAV.map(({ href, label }) => (
             <Link key={href} href={href} className="rounded-md px-3 py-2 hover:bg-muted">
               {label}
             </Link>
           ))}
+          <CartLink />
         </nav>
       </div>
     </header>

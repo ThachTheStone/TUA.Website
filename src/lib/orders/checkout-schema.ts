@@ -1,0 +1,81 @@
+import { z } from "zod";
+import { PREPAY_PERCENTS } from "@/lib/orders/pricing";
+
+// FR07 checkout input. Shared by the form (client) and createOrder (server).
+// Prices are deliberately absent: the server takes them from settings.
+
+export const ORDER_CODE_RE = /^TUA\d{4,}$/;
+export const MAX_CART_LINES = 20;
+
+/** `0901 234 567`, `+84 901234567`, `090.123.4567` → `0901234567`. */
+export function normalizePhone(value: string): string {
+  const digits = value.replace(/[\s.\-()]/g, "");
+  return digits.startsWith("+84") ? `0${digits.slice(3)}` : digits.startsWith("84") && digits.length === 11 ? `0${digits.slice(2)}` : digits;
+}
+
+export const phoneSchema = z
+  .string()
+  .trim()
+  .min(1, "Vui lòng nhập số điện thoại")
+  .transform(normalizePhone)
+  .refine((v) => /^0[35789]\d{8}$/.test(v), "Số điện thoại không hợp lệ (10 số, ví dụ 0901234567)");
+
+export const orderCodeSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .refine((v) => ORDER_CODE_RE.test(v), "Mã đơn có dạng TUA0001");
+
+const text = (max: number, label: string) =>
+  z.string().trim().max(max, `${label} tối đa ${max} ký tự`);
+
+export const checkoutFormSchema = z
+  .object({
+    customer_name: text(100, "Họ tên").min(2, "Vui lòng nhập họ tên"),
+    phone: phoneSchema,
+    email: z
+      .string()
+      .trim()
+      .min(1, "Vui lòng nhập email")
+      .max(200, "Email tối đa 200 ký tự")
+      .pipe(z.email("Email không hợp lệ")),
+    fulfillment: z.enum(["DELIVERY", "PICKUP"], { error: "Vui lòng chọn hình thức nhận hàng" }),
+    address: text(300, "Địa chỉ"),
+    preferred_time: text(200, "Thời gian"),
+    pickup_location: text(200, "Địa điểm"),
+    note: text(500, "Ghi chú"),
+    prepay_percent: z.coerce
+      .number()
+      .refine((v) => (PREPAY_PERCENTS as readonly number[]).includes(v), "Vui lòng chọn mức thanh toán trước"),
+    consent: z.boolean().refine((v) => v, "Bạn cần đồng ý với chính sách xử lý dữ liệu cá nhân"),
+  })
+  .superRefine((v, ctx) => {
+    if (v.fulfillment === "DELIVERY" && !v.address) {
+      ctx.addIssue({ code: "custom", path: ["address"], message: "Vui lòng nhập địa chỉ nhận hàng" });
+    }
+    if (v.fulfillment === "PICKUP" && !v.preferred_time) {
+      ctx.addIssue({ code: "custom", path: ["preferred_time"], message: "Vui lòng nhập thời gian hẹn nhận" });
+    }
+    if (v.fulfillment === "PICKUP" && !v.pickup_location) {
+      ctx.addIssue({ code: "custom", path: ["pickup_location"], message: "Vui lòng nhập địa điểm hẹn nhận" });
+    }
+  });
+
+export type CheckoutFormInput = z.input<typeof checkoutFormSchema>;
+export type CheckoutForm = z.output<typeof checkoutFormSchema>;
+
+export const checkoutItemSchema = z.object({
+  type: z.enum(["PLAIN", "CUSTOM"]),
+  color: z.string().min(1).max(50),
+  size: z.string().min(1).max(20),
+  quantity: z.number().int().min(1, "Số lượng tối thiểu là 1").max(50, "Số lượng tối đa 50"),
+  /** Folder the design files were uploaded to (CUSTOM only). */
+  uploadId: z.uuid().optional(),
+});
+
+export const createOrderSchema = z.object({
+  form: checkoutFormSchema,
+  items: z.array(checkoutItemSchema).min(1, "Giỏ hàng đang trống").max(MAX_CART_LINES, "Giỏ hàng quá nhiều dòng"),
+});
+
+export type CreateOrderInput = z.input<typeof createOrderSchema>;

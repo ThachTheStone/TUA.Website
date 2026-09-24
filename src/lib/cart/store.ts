@@ -30,6 +30,8 @@ type CartState = {
   setQuantity: (itemId: string, quantity: number) => void;
   removeItem: (itemId: string) => void;
   setWip: (wip: DesignWip | null) => void;
+  /** Empties the cart after an order was placed (keeps nothing of the old designs). */
+  clear: () => void;
 };
 
 export const MAX_QUANTITY = 50;
@@ -109,6 +111,8 @@ export const useCart = create<CartState>()(
         }),
 
       setWip: (wip) => set({ wip }),
+
+      clear: () => set({ items: [], drafts: {} }),
     }),
     { name: "tua-cart", version: 1, storage: createJSONStorage(() => safeStorage) },
   ),
