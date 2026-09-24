@@ -15,7 +15,7 @@ Tài liệu xác định đầy đủ yêu cầu chức năng, phi chức năng,
 
 ### 1.2. Phạm vi
 - **Trang khách hàng (Public site):** xem giới thiệu, ý nghĩa dự án, Top 5 tranh của các bé, sự kiện và khuyến mãi; mua áo mẫu; thiết kế áo trên canvas; tài khoản Người mua; giỏ hàng; đặt hàng và thanh toán cọc qua VietQR; quyên góp; tra cứu đơn; xem Bảng vinh danh nhà hảo tâm và nhà tài trợ.
-- **Trang quản trị (Admin Portal):** quản lý mẫu áo, quản lý đơn hàng, xác nhận thanh toán, cập nhật trạng thái, tạo đơn Workshop thủ công, quản lý quyên góp, quản lý nội dung, quản lý nhà tài trợ, quản lý tài khoản.
+- **Trang quản trị (Admin Portal):** quản lý mẫu áo, quản lý mẫu email, quản lý đơn hàng, xác nhận thanh toán, cập nhật trạng thái, tạo đơn Workshop thủ công, quản lý quyên góp, quản lý nội dung, quản lý nhà tài trợ, quản lý tài khoản.
 - **Tích hợp:** VietQR (sinh mã QR), Google Sheets (bản sao dữ liệu để theo dõi minh bạch), Email (thông báo).
 
 ### 1.3. Ngoài phạm vi (phiên bản này)
@@ -209,6 +209,28 @@ Trang chủ gồm các phần theo thứ tự:
 - Nếu không thống nhất được với khách, Staff hủy đơn kèm lý do (hoàn tiền theo BR06).
 - Mỗi lần đổi trạng thái duyệt được ghi lịch sử (ai, lúc nào, lý do). Danh sách đơn trong Admin có bộ đếm "Thiết kế chờ duyệt".
 
+**FR30 – Quản lý mẫu email (Admin)**
+- Trang "Mẫu email" trong Admin liệt kê mọi email hệ thống gửi (FR24): tên, mô tả khi nào gửi, trạng thái bật/tắt, lần sửa cuối (ai, lúc nào).
+
+| Mã | Email | Gửi khi |
+|---|---|---|
+| `ORDER_CREATED` | Đặt hàng thành công | Khách đặt đơn trên website |
+| `DEPOSIT_CONFIRMED` | Đã nhận cọc | Staff bấm "Đã cọc" |
+| `FULLY_PAID` | Đã thanh toán 100% | Staff bấm "Đã thanh toán 100%" |
+| `DESIGN_REJECTED` | Thiết kế bị từ chối | Staff bấm "Từ chối" một thiết kế |
+| `ORDER_READY` | Đơn sẵn sàng | Đơn chuyển sang Sẵn sàng giao/nhận |
+| `ORDER_DELIVERED` | Đã giao | Staff bấm "Đã giao" |
+| `ORDER_CANCELLED` | Đơn bị hủy | Staff hủy đơn |
+| `ORDER_EXPIRED` | Đơn hết hạn | Hệ thống tự hủy đơn quá hạn |
+| `DONATION_CONFIRMED` | Cảm ơn quyên góp | Staff xác nhận khoản quyên góp |
+
+- Với mỗi mẫu, Admin sửa: **tiêu đề** và **nội dung** (văn bản có xuống dòng, in đậm, liên kết), và bật/tắt việc gửi.
+- Nội dung dùng **biến** đặt trong ngoặc nhọn, được thay bằng dữ liệu thật khi gửi. Mỗi mẫu hiển thị danh sách biến dùng được và bấm để chèn, ví dụ: `{ten_khach}`, `{ma_don}`, `{tong_tien}`, `{da_tra}`, `{con_lai}`, `{so_tien_can_chuyen}`, `{han_thanh_toan}`, `{hinh_thuc_nhan}`, `{link_don_hang}`, `{ly_do}`, `{ten_nguoi_quyen_gop}`, `{so_tien_quyen_gop}`, `{ma_quyen_gop}`, `{lien_he_ban_to_chuc}`. Tiền hiển thị dạng `129.000đ`, ngày dạng `dd/MM/yyyy HH:mm`.
+- Khi lưu, hệ thống báo lỗi nếu có biến không tồn tại cho mẫu đó, hoặc thiếu biến bắt buộc (ví dụ `{ma_don}` trong email đơn hàng, `{ly_do}` trong email từ chối/hủy).
+- Phần cố định do hệ thống tự thêm, Admin không sửa được: đầu/cuối email (tên dự án, liên hệ), và các khối thông tin bắt buộc: mã QR + thông tin chuyển khoản trong email Đặt hàng thành công, bảng sản phẩm và số tiền trong các email đơn hàng.
+- **Xem trước** email với dữ liệu mẫu; **Gửi thử** tới email của Admin đang đăng nhập; **Khôi phục mặc định** về nội dung ban đầu.
+- Chỉ Admin truy cập trang này. Email xác thực tài khoản khi đăng ký (FR26) do dịch vụ xác thực gửi và được sửa trong bảng điều khiển Supabase, không nằm trong trang này.
+
 ### 4.3. Tích hợp
 
 **FR22 – Sinh mã VietQR**
@@ -220,7 +242,8 @@ Trang chủ gồm các phần theo thứ tự:
 - Có nút "Đồng bộ lại toàn bộ" trong Admin. Nếu đồng bộ thất bại, hệ thống không chặn thao tác chính và ghi log lỗi.
 
 **FR24 – Email thông báo**
-- Gửi email khi: thiết kế bị từ chối (kèm lý do), đặt hàng thành công, xác nhận thanh toán, đơn sẵn sàng, đã giao, đơn bị hủy hoặc hết hạn, quyên góp được xác nhận.
+- Gửi email khi: đặt hàng thành công, xác nhận Đã cọc, xác nhận Đã thanh toán 100%, thiết kế bị từ chối (kèm lý do), đơn sẵn sàng, đã giao, đơn bị hủy, đơn hết hạn, quyên góp được xác nhận.
+- Tiêu đề và nội dung từng email lấy từ mẫu email do Admin quản lý (FR30). Email bị tắt thì không gửi.
 
 **FR25 – Tự động hủy đơn quá hạn**
 - Định kỳ mỗi 15 phút, các đơn ở trạng thái Chờ thanh toán quá thời hạn (mặc định 24 giờ) chuyển sang Hết hạn, và hệ thống gửi email thông báo.
@@ -340,6 +363,7 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 | `profiles` | id (= auth user), full_name, role (ADMIN/STAFF), is_active |
 | `customers` | id (= auth user), full_name, phone, created_at |
 | `carts` | customer_id, items (JSON), drafts (JSON), updated_at |
+| `email_templates` | key (ORDER_CREATED, ...), subject, body, is_enabled, updated_by, updated_at |
 | `settings` | key, value (JSON): giá, màu, size, vùng in, tài khoản ngân hàng, thời hạn hủy, mục tiêu quỹ, liên hệ Ban tổ chức |
 | `orders` | id, code, source (WEB/WORKSHOP), customer_name, phone, email, fulfillment (DELIVERY/PICKUP), address, preferred_time, pickup_location, note, subtotal, prepay_percent, prepay_amount, paid_amount, status, payment_status (UNPAID/DEPOSIT_PAID/FULLY_PAID), refund_status, cancel_reason, expires_at, created_by, customer_id, created_at |
 | `order_items` | id, order_id, type (PLAIN/CUSTOM/PROTOTYPE), color, size, quantity, unit_price, design_id, prototype_id, approval_status, reject_reason, reviewed_by, reviewed_at |
@@ -362,7 +386,7 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 
 **Public:** Trang chủ · Áo mẫu · Chi tiết áo mẫu · Đăng nhập · Đăng ký · Tài khoản (lịch sử đơn) · Thiết kế áo (canvas) · Chọn áo trơn · Giỏ hàng · Thanh toán (thông tin) · Thanh toán (QR) · Tra cứu đơn · Quyên góp · Quyên góp (QR) · Bảng vinh danh · Nhà tài trợ · Chính sách dữ liệu và điều khoản.
 
-**Admin:** Đăng nhập · Dashboard · Mẫu áo · Danh sách đơn · Chi tiết đơn · Tạo đơn Workshop · Quyên góp · Nội dung (câu chuyện, Top 5, sự kiện, khuyến mãi) · Nhà tài trợ · Tài khoản · Cài đặt.
+**Admin:** Đăng nhập · Dashboard · Mẫu áo · Danh sách đơn · Chi tiết đơn · Tạo đơn Workshop · Quyên góp · Nội dung (câu chuyện, Top 5, sự kiện, khuyến mãi) · Nhà tài trợ · Mẫu email · Tài khoản · Cài đặt.
 
 ---
 
@@ -386,6 +410,8 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 | 14 | Thời gian Staff duyệt thiết kế | Trong 24 giờ kể từ khi đặt hoặc gửi lại (cam kết vận hành, hệ thống không tự động) |
 | 15 | Khách không gửi lại thiết kế bị từ chối | Không tự hủy; Staff liên hệ và quyết định hủy/hoàn tiền |
 | 16 | Thiết kế bị từ chối có được đổi màu/size | Không; chỉ đổi thiết kế. Muốn đổi áo thì hủy và đặt đơn mới |
+| 17 | Ai được sửa mẫu email | Chỉ Admin (giống Cài đặt, Nội dung) |
+| 18 | Mẫu email có lưu lịch sử phiên bản không | Không; chỉ lưu người và thời điểm sửa cuối, có nút Khôi phục mặc định |
 
 ---
 
@@ -401,6 +427,7 @@ Mục tiêu ra mắt theo kế hoạch ban đầu: 08/10.
 | 4 | Đặt hàng, VietQR, tra cứu đơn, email | FR07, FR11, FR22, FR24 | Xong |
 | 4b | Tài khoản Người mua | FR26 | Xong (đăng nhập Google tạm tắt) |
 | 5 | Admin: đơn hàng, xác nhận Đã cọc / Đã thanh toán 100% / Đã giao, duyệt thiết kế, đơn Workshop | FR13–FR16, FR29, §5 | Chưa làm |
+| 5b | Mẫu email: trang Admin, biến, xem trước, gửi thử; chuyển mọi email sang dùng mẫu | FR24, FR30 | Chưa làm |
 | 6 | Chèn ảnh/sticker vào canvas; khách sửa và gửi lại thiết kế bị từ chối | FR03, FR05, FR26, FR29, BR01 | Chưa làm |
 | 7 | Áo mẫu (Admin quản lý, trang Áo mẫu, giỏ hàng, đặt hàng) và giới hạn điện thoại cho canvas | FR27, FR28, FR02, FR06, FR03, NFR02 | Chưa làm |
 | 8 | Quyên góp, Bảng vinh danh, Google Sheets, tự hủy đơn, dọn ảnh sau 30 ngày | FR08, FR09, FR18, FR23, FR25, NFR06 | Chưa làm |

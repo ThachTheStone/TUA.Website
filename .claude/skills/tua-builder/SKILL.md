@@ -77,6 +77,13 @@ URLs are Vietnamese slugs without diacritics.
 - Emails on Đã cọc, Đã thanh toán 100%, READY, DELIVERED and CANCELLED.
 **Done when:** printing is blocked until a rejected design is approved, a 50% order goes Đã cọc → … → Đã giao with "Còn nợ" shown, then Đã thanh toán 100% clears it; a 100% order goes straight to FULLY_PAID; history is logged; a STAFF user cannot open accounts or settings.
 
+### Phase 5b — Email templates (FR24, FR30)
+- Migration: `email_templates (key text pk, subject text, body text, is_enabled bool, updated_by uuid → profiles, updated_at)`, seeded with the 9 defaults (Vietnamese). Keep the defaults in code too (`lib/email/templates.ts`) for "Khôi phục mặc định".
+- `lib/email/templates.ts`: per key, the allowed variables, the required ones, and a sample data object for preview. Rendering: escape every variable value, replace `{bien}`, convert the limited markup (line breaks, **bold**, links) to HTML, wrap in the fixed layout, and add the fixed blocks (QR + bank info for ORDER_CREATED, items/amount table for order emails).
+- `sendTemplate(key, to, data)`: loads the template (cached per request), skips when disabled, never throws (hard rule 7). Move `sendOrderCreated` and every Phase 5 email onto it.
+- Admin `/admin/mau-email` (ADMIN only, checked in every action): list, edit subject/body with clickable variable chips, validation for unknown/missing variables, live preview, "Gửi thử" to the admin's own email, "Khôi phục mặc định", enable toggle.
+**Done when:** editing the "Đơn sẵn sàng" subject changes the next real email, a disabled template sends nothing, an unknown `{bien}` is refused on save, a value containing `<script>` is escaped, and STAFF gets redirected away from the page.
+
 ### Phase 6 — Buyer images in the canvas + resubmit (FR03, FR05, FR26, FR29, BR01)
 - Canvas "Chèn ảnh" tool (signed-in buyers only; logged-out buyers see a login prompt). New shape kind `image` referencing a `design_assets` row; move/resize/rotate like other shapes, clipped to the print area; max 10 per design.
 - Browser downscales to what the print area needs at 200 DPI, then uploads through a server action: check MIME by magic bytes (JPG/PNG/WebP), ≤ 10MB, strip EXIF, store in a private `uploads` bucket under `<customer_id>/`, insert `design_assets`. Signed URLs for display; never public.
