@@ -2,7 +2,8 @@
 
 import { Bold, Brush, Circle, Eraser, Minus, MousePointer2, PaintBucket, Square, Type } from "lucide-react";
 import type { Tool } from "@/components/canvas/area-stage";
-import { BRUSH_MAX, BRUSH_MIN, TEXT_FONTS, type TextFont } from "@/lib/design/types";
+import { TEXT_FONTS, textFont, type TextFont } from "@/lib/design/fonts";
+import { BRUSH_MAX, BRUSH_MIN } from "@/lib/design/types";
 import { cn } from "@/lib/utils";
 
 const TOOLS: { tool: Tool; label: string; Icon: typeof Brush }[] = [
@@ -81,7 +82,7 @@ export function Toolbar(props: Props) {
       )}
 
       {tool === "text" && (
-        <div className="flex gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           <select
             value={font}
             onChange={(e) => onFont(e.target.value as TextFont)}
@@ -90,7 +91,7 @@ export function Toolbar(props: Props) {
           >
             {TEXT_FONTS.map((f) => (
               <option key={f.key} value={f.key} style={{ fontFamily: f.family }}>
-                {f.label}
+                {f.vi ? f.label : `${f.label} (không dấu)`}
               </option>
             ))}
           </select>
@@ -104,6 +105,11 @@ export function Toolbar(props: Props) {
           >
             <Bold className="size-5" />
           </button>
+          {!textFont(font).vi && (
+            <span className="max-w-44 text-xs leading-tight text-amber-700 dark:text-amber-400">
+              Kiểu chữ này không có dấu tiếng Việt; chữ có dấu sẽ hiển thị bằng kiểu khác.
+            </span>
+          )}
         </div>
       )}
 

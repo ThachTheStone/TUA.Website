@@ -1,4 +1,7 @@
-import { TEXT_FONTS, type DesignShape, type EditableShape, type LineShape } from "@/lib/design/types";
+import { fontFamily } from "@/lib/design/fonts";
+import type { DesignShape, EditableShape, LineShape } from "@/lib/design/types";
+
+export { fontFamily };
 
 // One mapping from our shapes to Konva attributes, shared by the editor (react-konva)
 // and the offscreen exporter, so what the customer sees is exactly what gets printed.
@@ -107,10 +110,6 @@ export function applyTransform(shape: EditableShape, t: NodeTransform): Editable
     case "text":
       return { ...shape, ...base, fontSize: Math.max(4, shape.fontSize * sy) };
   }
-}
-
-export function fontFamily(font: string): string {
-  return (TEXT_FONTS.find((f) => f.key === font) ?? TEXT_FONTS[0]).family;
 }
 
 const imageCache = new Map<string, HTMLImageElement>();

@@ -1,3 +1,7 @@
+import type { TextFont } from "@/lib/design/fonts";
+
+export type { TextFont };
+
 // Canvas design model (FR03). Everything is stored in logical units: every print area is
 // LOGICAL_WIDTH units wide and keeps its real aspect ratio, whatever size it is shown at.
 // Business config (sizes in cm, DPI) comes from `settings.print_areas` / `settings.export_dpi`.
@@ -8,13 +12,6 @@ export const HISTORY_LIMIT = 40; // FR03 requires at least 30 undo steps
 export const BRUSH_MIN = 2;
 export const BRUSH_MAX = 60;
 
-/** Fonts for the text tool. System fonts with Vietnamese glyphs, so the export renders them too. */
-export const TEXT_FONTS = [
-  { key: "sans", label: "Không chân", family: "Arial, Helvetica, sans-serif" },
-  { key: "serif", label: "Có chân", family: "Georgia, 'Times New Roman', serif" },
-  { key: "mono", label: "Máy chữ", family: "'Courier New', Courier, monospace" },
-] as const;
-export type TextFont = (typeof TEXT_FONTS)[number]["key"];
 
 /** Text size (logical units) for a given value of the size slider. */
 export function fontSizeFor(size: number): number {

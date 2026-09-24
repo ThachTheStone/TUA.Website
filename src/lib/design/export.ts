@@ -1,6 +1,7 @@
 "use client";
 
 import type Konva from "konva";
+import { loadFonts } from "@/lib/design/fonts";
 import { MOCKUP_HEIGHT, MOCKUP_WIDTH, areaOnMockup, shirtSvgUrl } from "@/lib/design/mockup";
 import { loadImage, shapeKonva } from "@/lib/design/shapes";
 import {
@@ -19,6 +20,11 @@ import {
 
 export type AreaExport = { area: string; dataUrl: string; widthPx: number; heightPx: number };
 
+/** Font keys used by the visible texts of an area. */
+export function textFontsIn(design: AreaDesign): string[] {
+  return design.layers.flatMap((l) => (l.visible ? l.shapes : [])).flatMap((s) => (s.kind === "text" ? [s.font] : []));
+}
+
 /**
  * Renders one area to a transparent PNG of exactly `widthPx` × `heightPx` (height defaults to the
  * area's aspect ratio). Hidden layers are not printed.
@@ -30,6 +36,7 @@ export async function renderArea(
   heightPx = Math.round((widthPx * area.heightCm) / area.widthCm),
 ): Promise<string> {
   const { default: K } = await import("konva");
+  await loadFonts(textFontsIn(design));
   const width = LOGICAL_WIDTH;
   const height = logicalHeight(area);
   const container = document.createElement("div");

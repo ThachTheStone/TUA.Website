@@ -4,7 +4,9 @@ import type Konva from "konva";
 import { Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Ellipse, Image as KImage, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
+import { textFontsIn } from "@/lib/design/export";
 import { floodFill, hexToRgba } from "@/lib/design/flood-fill";
+import { loadFonts } from "@/lib/design/fonts";
 import { applyTransform, cachedImage, fontFamily, lineAttrs, loadImage, shapeKonva } from "@/lib/design/shapes";
 import {
   LOGICAL_WIDTH,
@@ -128,6 +130,8 @@ export function AreaStage(props: Props) {
   const [box, setBox] = useState({ width: 0, height: 0 });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [textEdit, setTextEdit] = useState<TextEdit | null>(null);
+  /** Bumped when a web font finishes loading, to redraw texts that were drawn with the fallback. */
+  const [fontEpoch, setFontEpoch] = useState(0);
 
   const height = logicalHeight(area);
   const scale = box.width && box.height ? Math.min(box.width / LOGICAL_WIDTH, box.height / height) : 0;
@@ -150,6 +154,20 @@ export function AreaStage(props: Props) {
     ? activeLayer.shapes.find((s): s is EditableShape => s.id === selectedId && isEditable(s))
     : undefined;
 
+  // Konva measures and draws text immediately, so load the fonts in use and redraw after.
+  const fontKeys = [...new Set([...textFontsIn(design), font])].sort().join(",");
+  useEffect(() => {
+    const keys = fontKeys.split(",");
+    if (keys.every((k) => document.fonts?.check(`400 32px ${fontFamily(k)}`) ?? true)) return;
+    let cancelled = false;
+    loadFonts(keys).then(() => {
+      if (!cancelled) setFontEpoch((n) => n + 1);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [fontKeys]);
+
   // Attach the selection frame to the selected Konva node.
   useEffect(() => {
     const tr = transformerRef.current;
@@ -157,7 +175,7 @@ export function AreaStage(props: Props) {
     const node = selected && !textEdit ? stageRef.current?.findOne((n: Konva.Node) => n.id() === selected.id) : undefined;
     tr.nodes(node ? [node] : []);
     tr.getLayer()?.batchDraw();
-  }, [selected, textEdit, scale]);
+  }, [selected, textEdit, scale, fontEpoch]);
 
   function removeShape(id: string) {
     onCommit({ layers: design.layers.map((l) => ({ ...l, shapes: l.shapes.filter((s) => s.id !== id) })) });
@@ -412,7 +430,7 @@ export function AreaStage(props: Props) {
           <Stage ref={stageRef} width={displayW} height={displayH} scaleX={scale} scaleY={scale}>
             {design.layers.map((layer) => (
               <Layer
-                key={layer.id}
+                key={`${layer.id}:${fontEpoch}`}
                 ref={(node) => {
                   if (node) layerRefs.current.set(layer.id, node);
                   else layerRefs.current.delete(layer.id);
