@@ -1,6 +1,7 @@
 "use client";
 
 import type Konva from "konva";
+import { loadAssetImage } from "@/lib/design/assets";
 import { loadFonts } from "@/lib/design/fonts";
 import { MOCKUP_HEIGHT, MOCKUP_WIDTH, areaOnMockup, shirtSvgUrl } from "@/lib/design/mockup";
 import { loadImage, shapeKonva } from "@/lib/design/shapes";
@@ -50,8 +51,11 @@ export async function renderArea(
       for (const shape of layer.shapes) {
         const { className, attrs } = shapeKonva(shape);
         let node: Konva.Shape;
-        if (className === "Image" && shape.kind === "raster") {
+        if (shape.kind === "raster") {
           node = new K.Image({ ...attrs, image: await loadImage(shape.src) });
+        } else if (shape.kind === "image") {
+          // Buyer photos print at full uploaded resolution (Konva scales the original pixels).
+          node = new K.Image({ ...attrs, image: await loadAssetImage(shape.assetId) });
         } else if (className === "Rect") node = new K.Rect(attrs);
         else if (className === "Ellipse") node = new K.Ellipse(attrs as Konva.EllipseConfig);
         else if (className === "Text") node = new K.Text(attrs);

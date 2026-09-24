@@ -7,9 +7,12 @@ import { Ellipse, Image as KImage, Layer, Line, Rect, Stage, Text, Transformer }
 import { textFontsIn } from "@/lib/design/export";
 import { floodFill, hexToRgba } from "@/lib/design/flood-fill";
 import { loadFonts } from "@/lib/design/fonts";
+import { loadAssetImage } from "@/lib/design/assets";
 import { applyTransform, cachedImage, fontFamily, lineAttrs, loadImage, shapeKonva } from "@/lib/design/shapes";
 import {
   LOGICAL_WIDTH,
+  MIN_IMAGE_DPI,
+  imagePrintDpi,
   fontSizeFor,
   isEditable,
   logicalHeight,
@@ -18,6 +21,7 @@ import {
   type CanvasPrintArea,
   type DesignShape,
   type EditableShape,
+  type ImageShape,
   type RasterShape,
   type TextFont,
   type TextShape,
@@ -69,9 +73,28 @@ function RasterNode({ shape }: { shape: RasterShape }) {
   return image ? <KImage image={image} {...shapeKonva(shape).attrs} /> : null;
 }
 
+/** A buyer photo/sticker; drawn as a placeholder frame until the signed URL has loaded. */
+function AssetNode({ shape, extra }: { shape: ImageShape; extra?: Record<string, unknown> }) {
+  const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    loadAssetImage(shape.assetId)
+      .then((img) => alive && setImage(img))
+      .catch(() => alive && setFailed(true));
+    return () => {
+      alive = false;
+    };
+  }, [shape.assetId]);
+  const attrs = shapeKonva(shape).attrs;
+  if (image) return <KImage image={image} {...attrs} {...extra} />;
+  return <Rect {...attrs} stroke={failed ? "#dc2626" : "#9ca3af"} strokeWidth={2} dash={[6, 4]} fill="rgba(0,0,0,0.04)" {...extra} />;
+}
+
 /** `extra` carries editor-only props (hit area, dragging, events) on top of the shared attributes. */
 function ShapeNode({ shape, extra }: { shape: DesignShape; extra?: Record<string, unknown> }) {
   if (shape.kind === "raster") return <RasterNode shape={shape} />;
+  if (shape.kind === "image") return <AssetNode shape={shape} extra={extra} />;
   const { className, attrs } = shapeKonva(shape);
   if (className === "Rect") return <Rect {...attrs} {...extra} />;
   if (className === "Ellipse") return <Ellipse {...(attrs as Konva.EllipseConfig)} {...extra} />;
@@ -466,8 +489,8 @@ export function AreaStage(props: Props) {
                 rotateAnchorOffset={28}
                 flipEnabled={false}
                 keepRatio
-                // Texts only scale evenly, from the corners.
-                enabledAnchors={selected?.kind === "text" ? CORNERS : ALL_ANCHORS}
+                // Texts and pictures only scale evenly, from the corners.
+                enabledAnchors={selected?.kind === "text" || selected?.kind === "image" ? CORNERS : ALL_ANCHORS}
                 // Don't let a shape shrink to nothing.
                 boundBoxFunc={(oldBox, newBox) =>
                   (newBox.width < 8 && newBox.width < oldBox.width) || (newBox.height < 8 && newBox.height < oldBox.height)
@@ -515,7 +538,12 @@ export function AreaStage(props: Props) {
       )}
 
       {selected && !textEdit && (
-        <div className="absolute top-0 right-0 flex gap-1 rounded-md border bg-background p-1 shadow-sm">
+        <div className="absolute top-0 right-0 flex max-w-72 flex-wrap items-center gap-1 rounded-md border bg-background p-1 shadow-sm">
+          {selected.kind === "image" && imagePrintDpi(selected, area) < MIN_IMAGE_DPI && (
+            <p className="w-full px-2 py-1 text-xs text-amber-700 dark:text-amber-400">
+              Ảnh có thể bị mờ khi in (khoảng {Math.round(imagePrintDpi(selected, area))} DPI). Hãy thu nhỏ ảnh hoặc chọn ảnh rõ hơn.
+            </p>
+          )}
           <button
             type="button"
             onClick={() => removeShape(selected.id)}

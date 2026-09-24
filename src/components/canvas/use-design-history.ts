@@ -15,9 +15,11 @@ type HistoryState = {
 export function useDesignHistory(initial: () => DesignAreas) {
   const [state, setState] = useState<HistoryState>(() => ({ areas: initial(), past: {}, future: {} }));
 
-  const commit = useCallback((key: string, next: AreaDesign) => {
+  /** `update` may be a function of the current design, for changes that finish later (image upload). */
+  const commit = useCallback((key: string, update: AreaDesign | ((current: AreaDesign) => AreaDesign)) => {
     setState((s) => {
       const prev = s.areas[key];
+      const next = typeof update === "function" ? update(prev) : update;
       if (prev === next) return s;
       const past = [...(s.past[key] ?? []), prev].slice(-HISTORY_LIMIT);
       return {

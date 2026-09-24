@@ -84,7 +84,7 @@ URLs are Vietnamese slugs without diacritics.
 - Admin `/admin/mau-email` (ADMIN only, checked in every action): list, edit subject/body with clickable variable chips, validation for unknown/missing variables, live preview, "Gửi thử" to the admin's own email, "Khôi phục mặc định", enable toggle.
 **Done when:** editing the "Đơn sẵn sàng" subject changes the next real email, a disabled template sends nothing, an unknown `{bien}` is refused on save, a value containing `<script>` is escaped, and STAFF gets redirected away from the page.
 
-### Phase 6 — Buyer images in the canvas + resubmit (FR03, FR05, FR26, FR29, BR01)
+### Phase 6 — Buyer images in the canvas + resubmit (FR03, FR05, FR26, FR29, BR01) ✅ done
 - Canvas "Chèn ảnh" tool (signed-in buyers only; logged-out buyers see a login prompt). New shape kind `image` referencing a `design_assets` row; move/resize/rotate like other shapes, clipped to the print area; max 10 per design.
 - Browser downscales to what the print area needs at 200 DPI, then uploads through a server action: check MIME by magic bytes (JPG/PNG/WebP), ≤ 10MB, strip EXIF, store in a private `uploads` bucket under `<customer_id>/`, insert `design_assets`. Signed URLs for display; never public.
 - Blurry warning when the placed image is below 150 DPI at its printed size.

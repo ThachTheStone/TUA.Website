@@ -1,4 +1,5 @@
 import "server-only";
+import { foreignAssets } from "@/lib/design/assets.server";
 import { collectUploadedDesign, type UploadedDesign } from "@/lib/orders/design-upload";
 import { createOrderSchema, type CreateOrderInput } from "@/lib/orders/checkout-schema";
 import { prepayAmount, subtotalOf, unitPrice } from "@/lib/orders/pricing";
@@ -48,6 +49,10 @@ export async function createWebOrder(
       }
       const design = await collectUploadedDesign(item.uploadId, settings);
       if (!design) return { ok: false, error: "Thiết kế chưa được tải lên đầy đủ. Vui lòng thử lại." };
+      // BR01: a design may only use photos this buyer uploaded.
+      if ((await foreignAssets(design.canvas_json.assets, customerId)).length) {
+        return { ok: false, error: "Thiết kế có ảnh không thuộc tài khoản của bạn. Vui lòng chèn lại ảnh." };
+      }
       designs.set(item.uploadId, design);
     }
   }

@@ -24,6 +24,20 @@ async function send(uploadId: string, kind: "area" | "preview" | "json", blob: B
 
 const toBlob = (dataUrl: string) => fetch(dataUrl).then((r) => r.blob());
 
+/**
+ * Renders one design to print files + preview + JSON and uploads them under a fresh upload id.
+ * Used by checkout and by resubmitting a rejected design (FR29). Throws a Vietnamese message.
+ */
+export async function uploadDesign(areas: DesignAreas, catalog: Pick<Catalog, "printAreas" | "dpi">, shirtHex: string): Promise<string> {
+  const files = await exportPrintFiles(areas, catalog.printAreas, catalog.dpi);
+  if (!files.length) throw new Error("Thiết kế chưa có nét vẽ nào.");
+  const uploadId = newId();
+  for (const f of files) await send(uploadId, "area", await toBlob(f.dataUrl), f.area);
+  await send(uploadId, "preview", await toBlob(await renderMockupPreview(areas, catalog.printAreas, shirtHex)));
+  await send(uploadId, "json", new Blob([JSON.stringify(areas)], { type: "application/json" }));
+  return uploadId;
+}
+
 /** Uploads all custom designs. Returns cart item id → upload id. Throws a Vietnamese message. */
 export async function uploadCartDesigns(
   items: CartItem[],
@@ -41,14 +55,12 @@ export async function uploadCartDesigns(
     if (!areas) throw new Error("Không tìm thấy bản thiết kế của một áo custom trong giỏ hàng");
 
     const hex = catalog.colors.find((c) => c.key === item.color)?.hex ?? "#ffffff";
-    const files = await exportPrintFiles(areas, catalog.printAreas, catalog.dpi);
-    if (!files.length) throw new Error("Có áo custom chưa có nét vẽ nào. Vui lòng sửa thiết kế.");
-
-    const uploadId = newId();
-    for (const f of files) await send(uploadId, "area", await toBlob(f.dataUrl), f.area);
-    await send(uploadId, "preview", await toBlob(await renderMockupPreview(areas, catalog.printAreas, hex)));
-    await send(uploadId, "json", new Blob([JSON.stringify(areas)], { type: "application/json" }));
-    uploads.set(item.id, uploadId);
+    try {
+      uploads.set(item.id, await uploadDesign(areas, catalog, hex));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      throw new Error(message === "Thiết kế chưa có nét vẽ nào." ? "Có áo custom chưa có nét vẽ nào. Vui lòng sửa thiết kế." : message);
+    }
   }
   onProgress({ label: "Đang tạo đơn hàng…", done: custom.length, total: custom.length });
   return uploads;

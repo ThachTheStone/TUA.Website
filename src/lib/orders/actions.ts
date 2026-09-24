@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { z } from "zod";
 import { getCustomer } from "@/lib/customers/session";
@@ -8,6 +9,7 @@ import { createWebOrder } from "@/lib/orders/create";
 import { saveDesignFile } from "@/lib/orders/design-upload";
 import { notifyOrder } from "@/lib/orders/notify";
 import { findOrderIdByToken, isOverdue, lookupOrder, type OrderView } from "@/lib/orders/queries";
+import { resubmitDesign } from "@/lib/orders/resubmit";
 import { transitionOrder } from "@/lib/orders/transition";
 import { getSettings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -106,5 +108,24 @@ export async function lookupOrderAction(input: { code: string; phone: string }):
   } catch (err) {
     console.error("[orders] lookup failed", err);
     return { ok: false, error: "Không tra cứu được đơn hàng. Vui lòng thử lại." };
+  }
+}
+
+const resubmitSchema = z.object({ code: orderCodeSchema, itemId: z.uuid(), uploadId: z.uuid() });
+
+/** FR29: the signed-in buyer sends a fixed design for a rejected shirt back for approval. */
+export async function resubmitDesignAction(input: { code: string; itemId: string; uploadId: string }): Promise<ActionResult> {
+  const session = await getCustomer();
+  if (!session) return { ok: false, error: "Vui lòng đăng nhập lại" };
+  const parsed = resubmitSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Dữ liệu không hợp lệ" };
+  try {
+    const { code, itemId, uploadId } = parsed.data;
+    const result = await resubmitDesign(session.userId, code, itemId, uploadId);
+    if (result.ok) revalidatePath(`/tai-khoan/don-hang/${code}`);
+    return result;
+  } catch (err) {
+    console.error("[orders] resubmit failed", err);
+    return { ok: false, error: "Không gửi lại được thiết kế. Vui lòng thử lại." };
   }
 }

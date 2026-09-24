@@ -1,10 +1,16 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { TYPE_LABEL } from "@/components/cart/catalog";
 import { formatDate, formatVND } from "@/lib/format";
 import type { OrderView } from "@/lib/orders/queries";
 
-/** Status, items, amounts and status history for customers (FR11). No personal data. */
-export function OrderDetails({ order }: { order: OrderView }) {
+/**
+ * Status, items, amounts and status history for customers (FR11). No personal data.
+ * `editHref` (account page only): link to fix a rejected custom shirt (FR29).
+ */
+export function OrderDetails({ order, editHref }: { order: OrderView; editHref?: (itemId: string) => string }) {
+  const closed = order.status === "CANCELLED" || order.status === "EXPIRED";
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center gap-3">
@@ -37,6 +43,11 @@ export function OrderDetails({ order }: { order: OrderView }) {
                   <p className="rounded-md bg-red-50 p-2 text-xs text-red-900 dark:bg-red-950 dark:text-red-200">
                     Thiết kế chưa được duyệt: {item.rejectReason}. Ban tổ chức sẽ liên hệ với bạn.
                   </p>
+                )}
+                {editHref && item.approvalStatus === "REJECTED" && !closed && (
+                  <Button asChild size="sm" variant="outline" className="self-start">
+                    <Link href={editHref(item.id)}>Sửa và gửi lại thiết kế</Link>
+                  </Button>
                 )}
               </li>
             ))}

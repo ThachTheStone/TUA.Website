@@ -24,7 +24,7 @@ export default async function AccountOrderPage({ params }: Props) {
         ← Đơn hàng của tôi
       </Link>
       <PaymentStatus order={order} />
-      <OrderDetails order={order} />
+      <OrderDetails order={order} editHref={(itemId) => `/tai-khoan/don-hang/${order.code}/sua/${itemId}`} />
     </div>
   );
 }

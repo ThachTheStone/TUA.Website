@@ -1,6 +1,6 @@
 "use client";
 
-import { Bold, Brush, Circle, Eraser, Minus, MousePointer2, PaintBucket, Square, Type } from "lucide-react";
+import { Bold, Brush, Circle, Eraser, ImagePlus, Loader2, Minus, MousePointer2, PaintBucket, Square, Type } from "lucide-react";
 import type { Tool } from "@/components/canvas/area-stage";
 import { TEXT_FONTS, textFont, type TextFont } from "@/lib/design/fonts";
 import { BRUSH_MAX, BRUSH_MIN } from "@/lib/design/types";
@@ -36,12 +36,15 @@ type Props = {
   onFont: (font: TextFont) => void;
   bold: boolean;
   onBold: (bold: boolean) => void;
+  /** "Chèn ảnh" (BR01): opens the file picker, or a login prompt when signed out. */
+  onInsertImage: () => void;
+  inserting: boolean;
 };
 
 const TAP = "flex size-11 shrink-0 items-center justify-center rounded-md border transition-colors";
 
 export function Toolbar(props: Props) {
-  const { tool, onTool, color, onColor, size, onSize, filled, onFilled, font, onFont, bold, onBold } = props;
+  const { tool, onTool, color, onColor, size, onSize, filled, onFilled, font, onFont, bold, onBold, onInsertImage, inserting } = props;
   const isShape = tool === "rect" || tool === "ellipse";
 
   return (
@@ -60,6 +63,17 @@ export function Toolbar(props: Props) {
             <Icon className="size-5" />
           </button>
         ))}
+        <button
+          type="button"
+          title="Chèn ảnh hoặc sticker"
+          aria-label="Chèn ảnh hoặc sticker"
+          onClick={onInsertImage}
+          disabled={inserting}
+          className={cn(TAP, "w-auto gap-1.5 px-3 text-sm hover:bg-muted disabled:opacity-60")}
+        >
+          {inserting ? <Loader2 className="size-5 animate-spin" /> : <ImagePlus className="size-5" />}
+          <span className="hidden sm:inline">{inserting ? "Đang tải ảnh…" : "Chèn ảnh"}</span>
+        </button>
       </div>
 
       {isShape && (

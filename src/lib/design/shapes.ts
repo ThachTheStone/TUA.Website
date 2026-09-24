@@ -83,6 +83,11 @@ export function shapeKonva(shape: DesignShape): { className: KonvaClass; attrs: 
           listening: false,
         },
       };
+    case "image":
+      return {
+        className: "Image",
+        attrs: { x: shape.x, y: shape.y, width: shape.width, height: shape.height, rotation: shape.rotation ?? 0, listening: false },
+      };
     case "raster":
       return { className: "Image", attrs: { x: 0, y: 0, width: shape.width, height: shape.height, listening: false } };
   }
@@ -109,12 +114,17 @@ export function applyTransform(shape: EditableShape, t: NodeTransform): Editable
     }
     case "text":
       return { ...shape, ...base, fontSize: Math.max(4, shape.fontSize * sy) };
+    case "image":
+      return { ...shape, ...base, width: shape.width * sx, height: shape.height * sy };
   }
 }
 
 const imageCache = new Map<string, HTMLImageElement>();
 
-/** Loads a data-URL image we generated ourselves (never a user file), cached unless told not to. */
+/**
+ * Loads an image, cached unless told not to. Remote images (buyer uploads behind signed URLs)
+ * are requested with CORS so drawing them doesn't taint the canvas used for export and fill.
+ */
 export function loadImage(src: string, { cache = true }: { cache?: boolean } = {}): Promise<HTMLImageElement> {
   const cached = imageCache.get(src);
   if (cached?.complete) return Promise.resolve(cached);
@@ -124,6 +134,7 @@ export function loadImage(src: string, { cache = true }: { cache?: boolean } = {
     img.addEventListener("error", () => reject(new Error("Không tải được hình")), { once: true });
     if (!cached) {
       if (cache) imageCache.set(src, img);
+      if (/^https?:/.test(src)) img.crossOrigin = "anonymous";
       img.src = src;
     }
   });

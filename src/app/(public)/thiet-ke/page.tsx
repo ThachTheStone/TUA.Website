@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DesignerLoader } from "@/components/canvas/designer-loader";
+import { getCustomer } from "@/lib/customers/session";
 import { getSettings } from "@/lib/settings";
 
 export const metadata: Metadata = { title: "Thiết kế áo" };
@@ -7,7 +8,7 @@ export const metadata: Metadata = { title: "Thiết kế áo" };
 export const dynamic = "force-dynamic";
 
 export default async function DesignPage({ searchParams }: { searchParams: Promise<{ sua?: string }> }) {
-  const [settings, { sua }] = await Promise.all([getSettings(), searchParams]);
+  const [settings, { sua }, session] = await Promise.all([getSettings(), searchParams, getCustomer()]);
 
   return (
     <DesignerLoader
@@ -17,6 +18,7 @@ export default async function DesignPage({ searchParams }: { searchParams: Promi
       price={settings.prices.CUSTOM}
       dpi={settings.export_dpi}
       editItemId={typeof sua === "string" ? sua : null}
+      signedIn={!!session}
     />
   );
 }

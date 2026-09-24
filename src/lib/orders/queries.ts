@@ -34,6 +34,7 @@ export type OrderView = {
   /** PENDING_PAYMENT whose deadline passed but the expiry job hasn't run yet. */
   overdue: boolean;
   items: {
+    id: string;
     type: ItemType;
     colorLabel: string;
     size: string;
@@ -78,7 +79,7 @@ async function buildView(order: OrderRow): Promise<OrderView> {
   const db = createServiceClient();
   const [settings, items, history] = await Promise.all([
     getSettings(),
-    db.from("order_items").select("type, color, size, quantity, unit_price, approval_status, reject_reason").eq("order_id", order.id).order("id"),
+    db.from("order_items").select("id, type, color, size, quantity, unit_price, approval_status, reject_reason").eq("order_id", order.id).order("id"),
     db
       .from("order_status_history")
       .select("to_status, changed_at")
@@ -103,6 +104,7 @@ async function buildView(order: OrderRow): Promise<OrderView> {
     remaining: Math.max(0, order.subtotal - order.paid_amount),
     overdue,
     items: (items.data ?? []).map((i) => ({
+      id: i.id,
       type: i.type,
       colorLabel: colorLabel(i.color),
       size: i.size,

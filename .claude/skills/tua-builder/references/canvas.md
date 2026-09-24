@@ -37,4 +37,4 @@ Export one PNG per non-empty area, and also a low-resolution mockup preview (the
 ## Validation
 - Custom item requires at least 1 non-empty area and the commitment checkbox (FR05) before "Thêm vào giỏ".
 - Save the draft (JSON per area) in the cart store so the user can reopen and edit it.
-- **Never render `<input type="file">` in the designer** (BR01).
+- **"Chèn ảnh" is the only file input on public pages** (BR01, Phase 6): signed-in buyers only, JPG/PNG/WebP ≤ 10MB, max 10 per design. The browser downscales/re-encodes, the server re-checks the bytes, stores in the private `uploads` bucket, and designs keep only the `design_assets` id (`kind: "image"` shape).

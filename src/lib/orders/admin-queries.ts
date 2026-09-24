@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { signedAssetUrls } from "@/lib/design/assets.server";
 import { getSettings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
 import type {
@@ -119,6 +120,8 @@ export type AdminOrderItem = {
   designSource: DesignSource | null;
   previewUrl: string | null;
   files: DesignFileView[];
+  /** Original photos/stickers the buyer uploaded for this design (FR29 review). */
+  assetUrls: string[];
 };
 
 export type TimelineEntry =
@@ -145,7 +148,7 @@ type ItemRow = {
   reject_reason: string | null;
   reviewed_by: string | null;
   reviewed_at: string | null;
-  designs: { source: DesignSource; preview_url: string | null; design_files: { area: string; file_path: string; width_px: number | null; height_px: number | null }[] } | null;
+  designs: { source: DesignSource; preview_url: string | null; canvas_json: { assets?: string[] } | null; design_files: { area: string; file_path: string; width_px: number | null; height_px: number | null }[] } | null;
 };
 
 const bucketFor = (source: DesignSource) => (source === "SCAN" ? "scans" : "designs");
@@ -169,7 +172,7 @@ export async function getAdminOrder(code: string): Promise<AdminOrder | null> {
     db
       .from("order_items")
       .select(
-        "id, type, color, size, quantity, unit_price, approval_status, reject_reason, reviewed_by, reviewed_at, designs(source, preview_url, design_files(area, file_path, width_px, height_px))",
+        "id, type, color, size, quantity, unit_price, approval_status, reject_reason, reviewed_by, reviewed_at, designs(source, preview_url, canvas_json, design_files(area, file_path, width_px, height_px))",
       )
       .eq("order_id", order.id)
       .order("id"),
@@ -197,6 +200,9 @@ export async function getAdminOrder(code: string): Promise<AdminOrder | null> {
     : { data: [] as { id: string; full_name: string }[] };
   const nameOf = (id: string | null) => (id ? (profiles ?? []).find((p) => p.id === id)?.full_name ?? "Staff" : null);
 
+  const assetIds = itemRows.flatMap((i) => i.designs?.canvas_json?.assets ?? []);
+  const assetUrlById = await signedAssetUrls(assetIds, null);
+
   const colorLabel = (key: string) => settings.colors.find((c) => c.key === key)?.label ?? key;
   const areaLabel = (key: string) => settings.print_areas.find((a) => a.key === key)?.label ?? key;
   const itemIndex = new Map(itemRows.map((i, n) => [i.id, n + 1]));
@@ -218,6 +224,7 @@ export async function getAdminOrder(code: string): Promise<AdminOrder | null> {
         reviewedBy: nameOf(i.reviewed_by),
         reviewedAt: i.reviewed_at,
         designSource: design?.source ?? null,
+        assetUrls: (design?.canvas_json?.assets ?? []).flatMap((id) => (assetUrlById[id] ? [assetUrlById[id]] : [])),
         previewUrl: design?.preview_url ? await signedUrl(bucket, design.preview_url) : null,
         files: design
           ? await Promise.all(

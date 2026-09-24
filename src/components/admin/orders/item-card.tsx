@@ -69,6 +69,19 @@ export function ItemCard({ item, code, locked }: { item: AdminOrderItem; code: s
           </div>
         )}
 
+        {item.assetUrls.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">Ảnh khách tải lên ({item.assetUrls.length}) – kiểm tra bản quyền, nội dung</span>
+            <div className="flex flex-wrap gap-2">
+              {item.assetUrls.map((url, n) => (
+                <a key={url} href={url} target="_blank" rel="noreferrer" title={`Ảnh ${n + 1}`}>
+                  <img src={url} alt={`Ảnh khách tải lên ${n + 1}`} className="size-20 rounded-md border bg-muted object-contain" />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
         {status === "REJECTED" && (
           <p className="rounded-md bg-red-50 p-2 text-sm text-red-900 dark:bg-red-950 dark:text-red-200">
             Lý do từ chối: {item.rejectReason}. Đang chờ khách sửa và gửi lại.

@@ -11,6 +11,10 @@ export const MAX_LAYERS = 5;
 export const HISTORY_LIMIT = 40; // FR03 requires at least 30 undo steps
 export const BRUSH_MIN = 2;
 export const BRUSH_MAX = 60;
+/** BR01/SRS §10 #13: photos and stickers a buyer may insert into one shirt design. */
+export const MAX_IMAGES = 10;
+/** Below this print resolution an inserted photo gets a "may be blurry" warning. */
+export const MIN_IMAGE_DPI = 150;
 
 
 /** Text size (logical units) for a given value of the size slider. */
@@ -84,6 +88,23 @@ export type TextShape = {
   color: string;
   rotation?: number;
 };
+/**
+ * A buyer photo/sticker (BR01). Only the `design_assets` id is stored, never the image data, so
+ * carts stay small; the file is fetched through a signed URL when drawn. `naturalWidth/Height`
+ * are the uploaded pixel size, used for the blur warning.
+ */
+export type ImageShape = {
+  id: string;
+  kind: "image";
+  assetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  naturalWidth: number;
+  naturalHeight: number;
+  rotation?: number;
+};
 /** Result of a flood fill: the whole layer rasterized into one PNG. */
 export type RasterShape = {
   id: string;
@@ -93,12 +114,14 @@ export type RasterShape = {
   height: number;
 };
 
-export type DesignShape = LineShape | RectShape | EllipseShape | StraightShape | TextShape | RasterShape;
+export type DesignShape = LineShape | RectShape | EllipseShape | StraightShape | TextShape | ImageShape | RasterShape;
 /** Shapes that can be selected, moved, resized and rotated after drawing. */
-export type EditableShape = RectShape | EllipseShape | StraightShape | TextShape;
+export type EditableShape = RectShape | EllipseShape | StraightShape | TextShape | ImageShape;
 
 export function isEditable(shape: DesignShape): shape is EditableShape {
-  return shape.kind === "rect" || shape.kind === "ellipse" || shape.kind === "straight" || shape.kind === "text";
+  return (
+    shape.kind === "rect" || shape.kind === "ellipse" || shape.kind === "straight" || shape.kind === "text" || shape.kind === "image"
+  );
 }
 
 export type DesignLayer = { id: string; name: string; visible: boolean; shapes: DesignShape[] };
@@ -141,4 +164,24 @@ export function areaHasContent(design: AreaDesign | undefined): boolean {
 
 export function designHasContent(areas: DesignAreas): boolean {
   return Object.values(areas).some(areaHasContent);
+}
+
+/** Every uploaded asset a design uses (all areas and layers, hidden ones included). */
+export function assetIdsIn(areas: unknown): string[] {
+  const ids = new Set<string>();
+  if (!areas || typeof areas !== "object") return [];
+  for (const area of Object.values(areas as Record<string, { layers?: { shapes?: { kind?: string; assetId?: unknown }[] }[] }>)) {
+    for (const layer of area?.layers ?? []) {
+      for (const shape of layer?.shapes ?? []) {
+        if (shape?.kind === "image" && typeof shape.assetId === "string") ids.add(shape.assetId);
+      }
+    }
+  }
+  return [...ids];
+}
+
+/** Print resolution of a placed image: its pixels over its printed width in inches. */
+export function imagePrintDpi(shape: Pick<ImageShape, "width" | "naturalWidth">, area: Pick<CanvasPrintArea, "widthCm">): number {
+  const inches = ((shape.width / LOGICAL_WIDTH) * area.widthCm) / 2.54;
+  return inches > 0 ? shape.naturalWidth / inches : Infinity;
 }
