@@ -65,12 +65,16 @@ URLs are Vietnamese slugs without diacritics.
 - Email + password sign-up with email confirmation, Google sign-in behind `GOOGLE_LOGIN_ENABLED`.
 - `customers`, `carts`, `orders.customer_id` (migration 0003). Checkout requires login; cart syncs to the account.
 
-### Phase 5 — Admin orders (FR13–FR16)
-- Orders table with filters, search and status counters.
-- Order detail: design previews plus download of print files (signed URLs), payment recording, and transition buttons that show only valid next states.
-- Workshop form: staff uploads scans to the `scans` bucket; the cash option creates the order as CONFIRMED.
-- Emails on CONFIRMED, READY, DELIVERED and CANCELLED.
-**Done when:** an order can go from start to DELIVERED, history is logged, and a STAFF user cannot open accounts or settings.
+### Phase 5 — Admin orders (FR13–FR16, SRS §5)
+- Migration: `payment_status` enum (`UNPAID`, `DEPOSIT_PAID`, `FULLY_PAID`) on `orders`, default `UNPAID`; show it on the payment page, lookup and account pages too.
+- Orders table with filters (order status, payment status, source, fulfilment, dates), search and status counters; "Còn nợ" marker for DELIVERED + DEPOSIT_PAID.
+- Order detail: design previews plus download of print files (signed URLs), status history, and buttons that show only valid actions:
+  - **"Đã cọc"** (amount input, default `prepay_amount`, must be ≥ 50% and < subtotal) and **"Đã thanh toán 100%"** (records the remainder). Both insert a `payments` row; the first one moves PAYMENT_REVIEW → CONFIRMED via `transitionOrder()`. "Đã thanh toán 100%" stays available on DEPOSIT_PAID orders until cancelled.
+  - Production buttons (Đang in, Kiểm tra chất lượng, Sẵn sàng) and **"Đã giao"** (READY only; warns about the remaining amount when DEPOSIT_PAID).
+- Payment status changes go through one server function (like `transitionOrder()`), which checks the role, the amounts and writes history in one RPC.
+- Workshop form: staff uploads scans to the `scans` bucket; cash payment creates the order as CONFIRMED with DEPOSIT_PAID or FULLY_PAID.
+- Emails on Đã cọc, Đã thanh toán 100%, READY, DELIVERED and CANCELLED.
+**Done when:** a 50% order goes Đã cọc → … → Đã giao with "Còn nợ" shown, then Đã thanh toán 100% clears it; a 100% order goes straight to FULLY_PAID; history is logged; a STAFF user cannot open accounts or settings.
 
 ### Phase 6 — Shirt prototypes (FR27, FR28, FR02, FR06) → `references/data-model.md` (Prototypes)
 - Migration: `prototypes` table, `item_type` + `PROTOTYPE`, `design_source` + `PROTOTYPE`, `order_items.prototype_id`.
@@ -79,7 +83,9 @@ URLs are Vietnamese slugs without diacritics.
 - Cart: new line kind `{type: "PROTOTYPE", prototypeId, size, quantity}`; same prototype + size merges. Color comes from the prototype.
 - Checkout: server loads the prototype (must be active), uses its color and `prices.CUSTOM`, links `order_items.design_id` to the prototype's design so admin print downloads work unchanged.
 - Workshop form (Phase 5) can pick a prototype.
-**Done when:** admin publishes a prototype, a buyer orders it with a plain and a custom shirt, totals use the custom price, a deactivated prototype blocks checkout, and admin order detail downloads the prototype's print file.
+- Phones (shorter screen side < 600px): `/thiet-ke` shows "Tính năng tự thiết kế cần máy tính hoặc máy tính bảng", the organizer contact from `settings.contact`, and buttons to Áo mẫu / Áo trơn instead of the canvas. Hide "Sửa thiết kế" in the cart on phones. Add the contact fields to the admin settings form.
+- Check plain + prototype buying, checkout, payment and account pages at 390px.
+**Done when:** on a phone the canvas is replaced by the help message, and admin publishes a prototype, a buyer orders it with a plain and a custom shirt, totals use the custom price, a deactivated prototype blocks checkout, and admin order detail downloads the prototype's print file.
 
 ### Phase 7 — Donations, Sheets, cron (FR08, FR09, FR18, FR23, FR25)
 - Donation form (min from settings, default 300.000đ), donation QR using the fund account and prefix `UH`, admin confirm, donor wall and progress bar.

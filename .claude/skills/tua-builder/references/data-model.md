@@ -185,3 +185,16 @@ export const STATUS_LABEL = { PENDING_PAYMENT:'Chờ thanh toán', PAYMENT_REVIE
   DELIVERED:'Đã giao', EXPIRED:'Hết hạn', CANCELLED:'Đã hủy' };
 ```
 Guards: CONFIRMED requires `paid_amount >= ceil(subtotal*0.5)` (BR02). Cancelling with `paid_amount > 0` sets `refund_status = 'REQUIRED'`.
+
+### Payment status (Phase 5, SRS §5.2)
+```sql
+create type payment_status as enum ('UNPAID','DEPOSIT_PAID','FULLY_PAID');
+alter table orders add column payment_status payment_status not null default 'UNPAID';
+```
+```ts
+export const PAYMENT_ALLOWED = { UNPAID: ['DEPOSIT_PAID','FULLY_PAID'], DEPOSIT_PAID: ['FULLY_PAID'], FULLY_PAID: [] };
+export const PAYMENT_LABEL = { UNPAID: 'Chưa thanh toán', DEPOSIT_PAID: 'Đã cọc', FULLY_PAID: 'Đã thanh toán 100%' };
+```
+- "Đã cọc": staff enters the received amount; require `ceil(subtotal*0.5) <= paid_amount < subtotal`.
+- "Đã thanh toán 100%": insert a payment of `subtotal - paid_amount`, set `paid_amount = subtotal`.
+- The first confirmation also runs PAYMENT_REVIEW → CONFIRMED. Delivered orders stay DEPOSIT_PAID until the remainder is recorded ("Còn nợ").
