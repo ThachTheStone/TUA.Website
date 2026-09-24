@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { GoogleButton, OrDivider, SignInForm } from "@/components/account/auth-forms";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getCustomer, safeNext } from "@/lib/customers/session";
+import { getCustomer, googleLoginEnabled, safeNext } from "@/lib/customers/session";
 
 export const metadata: Metadata = { title: "Đăng nhập" };
 
@@ -34,8 +34,12 @@ export default async function SignInPage({ searchParams }: Props) {
               <AlertDescription>{ERRORS[loi]}</AlertDescription>
             </Alert>
           )}
-          <GoogleButton next={next} />
-          <OrDivider />
+          {googleLoginEnabled() && (
+            <>
+              <GoogleButton next={next} />
+              <OrDivider />
+            </>
+          )}
           <SignInForm next={next} />
         </CardContent>
       </Card>

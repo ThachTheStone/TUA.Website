@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { siteUrl } from "@/lib/email";
 import { phoneSchema } from "@/lib/orders/checkout-schema";
-import { ensureCustomer, getCustomer, safeNext } from "@/lib/customers/session";
+import { ensureCustomer, getCustomer, googleLoginEnabled, safeNext } from "@/lib/customers/session";
 import { createSessionClient } from "@/lib/supabase/auth";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/types/action";
@@ -94,6 +94,7 @@ export async function signUp(_prev: SignUpResult | null, formData: FormData): Pr
 
 /** Starts Google OAuth; Supabase sends the user back to /auth/callback. */
 export async function signInWithGoogle(formData: FormData) {
+  if (!googleLoginEnabled()) redirect("/dang-nhap?loi=google");
   const supabase = await createSessionClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",

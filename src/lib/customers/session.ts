@@ -48,6 +48,11 @@ export async function ensureCustomer(user: User): Promise<void> {
   if (error) throw new Error(`ensureCustomer: ${error.message}`);
 }
 
+/** Google sign-in is off until the OAuth client is set up in Supabase (GOOGLE_LOGIN_ENABLED=true). */
+export function googleLoginEnabled(): boolean {
+  return process.env.GOOGLE_LOGIN_ENABLED === "true";
+}
+
 /** Only same-site paths outside the admin area are allowed as post-login targets. */
 export function safeNext(value: unknown, fallback = "/tai-khoan"): string {
   if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) {
