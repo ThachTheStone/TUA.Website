@@ -143,3 +143,49 @@ export async function findOrderIdByToken(code: string, token: string) {
     .maybeSingle();
   return data as Pick<Order, "id" | "status" | "expires_at"> | null;
 }
+
+// ─── FR26: the signed-in buyer's own orders ────────────────────────────────
+
+export type CustomerOrderSummary = {
+  code: string;
+  status: OrderStatus;
+  statusLabel: string;
+  overdue: boolean;
+  createdAt: string;
+  subtotal: number;
+  paidAmount: number;
+};
+
+export async function listCustomerOrders(customerId: string): Promise<CustomerOrderSummary[]> {
+  const { data, error } = await createServiceClient()
+    .from("orders")
+    .select("code, status, created_at, subtotal, paid_amount, expires_at")
+    .eq("customer_id", customerId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw new Error(`listCustomerOrders: ${error.message}`);
+
+  return (data ?? []).map((o) => {
+    const overdue = isOverdue(o);
+    return {
+      code: o.code,
+      status: o.status,
+      statusLabel: overdue ? "Quá hạn thanh toán" : STATUS_LABEL[o.status as OrderStatus],
+      overdue,
+      createdAt: o.created_at,
+      subtotal: o.subtotal,
+      paidAmount: o.paid_amount,
+    };
+  });
+}
+
+/** One order, only if it belongs to the buyer. */
+export async function getCustomerOrder(customerId: string, code: string): Promise<OrderView | null> {
+  const { data } = await createServiceClient()
+    .from("orders")
+    .select(ORDER_FIELDS)
+    .eq("code", code.toUpperCase())
+    .eq("customer_id", customerId)
+    .maybeSingle();
+  return data ? buildView(data as OrderRow) : null;
+}

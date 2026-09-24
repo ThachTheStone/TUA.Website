@@ -2,6 +2,7 @@
 
 import { after } from "next/server";
 import { z } from "zod";
+import { getCustomer } from "@/lib/customers/session";
 import { sendOrderCreated, siteUrl } from "@/lib/email";
 import { orderCodeSchema, phoneSchema, type CreateOrderInput } from "@/lib/orders/checkout-schema";
 import { createWebOrder } from "@/lib/orders/create";
@@ -9,11 +10,14 @@ import { saveDesignFile } from "@/lib/orders/design-upload";
 import { findOrderIdByToken, isOverdue, lookupOrder, type OrderView } from "@/lib/orders/queries";
 import { transitionOrder } from "@/lib/orders/transition";
 import { getSettings } from "@/lib/settings";
+import { createServiceClient } from "@/lib/supabase/server";
 import { vietQrUrl } from "@/lib/vietqr";
 import type { ActionResult } from "@/types/action";
 
-// Public (customer) server actions for Phase 4. No login: access is proven by an
-// upload id the browser generated, the payment-link token, or code + phone.
+// Public (customer) server actions. Placing an order needs a signed-in buyer (FR26).
+// Paying and looking up are proven by the payment-link token or code + phone.
+
+const LOGIN_REQUIRED = "Vui lòng đăng nhập để đặt hàng";
 
 const uploadSchema = z.object({
   uploadId: z.uuid(),
@@ -23,6 +27,7 @@ const uploadSchema = z.object({
 
 /** Stores one canvas export (print PNG, preview PNG or design JSON) for a custom shirt. */
 export async function uploadDesignFile(formData: FormData): Promise<ActionResult> {
+  if (!(await getCustomer())) return { ok: false, error: LOGIN_REQUIRED };
   const parsed = uploadSchema.safeParse({
     uploadId: formData.get("uploadId"),
     kind: formData.get("kind"),
@@ -43,8 +48,10 @@ export async function uploadDesignFile(formData: FormData): Promise<ActionResult
 export type CreateOrderResult = { code: string; token: string };
 
 export async function createOrder(input: CreateOrderInput): Promise<ActionResult<CreateOrderResult>> {
+  const session = await getCustomer();
+  if (!session) return { ok: false, error: LOGIN_REQUIRED };
   try {
-    const result = await createWebOrder(input);
+    const result = await createWebOrder(input, session.userId);
     if (!result.ok) return result;
     const order = result.data;
     const settings = await getSettings();
@@ -52,6 +59,16 @@ export async function createOrder(input: CreateOrderInput): Promise<ActionResult
 
     // FR07/FR24: confirmation email after the response (never fails the order).
     after(async () => {
+      // FR26: Google sign-ups give their phone at checkout; keep it on the account.
+      if (!session.customer.phone) {
+        const { error } = await createServiceClient()
+          .from("customers")
+          .update({ phone: order.phone })
+          .eq("id", session.userId)
+          .is("phone", null);
+        if (error) console.error("[orders] save customer phone failed", error.message);
+      }
+
       await sendOrderCreated({
         to: order.email,
         customerName: order.customerName,

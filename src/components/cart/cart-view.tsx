@@ -76,7 +76,7 @@ function CartLine({ item, catalog, unavailable }: { item: CartItem; catalog: Cat
 }
 
 /** FR06: cart lines with quantity, remove and re-edit. */
-export function CartView({ catalog }: { catalog: Catalog }) {
+export function CartView({ catalog, signedIn }: { catalog: Catalog; signedIn: boolean }) {
   const hydrated = useHydrated();
   const items = useCart((s) => s.items);
 
@@ -120,6 +120,15 @@ export function CartView({ catalog }: { catalog: Catalog }) {
         <Button asChild={!blocked} size="lg" className="h-12" disabled={blocked}>
           {blocked ? <span>Tiến hành đặt hàng</span> : <Link href="/thanh-toan">Tiến hành đặt hàng</Link>}
         </Button>
+        {!signedIn && (
+          <p className="text-center text-sm text-muted-foreground">
+            Bạn cần{" "}
+            <Link href="/dang-nhap?next=/thanh-toan" className="underline underline-offset-4">
+              đăng nhập
+            </Link>{" "}
+            để đặt hàng. Giỏ hàng sẽ được giữ nguyên.
+          </p>
+        )}
         <Link href="/thiet-ke" className="text-center text-sm underline underline-offset-4">
           Thiết kế thêm áo
         </Link>

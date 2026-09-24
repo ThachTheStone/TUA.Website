@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { AccountLink } from "@/components/account/account-link";
 import { CartLink } from "@/components/public/cart-link";
+import type { CustomerSession } from "@/lib/customers/session";
 
 // Links are added here as later phases ship their pages (quyên góp).
 const NAV = [
@@ -9,7 +11,7 @@ const NAV = [
   { href: "/vinh-danh", label: "Vinh danh" },
 ];
 
-export function SiteHeader() {
+export function SiteHeader({ session }: { session: CustomerSession | null }) {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
@@ -18,11 +20,12 @@ export function SiteHeader() {
         </Link>
         <nav className="flex items-center gap-1 overflow-x-auto text-sm">
           {NAV.map(({ href, label }) => (
-            <Link key={href} href={href} className="rounded-md px-3 py-2 hover:bg-muted">
+            <Link key={href} href={href} className="shrink-0 rounded-md px-3 py-2 hover:bg-muted">
               {label}
             </Link>
           ))}
           <CartLink />
+          <AccountLink session={session} />
         </nav>
       </div>
     </header>

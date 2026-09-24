@@ -24,6 +24,10 @@ type CartState = {
   items: CartItem[];
   drafts: Record<string, DesignAreas>;
   wip: DesignWip | null;
+  /** FR26: customer id whose saved cart this is; null for a guest cart. */
+  owner: string | null;
+  /** Local changes not yet saved to the owner's account. */
+  dirty: boolean;
   addPlain: (input: { color: string; size: string; quantity: number }) => void;
   /** Adds a custom shirt, or updates `wip.editingItemId` when the customer reopened one. */
   saveCustom: (input: { itemId: string | null; color: string; size: string; areas: DesignAreas }) => void;
@@ -32,6 +36,10 @@ type CartState = {
   setWip: (wip: DesignWip | null) => void;
   /** Empties the cart after an order was placed (keeps nothing of the old designs). */
   clear: () => void;
+  /** Replaces the cart with the account's cart after sign-in. */
+  adopt: (owner: string, cart: { items: CartItem[]; drafts: Record<string, DesignAreas> }) => void;
+  /** Sign-out: forget everything on this device (the account keeps its copy). */
+  reset: () => void;
 };
 
 export const MAX_QUANTITY = 50;
@@ -69,6 +77,8 @@ export const useCart = create<CartState>()(
       items: [],
       drafts: {},
       wip: null,
+      owner: null,
+      dirty: false,
 
       addPlain: ({ color, size, quantity }) =>
         set((s) => {
@@ -113,6 +123,10 @@ export const useCart = create<CartState>()(
       setWip: (wip) => set({ wip }),
 
       clear: () => set({ items: [], drafts: {} }),
+
+      adopt: (owner, { items, drafts }) => set({ owner, items, drafts, dirty: false }),
+
+      reset: () => set({ items: [], drafts: {}, wip: null, owner: null, dirty: false }),
     }),
     { name: "tua-cart", version: 1, storage: createJSONStorage(() => safeStorage) },
   ),

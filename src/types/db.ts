@@ -27,6 +27,14 @@ export interface Profile {
   created_at: string;
 }
 
+/** FR26 buyer account. Separate from `Profile`: a customer never gets admin access. */
+export interface Customer {
+  id: string;
+  full_name: string;
+  phone: string | null;
+  created_at: string;
+}
+
 export interface Order {
   id: string;
   code: string;
@@ -48,6 +56,7 @@ export interface Order {
   cancel_reason: string | null;
   expires_at: string | null;
   created_by: string | null;
+  customer_id: string | null;
   created_at: string;
   updated_at: string;
   /** Secret for the payment page link; never show it in admin lists or Sheets. */

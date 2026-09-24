@@ -55,7 +55,8 @@ Toàn bộ dữ liệu đơn hàng, quyên góp và trạng thái được lưu 
 
 | Tác nhân | Mô tả | Quyền |
 |---|---|---|
-| Khách (Guest) | Người truy cập, không cần đăng nhập | Xem nội dung, thiết kế, đặt hàng, quyên góp, tra cứu đơn |
+| Khách (Guest) | Người truy cập, không cần đăng nhập | Xem nội dung, thiết kế, thêm vào giỏ hàng, quyên góp, tra cứu đơn |
+| Người mua (Customer) | Khách đã đăng ký tài khoản (email + mật khẩu hoặc Google) | Toàn bộ quyền của Khách, cộng thêm: đặt hàng, xem lịch sử và theo dõi trạng thái đơn của mình, giỏ hàng được lưu theo tài khoản |
 | Staff | Thành viên Ban tổ chức | Xử lý đơn hàng, xác nhận thanh toán, cập nhật trạng thái, tạo đơn Workshop, xác nhận quyên góp |
 | Admin | Trưởng nhóm / quản trị | Toàn bộ quyền của Staff, cộng thêm: quản lý tài khoản, nội dung, nhà tài trợ, cài đặt (giá, thời hạn, tài khoản ngân hàng) |
 
@@ -94,8 +95,10 @@ Số lượng tài khoản Staff không giới hạn. Admin có thể thêm ho�
 - Mỗi áo custom là một dòng riêng gắn với một bản thiết kế. Có thể đặt nhiều cái cùng một thiết kế bằng cách tăng số lượng.
 - Sửa số lượng, xóa dòng, mở lại canvas để sửa thiết kế.
 - Giỏ hàng lưu tạm trên trình duyệt (localStorage) để không mất khi tải lại trang.
+- Khi đã đăng nhập, giỏ hàng được lưu theo tài khoản (xem FR26).
 
 **FR07 – Đặt hàng và thanh toán trước**
+- Phải đăng nhập tài khoản Người mua mới được đặt hàng (FR26). Họ tên, SĐT, email được điền sẵn từ tài khoản.
 - Khách nhập: Họ tên, Số điện thoại, Email.
 - Khách chọn hình thức nhận hàng:
   - **Giao hàng:** địa chỉ nhận, thời gian mong muốn nhận hàng (văn bản), ghi chú.
@@ -178,6 +181,16 @@ Số lượng tài khoản Staff không giới hạn. Admin có thể thêm ho�
 **FR25 – Tự động hủy đơn quá hạn**
 - Định kỳ mỗi 15 phút, các đơn ở trạng thái Chờ thanh toán quá thời hạn (mặc định 24 giờ) chuyển sang Hết hạn, và hệ thống gửi email thông báo.
 
+### 4.4. Tài khoản Người mua
+
+**FR26 – Đăng ký, đăng nhập, đăng xuất cho Người mua**
+- Đăng ký bằng email + mật khẩu (tối thiểu 8 ký tự) kèm Họ tên và Số điện thoại. Tài khoản chỉ dùng được sau khi bấm liên kết xác thực gửi qua email.
+- Đăng nhập bằng email + mật khẩu hoặc bằng Google. Người dùng Google không bắt buộc nhập SĐT khi đăng ký; SĐT được hỏi ở bước đặt hàng và lưu lại vào tài khoản.
+- Có chức năng đăng xuất. Khi đăng xuất, giỏ hàng trên trình duyệt được xóa (vẫn còn lưu trong tài khoản).
+- Trang "Tài khoản": xem và sửa Họ tên, SĐT; danh sách đơn đã đặt (mã đơn, ngày, trạng thái, tổng tiền, đã trả); xem chi tiết và lịch sử trạng thái từng đơn; thanh toán lại đơn đang Chờ thanh toán.
+- Giỏ hàng được lưu theo tài khoản: đăng nhập trên thiết bị khác sẽ thấy lại giỏ hàng. Giỏ hàng tạo khi chưa đăng nhập được gộp vào giỏ của tài khoản khi đăng nhập.
+- Tài khoản Người mua tách biệt với tài khoản Staff/Admin và không truy cập được trang quản trị.
+
 ---
 
 ## 5. Sơ đồ trạng thái đơn hàng
@@ -243,8 +256,10 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 | Bảng | Trường chính |
 |---|---|
 | `profiles` | id (= auth user), full_name, role (ADMIN/STAFF), is_active |
+| `customers` | id (= auth user), full_name, phone, created_at |
+| `carts` | customer_id, items (JSON), drafts (JSON), updated_at |
 | `settings` | key, value (JSON): giá, màu, size, vùng in, tài khoản ngân hàng, thời hạn hủy, mục tiêu quỹ |
-| `orders` | id, code, source (WEB/WORKSHOP), customer_name, phone, email, fulfillment (DELIVERY/PICKUP), address, preferred_time, pickup_location, note, subtotal, prepay_percent, prepay_amount, paid_amount, status, refund_status, cancel_reason, expires_at, created_by, created_at |
+| `orders` | id, code, source (WEB/WORKSHOP), customer_name, phone, email, fulfillment (DELIVERY/PICKUP), address, preferred_time, pickup_location, note, subtotal, prepay_percent, prepay_amount, paid_amount, status, refund_status, cancel_reason, expires_at, created_by, customer_id, created_at |
 | `order_items` | id, order_id, type (PLAIN/CUSTOM), color, size, quantity, unit_price, design_id |
 | `designs` | id, source (CANVAS/SCAN), canvas_json, preview_url, created_at |
 | `design_files` | id, design_id, area (vùng 1/2/3), file_url, width_px, height_px |
@@ -260,7 +275,7 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 
 ## 9. Danh sách màn hình
 
-**Public:** Trang chủ · Thiết kế áo (canvas) · Chọn áo trơn · Giỏ hàng · Thanh toán (thông tin) · Thanh toán (QR) · Tra cứu đơn · Quyên góp · Quyên góp (QR) · Bảng vinh danh · Nhà tài trợ · Chính sách dữ liệu và điều khoản.
+**Public:** Trang chủ · Đăng nhập · Đăng ký · Tài khoản (lịch sử đơn) · Thiết kế áo (canvas) · Chọn áo trơn · Giỏ hàng · Thanh toán (thông tin) · Thanh toán (QR) · Tra cứu đơn · Quyên góp · Quyên góp (QR) · Bảng vinh danh · Nhà tài trợ · Chính sách dữ liệu và điều khoản.
 
 **Admin:** Đăng nhập · Dashboard · Danh sách đơn · Chi tiết đơn · Tạo đơn Workshop · Quyên góp · Nội dung (câu chuyện, Top 5, sự kiện, khuyến mãi) · Nhà tài trợ · Tài khoản · Cài đặt.
 

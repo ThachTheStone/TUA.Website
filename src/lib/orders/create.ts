@@ -15,13 +15,18 @@ export type CreatedOrder = {
   code: string;
   accessToken: string;
   email: string;
+  phone: string;
   customerName: string;
   subtotal: number;
   prepayAmount: number;
   expiresAt: string;
 };
 
-export async function createWebOrder(input: CreateOrderInput): Promise<ActionResult<CreatedOrder>> {
+/** `customerId`: the signed-in buyer placing the order (FR26). */
+export async function createWebOrder(
+  input: CreateOrderInput,
+  customerId: string,
+): Promise<ActionResult<CreatedOrder>> {
   const parsed = createOrderSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const { form, items } = parsed.data;
@@ -79,6 +84,7 @@ export async function createWebOrder(input: CreateOrderInput): Promise<ActionRes
       prepay_percent: form.prepay_percent,
       prepay_amount: prepay,
       expires_at: expiresAt,
+      customer_id: customerId,
       history_note: "Khách đặt hàng trên website",
     },
     p_items: items.map((item) => ({
@@ -103,6 +109,7 @@ export async function createWebOrder(input: CreateOrderInput): Promise<ActionRes
       code: created.code,
       accessToken: created.access_token,
       email: form.email,
+      phone: form.phone,
       customerName: form.customer_name,
       subtotal,
       prepayAmount: prepay,

@@ -35,8 +35,10 @@ const choice = (active: boolean) =>
     active ? "border-primary bg-primary/5" : "hover:bg-muted/50",
   );
 
+type Contact = { customer_name: string; phone: string; email: string };
+
 /** FR07: customer details, fulfilment, prepay choice and consent, then create the order. */
-export function CheckoutForm({ catalog }: { catalog: Catalog }) {
+export function CheckoutForm({ catalog, contact }: { catalog: Catalog; contact: Contact }) {
   const router = useRouter();
   const hydrated = useHydrated();
   const items = useCart((s) => s.items);
@@ -48,9 +50,7 @@ export function CheckoutForm({ catalog }: { catalog: Catalog }) {
   const form = useForm<CheckoutFormInput, unknown, CheckoutValues>({
     resolver: zodResolver(checkoutFormSchema),
     defaultValues: {
-      customer_name: "",
-      phone: "",
-      email: "",
+      ...contact,
       fulfillment: "PICKUP",
       address: "",
       preferred_time: "",

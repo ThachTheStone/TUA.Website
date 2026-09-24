@@ -1,8 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-// Refreshes the Supabase session cookie and bounces logged-out visitors away from /admin.
-// Role and is_active are checked again server-side by requireRole().
+// Refreshes the Supabase session cookie on every page (staff and buyers share it) and
+// bounces logged-out visitors away from /admin and /tai-khoan.
+// Role, is_active and the customer row are checked again server-side.
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -22,18 +23,24 @@ export async function middleware(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
+  if (user) return response;
 
-  const { pathname } = request.nextUrl;
-  if (!user && pathname !== "/admin/login") {
+  const { pathname, search } = request.nextUrl;
+  const redirectTo = (path: string, query = "") => {
     const url = request.nextUrl.clone();
-    url.pathname = "/admin/login";
-    url.search = "";
+    url.pathname = path;
+    url.search = query;
     return NextResponse.redirect(url);
-  }
+  };
 
+  if (pathname.startsWith("/admin") && pathname !== "/admin/login") return redirectTo("/admin/login");
+  if (pathname.startsWith("/tai-khoan")) {
+    return redirectTo("/dang-nhap", `?next=${encodeURIComponent(pathname + search)}`);
+  }
   return response;
 }
 
 export const config = {
-  matcher: ["/admin", "/admin/:path*"],
+  // Every page except static assets, images and the cron API.
+  matcher: ["/((?!_next/static|_next/image|api/cron|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)"],
 };

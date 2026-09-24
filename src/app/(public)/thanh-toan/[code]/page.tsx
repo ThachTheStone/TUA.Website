@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { OrderDetails } from "@/components/order/order-details";
-import { PaymentPanel } from "@/components/order/payment-panel";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PaymentStatus } from "@/components/order/payment-status";
 import { getOrderByToken } from "@/lib/orders/queries";
 
 export const metadata: Metadata = { title: "Thanh toán", robots: { index: false } };
@@ -22,29 +21,15 @@ export default async function PaymentPage({ params, searchParams }: Props) {
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">Thanh toán đơn {order.code}</h1>
         <p className="text-muted-foreground">
-          Lưu lại mã đơn <strong className="text-foreground">{order.code}</strong> để{" "}
-          <Link href="/tra-cuu" className="underline underline-offset-4">
-            tra cứu
-          </Link>{" "}
-          bằng số điện thoại bạn đã nhập. Thông tin thanh toán cũng đã được gửi vào email của bạn.
+          Bạn có thể theo dõi đơn <strong className="text-foreground">{order.code}</strong> trong{" "}
+          <Link href="/tai-khoan" className="underline underline-offset-4">
+            tài khoản
+          </Link>
+          . Thông tin thanh toán cũng đã được gửi vào email của bạn.
         </p>
       </div>
 
-      {order.payment ? (
-        <PaymentPanel payment={order.payment} code={order.code} token={order.accessToken} />
-      ) : order.status === "PAYMENT_REVIEW" ? (
-        <Alert>
-          <AlertDescription>
-            Cảm ơn bạn! Ban tổ chức đang đối soát khoản chuyển khoản và sẽ gửi email khi đơn được xác nhận.
-          </AlertDescription>
-        </Alert>
-      ) : order.overdue ? (
-        <Alert variant="destructive">
-          <AlertDescription>
-            Đơn đã quá hạn thanh toán. Nếu bạn đã chuyển khoản, vui lòng liên hệ Ban tổ chức kèm mã đơn {order.code}.
-          </AlertDescription>
-        </Alert>
-      ) : null}
+      <PaymentStatus order={order} />
 
       <OrderDetails order={order} />
     </div>
