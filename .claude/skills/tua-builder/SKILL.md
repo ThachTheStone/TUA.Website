@@ -51,7 +51,7 @@ URLs are Vietnamese slugs without diacritics.
 **Done when:** editing in the admin shows up on the home page without a redeploy.
 
 ### Phase 3 — Canvas designer (FR02–FR05) → `references/canvas.md`
-**Done when:** a user can draw on all 3 areas on an iPad with no page scroll, undo/redo works, export produces a 200 DPI PNG per area, and there is no upload button.
+**Done when:** a user can draw on all 3 areas on an iPad with no page scroll, undo/redo works, and export produces a 200 DPI PNG per area.
 
 ### Phase 4 — Cart + checkout + VietQR (FR06, FR07, FR11, FR22, FR24)
 - Cart state is Zustand persisted to localStorage. Items: `{type, color, size, quantity, designDraftId?}`.
@@ -72,11 +72,21 @@ URLs are Vietnamese slugs without diacritics.
   - **"Đã cọc"** (amount input, default `prepay_amount`, must be ≥ 50% and < subtotal) and **"Đã thanh toán 100%"** (records the remainder). Both insert a `payments` row; the first one moves PAYMENT_REVIEW → CONFIRMED via `transitionOrder()`. "Đã thanh toán 100%" stays available on DEPOSIT_PAID orders until cancelled.
   - Production buttons (Đang in, Kiểm tra chất lượng, Sẵn sàng) and **"Đã giao"** (READY only; warns about the remaining amount when DEPOSIT_PAID).
 - Payment status changes go through one server function (like `transitionOrder()`), which checks the role, the amounts and writes history in one RPC.
-- Workshop form: staff uploads scans to the `scans` bucket; cash payment creates the order as CONFIRMED with DEPOSIT_PAID or FULLY_PAID.
+- Design approval (FR29, SRS §5.3): `order_items.approval_status` + `design_reviews` history. Buttons Xem xét / Duyệt / Từ chối (reason required) per custom item; "Thiết kế chờ duyệt" counter and filter; CONFIRMED → PRINTING blocked until every custom item is APPROVED (BR12). Email on rejection with the reason. Buyer account + lookup show each shirt's approval status and reason.
+- Workshop form: staff uploads scans to the `scans` bucket (created APPROVED); cash payment creates the order as CONFIRMED with DEPOSIT_PAID or FULLY_PAID.
 - Emails on Đã cọc, Đã thanh toán 100%, READY, DELIVERED and CANCELLED.
-**Done when:** a 50% order goes Đã cọc → … → Đã giao with "Còn nợ" shown, then Đã thanh toán 100% clears it; a 100% order goes straight to FULLY_PAID; history is logged; a STAFF user cannot open accounts or settings.
+**Done when:** printing is blocked until a rejected design is approved, a 50% order goes Đã cọc → … → Đã giao with "Còn nợ" shown, then Đã thanh toán 100% clears it; a 100% order goes straight to FULLY_PAID; history is logged; a STAFF user cannot open accounts or settings.
 
-### Phase 6 — Shirt prototypes (FR27, FR28, FR02, FR06) → `references/data-model.md` (Prototypes)
+### Phase 6 — Buyer images in the canvas + resubmit (FR03, FR05, FR26, FR29, BR01)
+- Canvas "Chèn ảnh" tool (signed-in buyers only; logged-out buyers see a login prompt). New shape kind `image` referencing a `design_assets` row; move/resize/rotate like other shapes, clipped to the print area; max 10 per design.
+- Browser downscales to what the print area needs at 200 DPI, then uploads through a server action: check MIME by magic bytes (JPG/PNG/WebP), ≤ 10MB, strip EXIF, store in a private `uploads` bucket under `<customer_id>/`, insert `design_assets`. Signed URLs for display; never public.
+- Blurry warning when the placed image is below 150 DPI at its printed size.
+- Cart/saved cart store only asset ids (not image data). Export loads the images via signed URLs before rendering print files.
+- FR05 checkbox text covers uploaded images and the approval step.
+- Account page: rejected shirt → "Sửa thiết kế" opens the canvas with that design → "Gửi lại" uploads new print files, replaces `order_items.design_id`, sets PENDING_APPROVAL, logs `design_reviews` (changed_by null). Color/size/qty/price unchanged; APPROVED designs are locked.
+**Done when:** a buyer inserts two photos, orders, staff rejects with a reason, the buyer sees it, edits, resubmits, staff approves, and the print file contains the photos at full quality. A logged-out visitor cannot upload; a renamed .exe as .png is refused.
+
+### Phase 7 — Shirt prototypes (FR27, FR28, FR02, FR06) → `references/data-model.md` (Prototypes)
 - Migration: `prototypes` table, `item_type` + `PROTOTYPE`, `design_source` + `PROTOTYPE`, `order_items.prototype_id`.
 - Admin `/admin/mau-ao`: CRUD, sort, active toggle. Staff/Admin upload 1–4 display images (`content` bucket) and one print PNG per print area (`designs` bucket, under `prototypes/<id>/`). Check PNG pixel size against print area × DPI and warn.
 - Public `/mau-ao` grid and `/mau-ao/[slug]` detail: images, name, description, fixed color, size + quantity, "Thêm vào giỏ".
@@ -87,19 +97,19 @@ URLs are Vietnamese slugs without diacritics.
 - Check plain + prototype buying, checkout, payment and account pages at 390px.
 **Done when:** on a phone the canvas is replaced by the help message, and admin publishes a prototype, a buyer orders it with a plain and a custom shirt, totals use the custom price, a deactivated prototype blocks checkout, and admin order detail downloads the prototype's print file.
 
-### Phase 7 — Donations, Sheets, cron (FR08, FR09, FR18, FR23, FR25)
+### Phase 8 — Donations, Sheets, cron (FR08, FR09, FR18, FR23, FR25)
 - Donation form (min from settings, default 300.000đ), donation QR using the fund account and prefix `UH`, admin confirm, donor wall and progress bar.
 - `lib/sheets.ts` full-resync approach (see integrations), called after every mutation plus an admin "Đồng bộ lại" button. OrderItems sheet includes the prototype name.
-- Expire cron.
+- Expire cron, plus a daily cleanup of buyer uploads older than 30 days that no live order uses (NFR06).
 **Done when:** a confirmed donation appears on the wall and in the sheet, and an old unpaid order becomes EXPIRED within 15 minutes.
 
-### Phase 8 — New home page (FR01, FR17)
+### Phase 9 — New home page (FR01, FR17)
 - Content blocks `hero`, `about`, `mission` (seed + admin editing in Nội dung; hero has title, body, image).
 - Sections in order: Hero (CTAs: Xem áo mẫu, Tự thiết kế áo, Quyên góp) → Áo mẫu grid (+ entries to custom and plain) → Về chúng tôi → Ý nghĩa dự án → Top 5 / Workshop / promotions → Vinh danh (total, progress, latest ~10 confirmed donations via `public_donations`, link to /vinh-danh, sponsor logos by tier).
 - Hide any section with no data. Keep each section a small server component in `components/public/home/`.
 **Done when:** every section is editable in admin, an empty section disappears, and the page works at 390px, 820px and 1440px.
 
-### Phase 9 — Polish + deploy
+### Phase 10 — Polish + deploy
 - Responsive check at 390px, 820px (iPad) and 1440px; empty and loading states; error toasts in Vietnamese.
 - Policy page (Nghị định 13/2023 consent), OG image and favicon.
 - Deploy to Vercel, set env vars, run through the end-to-end checklist below.
@@ -119,7 +129,8 @@ URLs are Vietnamese slugs without diacritics.
 - [ ] A workshop cash order with a scanned image.
 - [ ] A donation under 300.000đ is rejected; an anonymous donation shows "Nhà hảo tâm ẩn danh".
 - [ ] The Sheets tabs match the DB after a resync.
-- [ ] No upload input exists on any public page (search the code for `type="file"` outside `admin/`).
+- [ ] The only public upload is the canvas "Chèn ảnh" tool, and it requires login (search the code for `type="file"` outside `admin/`).
+- [ ] A rejected design blocks printing; the buyer can resubmit; uploaded photos are not reachable without a signed URL.
 - [ ] The service key is not in the client bundle.
 - [ ] Checkout while logged out redirects to login; the cart survives login and shows on a second device.
 - [ ] A prototype order uses the custom price and the prototype's print file; a deactivated prototype cannot be ordered.

@@ -22,7 +22,7 @@ Tài liệu xác định đầy đủ yêu cầu chức năng, phi chức năng,
 - Xác nhận thanh toán tự động qua webhook ngân hàng (SePay/Casso) — dự kiến mở rộng sau.
 - Tích hợp API đơn vị vận chuyển. Ban tổ chức tự đặt dịch vụ giao hàng bên ngoài.
 - Mã giảm giá tự động áp dụng vào giỏ hàng (khuyến mãi hiện chỉ là nội dung hiển thị).
-- Tải ảnh từ thiết bị của khách hàng (bị cấm theo BR01).
+- Tự động phát hiện nội dung phản cảm hoặc vi phạm bản quyền trong ảnh khách tải lên (việc duyệt do Staff/Admin làm thủ công, FR29).
 
 ### 1.4. Thuật ngữ
 | Thuật ngữ | Ý nghĩa |
@@ -40,9 +40,9 @@ Tài liệu xác định đầy đủ yêu cầu chức năng, phi chức năng,
 
 ## 2. Tổng quan nghiệp vụ
 
-TỰA là nền tảng thương mại điện tử kết hợp gây quỹ cho chiến dịch "Nét Vẽ Yêu Thương". Có ba cách mua áo: (1) **Áo custom**: tự thiết kế trên canvas của website; (2) **Áo mẫu**: chọn một thiết kế có sẵn do Ban tổ chức đăng, giá bằng áo custom; (3) **Áo trơn**: chọn màu và size. Tuyệt đối không có tính năng tải ảnh từ thiết bị, nhằm kiểm soát rủi ro bản quyền.
+TỰA là nền tảng thương mại điện tử kết hợp gây quỹ cho chiến dịch "Nét Vẽ Yêu Thương". Có ba cách mua áo: (1) **Áo custom**: tự thiết kế trên canvas của website; (2) **Áo mẫu**: chọn một thiết kế có sẵn do Ban tổ chức đăng, giá bằng áo custom; (3) **Áo trơn**: chọn màu và size. Khi thiết kế áo custom, khách có thể vẽ, viết chữ và chèn ảnh/sticker của riêng mình (câu chuyện của họ). Để kiểm soát nội dung phản cảm và vi phạm bản quyền, **mọi thiết kế áo custom phải được Staff/Admin duyệt** trước khi in (FR29).
 
-Một đơn hàng có thể chứa cả ba loại áo. Mỗi áo custom có bản thiết kế riêng; áo mẫu dùng thiết kế và file in của mẫu. Sau khi thiết kế, khách cam kết bản quyền, điền thông tin và chọn hình thức nhận hàng. Có hai hình thức: giao hàng (khách ở ngoài trường) hoặc nhận tại campus theo lịch hẹn. Khách chọn mức thanh toán trước 50%, 75% hoặc 100%. Hệ thống sinh mã VietQR có sẵn số tiền và nội dung chuyển khoản chứa Order Code. Khách quét mã, chuyển khoản, rồi bấm "Tôi đã chuyển khoản". Staff đối soát thủ công với sao kê ngân hàng rồi bấm "Đã cọc" (khách trả 50%/75%) hoặc "Đã thanh toán 100%".
+Một đơn hàng có thể chứa cả ba loại áo. Mỗi áo custom có bản thiết kế riêng; áo mẫu dùng thiết kế và file in của mẫu. Sau khi thiết kế, khách cam kết bản quyền, điền thông tin và chọn hình thức nhận hàng. Có hai hình thức: giao hàng (khách ở ngoài trường) hoặc nhận tại campus theo lịch hẹn. Khách chọn mức thanh toán trước 50%, 75% hoặc 100%. Hệ thống sinh mã VietQR có sẵn số tiền và nội dung chuyển khoản chứa Order Code. Khách quét mã, chuyển khoản, rồi bấm "Tôi đã chuyển khoản". Song song, Staff/Admin duyệt từng thiết kế custom (Chờ duyệt → Đang xem xét → Đã duyệt hoặc Bị từ chối kèm lý do). Thiết kế bị từ chối được khách sửa và gửi lại. Staff đối soát thủ công với sao kê ngân hàng rồi bấm "Đã cọc" (khách trả 50%/75%) hoặc "Đã thanh toán 100%".
 
 Khách vẽ tay trên giấy tại Campus Workshop được Staff scan bản vẽ và tạo đơn thủ công trên Admin. Chỉ Staff được phép upload ảnh scan.
 
@@ -92,14 +92,17 @@ Trang chủ gồm các phần theo thứ tự:
 - Hoạt động trên máy tính (chuột) và máy tính bảng (cảm ứng, bút). Không cuộn trang khi đang vẽ.
 - **Không dùng trên điện thoại** (thiết bị có cạnh ngắn màn hình dưới 600px). Trên điện thoại, trang Thiết kế áo không mở canvas mà hiển thị: "Tính năng tự thiết kế cần máy tính hoặc máy tính bảng", thông tin liên hệ Ban tổ chức để được hỗ trợ (FR21), và nút chuyển sang Áo mẫu / Áo trơn.
 - Vùng in có thể để trống, nhưng áo custom phải có ít nhất 1 vùng có nội dung.
-- Không có nút tải ảnh lên (BR01).
+- **Chèn ảnh (sticker, hình ảnh):** khách đã đăng nhập được tải ảnh từ thiết bị lên canvas (BR01). Ảnh là một đối tượng trên lớp: di chuyển, phóng to/thu nhỏ, xoay, xóa như hình khối; bị cắt theo vùng in.
+  - Định dạng JPG, PNG, WebP; tối đa 10MB mỗi ảnh; tối đa 10 ảnh mỗi thiết kế.
+  - Ảnh được thu nhỏ trên trình duyệt về kích thước đủ in 200 DPI cho vùng in trước khi tải lên, và được lưu riêng tư (chỉ khách đó và Staff/Admin xem được).
+  - Nếu ảnh quá nhỏ so với kích thước đang đặt trên áo (dưới 150 DPI khi in), hiển thị cảnh báo "Ảnh có thể bị mờ khi in".
 
 **FR04 – Xem trước (Preview)**
 - Hiển thị bản vẽ áp lên mockup áo theo màu áo đã chọn, xem được cả mặt trước và mặt sau.
 
 **FR05 – Cam kết nội dung**
 - Chỉ áp dụng cho áo custom (áo mẫu do Ban tổ chức thiết kế nên không cần cam kết).
-- Trước khi thêm áo custom vào giỏ, khách phải tick đồng ý: nội dung tự vẽ, không bạo lực, không phản cảm, không vi phạm bản quyền. Nếu chưa tick, nút "Thêm vào giỏ" bị vô hiệu hóa.
+- Trước khi thêm áo custom vào giỏ, khách phải tick đồng ý: nội dung do mình vẽ hoặc mình có quyền sử dụng (kể cả ảnh tải lên), không bạo lực, không phản cảm, không vi phạm bản quyền; và hiểu rằng thiết kế sẽ được Ban tổ chức duyệt, có thể bị từ chối. Nếu chưa tick, nút "Thêm vào giỏ" bị vô hiệu hóa.
 
 **FR06 – Giỏ hàng**
 - Một đơn chứa nhiều áo. Mỗi dòng gồm: loại áo, màu, size, số lượng, bản thiết kế (nếu là áo custom) và thành tiền.
@@ -151,7 +154,7 @@ Trang chủ gồm các phần theo thứ tự:
 
 **FR13 – Quản lý đơn hàng**
 - Bảng danh sách đơn (Web và Workshop) với các cột: Order Code, nguồn đơn, tên khách, SĐT, tổng tiền, đã trả, còn lại, hình thức nhận, trạng thái đơn, trạng thái thanh toán, ngày tạo.
-- Lọc theo trạng thái đơn, trạng thái thanh toán, nguồn, hình thức nhận, khoảng ngày. Tìm kiếm theo Order Code, tên, SĐT.
+- Lọc theo trạng thái đơn, trạng thái thanh toán, trạng thái duyệt thiết kế (có đơn cần duyệt), nguồn, hình thức nhận, khoảng ngày. Tìm kiếm theo Order Code, tên, SĐT.
 - Bộ đếm theo trạng thái ở đầu trang.
 
 **FR14 – Chi tiết đơn và xác nhận thanh toán**
@@ -161,7 +164,8 @@ Trang chủ gồm các phần theo thứ tự:
   - **"Đã thanh toán 100%"**: dùng khi khách đã trả đủ. Hệ thống ghi nhận khoản còn thiếu để số đã trả bằng tổng đơn. Trạng thái thanh toán thành Đã thanh toán 100%.
 - Lần xác nhận đầu tiên chuyển trạng thái đơn từ Chờ xác nhận thanh toán sang Đã xác nhận.
 - Mỗi lần bấm ghi một khoản vào `payments` (số tiền, phương thức, người bấm, thời gian) và một dòng lịch sử.
-- Staff có thể từ chối: hủy đơn kèm lý do. Nếu khách đã chuyển tiền, đánh dấu cần hoàn tiền (BR06).
+- Duyệt từng thiết kế custom ngay trong trang chi tiết đơn (FR29).
+- Staff có thể hủy đơn kèm lý do. Nếu khách đã chuyển tiền, đánh dấu cần hoàn tiền (BR06).
 
 **FR15 – Cập nhật trạng thái**
 - Chuyển trạng thái theo sơ đồ ở mục 5. Mỗi lần chuyển được ghi lịch sử (ai, lúc nào, ghi chú).
@@ -171,7 +175,7 @@ Trang chủ gồm các phần theo thứ tự:
 
 **FR16 – Tạo đơn Workshop**
 - Form nhập thông tin khách, danh sách áo, hình thức nhận, phương thức thanh toán (tiền mặt tại chỗ hoặc chuyển khoản).
-- Staff upload ảnh scan bản vẽ (JPG/PNG, tối đa 10MB mỗi ảnh) cho từng áo custom. Có thể chọn áo mẫu (không cần scan).
+- Staff upload ảnh scan bản vẽ (JPG/PNG, tối đa 10MB mỗi ảnh) cho từng áo custom; thiết kế Workshop được tạo ở trạng thái Đã duyệt (Staff đã xem tại chỗ). Có thể chọn áo mẫu (không cần scan).
 - Nếu khách trả tiền mặt tại chỗ, đơn được tạo thẳng ở trạng thái Đã xác nhận, với trạng thái thanh toán Đã cọc (trả từ 50% đến dưới 100%) hoặc Đã thanh toán 100%.
 
 **FR17 – Quản lý nội dung (Admin)**
@@ -194,6 +198,17 @@ Trang chủ gồm các phần theo thứ tự:
 - Mỗi mẫu gồm: tên, đường dẫn (slug), mô tả, màu áo (một màu trong cài đặt), 1–4 ảnh hiển thị (JPG/PNG/WebP, tối đa 5MB mỗi ảnh), và file in PNG cho từng vùng in được dùng (ít nhất 1 vùng, tối đa 20MB mỗi file).
 - Hệ thống kiểm tra file in đủ độ phân giải theo kích thước vùng in và DPI trong cài đặt; nếu thiếu thì cảnh báo.
 
+**FR29 – Duyệt thiết kế áo custom**
+- Mỗi áo custom trong đơn có trạng thái duyệt riêng (§5.3). Áo mẫu và áo trơn không cần duyệt.
+- Khi đơn được tạo, mọi áo custom ở trạng thái **Chờ duyệt**. Việc duyệt diễn ra song song với thanh toán (khách vẫn thanh toán ngay).
+- Staff/Admin mở thiết kế (ảnh xem trước trên áo và file in từng vùng, xem được cả ảnh gốc khách tải lên) và bấm:
+  - **"Xem xét"**: chuyển sang **Đang xem xét** (để người khác biết đã có người nhận xử lý).
+  - **"Duyệt"**: chuyển sang **Đã duyệt**. Thiết kế đã duyệt bị khóa, khách không sửa được nữa.
+  - **"Từ chối"**: bắt buộc nhập lý do; chuyển sang **Bị từ chối**. Khách thấy lý do trong tài khoản và nhận email. Ban tổ chức liên hệ khách ngoài hệ thống (điện thoại/Zalo) để trao đổi.
+- Thiết kế Bị từ chối: khách mở lại áo đó từ trang Tài khoản trên máy tính/máy tính bảng, sửa và bấm "Gửi lại". Thiết kế mới thay thế thiết kế cũ, quay về **Chờ duyệt**. Chỉ đổi được thiết kế; loại áo, màu, size, số lượng và giá giữ nguyên.
+- Nếu không thống nhất được với khách, Staff hủy đơn kèm lý do (hoàn tiền theo BR06).
+- Mỗi lần đổi trạng thái duyệt được ghi lịch sử (ai, lúc nào, lý do). Danh sách đơn trong Admin có bộ đếm "Thiết kế chờ duyệt".
+
 ### 4.3. Tích hợp
 
 **FR22 – Sinh mã VietQR**
@@ -205,7 +220,7 @@ Trang chủ gồm các phần theo thứ tự:
 - Có nút "Đồng bộ lại toàn bộ" trong Admin. Nếu đồng bộ thất bại, hệ thống không chặn thao tác chính và ghi log lỗi.
 
 **FR24 – Email thông báo**
-- Gửi email khi: đặt hàng thành công, xác nhận thanh toán, đơn sẵn sàng, đã giao, đơn bị hủy hoặc hết hạn, quyên góp được xác nhận.
+- Gửi email khi: thiết kế bị từ chối (kèm lý do), đặt hàng thành công, xác nhận thanh toán, đơn sẵn sàng, đã giao, đơn bị hủy hoặc hết hạn, quyên góp được xác nhận.
 
 **FR25 – Tự động hủy đơn quá hạn**
 - Định kỳ mỗi 15 phút, các đơn ở trạng thái Chờ thanh toán quá thời hạn (mặc định 24 giờ) chuyển sang Hết hạn, và hệ thống gửi email thông báo.
@@ -216,7 +231,7 @@ Trang chủ gồm các phần theo thứ tự:
 - Đăng ký bằng email + mật khẩu (tối thiểu 8 ký tự) kèm Họ tên và Số điện thoại. Tài khoản chỉ dùng được sau khi bấm liên kết xác thực gửi qua email.
 - Đăng nhập bằng email + mật khẩu hoặc bằng Google. Người dùng Google không bắt buộc nhập SĐT khi đăng ký; SĐT được hỏi ở bước đặt hàng và lưu lại vào tài khoản.
 - Có chức năng đăng xuất. Khi đăng xuất, giỏ hàng trên trình duyệt được xóa (vẫn còn lưu trong tài khoản).
-- Trang "Tài khoản": xem và sửa Họ tên, SĐT; danh sách đơn đã đặt (mã đơn, ngày, trạng thái đơn, trạng thái thanh toán, tổng tiền, đã trả); xem chi tiết và lịch sử trạng thái từng đơn; thanh toán lại đơn đang Chờ thanh toán.
+- Trang "Tài khoản": xem và sửa Họ tên, SĐT; danh sách đơn đã đặt (mã đơn, ngày, trạng thái đơn, trạng thái thanh toán, tổng tiền, đã trả); xem chi tiết và lịch sử trạng thái từng đơn, trạng thái duyệt của từng áo custom và lý do nếu bị từ chối; sửa và gửi lại thiết kế bị từ chối (FR29); thanh toán lại đơn đang Chờ thanh toán.
 - Giỏ hàng được lưu theo tài khoản: đăng nhập trên thiết bị khác sẽ thấy lại giỏ hàng. Giỏ hàng tạo khi chưa đăng nhập được gộp vào giỏ của tài khoản khi đăng nhập.
 - Tài khoản Người mua tách biệt với tài khoản Staff/Admin và không truy cập được trang quản trị.
 
@@ -231,7 +246,7 @@ Mỗi đơn có hai trạng thái độc lập: **trạng thái đơn** (`status
 | Mã | Tên hiển thị | Ý nghĩa |
 |---|---|---|
 | `PENDING_PAYMENT` | Chờ thanh toán | Vừa tạo, chưa báo chuyển khoản |
-| `PAYMENT_REVIEW` | Chờ xác nhận thanh toán | Khách bấm "Tôi đã chuyển khoản"; Staff đối soát và duyệt nội dung bản vẽ |
+| `PAYMENT_REVIEW` | Chờ xác nhận thanh toán | Khách bấm "Tôi đã chuyển khoản"; Staff đối soát sao kê |
 | `CONFIRMED` | Đã xác nhận | Staff đã xác nhận Đã cọc hoặc Đã thanh toán 100% |
 | `PRINTING` | Đang in | |
 | `QC` | Kiểm tra chất lượng | |
@@ -249,7 +264,7 @@ PRINTING        → QC
 QC              → READY | PRINTING (in lại)
 READY           → DELIVERED
 ```
-PAYMENT_REVIEW → CONFIRMED chỉ xảy ra qua nút "Đã cọc" hoặc "Đã thanh toán 100%". READY → DELIVERED chỉ xảy ra qua nút "Đã giao".
+PAYMENT_REVIEW → CONFIRMED chỉ xảy ra qua nút "Đã cọc" hoặc "Đã thanh toán 100%". CONFIRMED → PRINTING chỉ khi mọi áo custom Đã duyệt (BR12). READY → DELIVERED chỉ xảy ra qua nút "Đã giao".
 
 ### 5.2. Trạng thái thanh toán
 
@@ -266,6 +281,21 @@ DEPOSIT_PAID → FULLY_PAID
 - Chỉ Staff/Admin đổi được trạng thái thanh toán, bằng các nút trên. Khách bấm "Tôi đã chuyển khoản" chỉ chuyển trạng thái đơn sang Chờ xác nhận thanh toán.
 - Đơn Đã giao nhưng thanh toán vẫn là Đã cọc được hiển thị là "Còn nợ" trong Admin.
 
+### 5.3. Trạng thái duyệt thiết kế (từng áo custom)
+
+| Mã | Tên hiển thị | Ý nghĩa |
+|---|---|---|
+| `PENDING_APPROVAL` | Chờ duyệt | Mặc định khi tạo đơn hoặc khi khách gửi lại |
+| `UNDER_REVIEW` | Đang xem xét | Staff/Admin đã nhận xem xét |
+| `APPROVED` | Đã duyệt | Được phép in; thiết kế bị khóa |
+| `REJECTED` | Bị từ chối | Có lý do; Ban tổ chức liên hệ khách |
+
+```
+PENDING_APPROVAL → UNDER_REVIEW | APPROVED | REJECTED
+UNDER_REVIEW     → APPROVED | REJECTED | PENDING_APPROVAL (trả lại hàng chờ)
+REJECTED         → PENDING_APPROVAL (khách gửi lại thiết kế)
+```
+
 Trường `refund_status` (NONE / REQUIRED / DONE) được ghi riêng cho đơn bị hủy sau khi khách đã chuyển tiền.
 
 Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
@@ -279,7 +309,7 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 - **NFR03 – Bảo mật:** Admin yêu cầu đăng nhập; mật khẩu được băm (do dịch vụ xác thực đảm nhiệm); phân quyền kiểm tra ở phía server; khóa bí mật không lộ ra trình duyệt; tra cứu đơn bắt buộc khớp cả Order Code và SĐT.
 - **NFR04 – Tốc độ:** sinh QR dưới 2 giây; trang chủ tải dưới 3 giây trên mạng 4G.
 - **NFR05 – Chất lượng in:** file xuất cho mỗi vùng in có độ phân giải 200 DPI theo kích thước thật của vùng in, định dạng PNG nền trong suốt.
-- **NFR06 – Dữ liệu cá nhân:** tuân thủ Nghị định 13/2023/NĐ-CP. Có checkbox đồng ý và trang chính sách. Chỉ Staff đăng nhập mới xem được thông tin khách. Ảnh các bé chỉ dùng tên hoặc biệt danh, có sự đồng ý của mái ấm.
+- **NFR06 – Dữ liệu cá nhân:** tuân thủ Nghị định 13/2023/NĐ-CP. Có checkbox đồng ý và trang chính sách. Chỉ Staff đăng nhập mới xem được thông tin khách. Ảnh các bé chỉ dùng tên hoặc biệt danh, có sự đồng ý của mái ấm. Ảnh khách tải lên chỉ dùng để in đơn của họ; ảnh của đơn Hết hạn/Đã hủy và ảnh không nằm trong đơn nào được xóa sau 30 ngày.
 - **NFR07 – Tin cậy:** lỗi đồng bộ Sheets hoặc gửi email không làm thất bại việc tạo đơn.
 - **NFR08 – Ngôn ngữ và định dạng:** toàn bộ giao diện tiếng Việt; tiền hiển thị dạng `129.000đ`; ngày dạng `dd/MM/yyyy HH:mm`, múi giờ Asia/Ho_Chi_Minh.
 - **NFR09 – Chi phí:** vận hành trong gói miễn phí của các dịch vụ.
@@ -288,12 +318,13 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 
 ## 7. Quy tắc nghiệp vụ
 
-- **BR01:** Không có tính năng upload ảnh từ thiết bị của khách. Chỉ Staff/Admin được upload ảnh, và chỉ trong trang quản trị: ảnh scan cho đơn Workshop, ảnh và file in của áo mẫu, ảnh nội dung và logo nhà tài trợ.
+- **BR01:** Khách chỉ được tải ảnh lên ở một nơi: công cụ Chèn ảnh trong canvas thiết kế (FR03), và phải đăng nhập. Ảnh khách tải lên được kiểm tra định dạng và dung lượng ở server, lưu riêng tư, không bao giờ hiển thị công khai. Staff/Admin được tải ảnh trong trang quản trị: ảnh scan cho đơn Workshop, ảnh và file in của áo mẫu, ảnh nội dung và logo nhà tài trợ.
 - **BR02:** Đơn chỉ được đưa vào sản xuất khi trạng thái thanh toán là Đã cọc (tối thiểu 50% tổng đơn) hoặc Đã thanh toán 100%, do Staff/Admin xác nhận.
+- **BR12:** Đơn chỉ được chuyển sang Đang in khi mọi áo custom trong đơn ở trạng thái Đã duyệt.
 - **BR11:** Đơn Đã cọc được phép giao; phần còn lại thu khi giao/nhận và ghi nhận bằng nút "Đã thanh toán 100%".
 - **BR03:** Khách chọn trả trước 50%, 75% hoặc 100%. Phần còn lại thanh toán khi giao hoặc nhận hàng.
 - **BR04:** Tiền bán hàng và tiền quyên góp dùng hai tài khoản ngân hàng riêng (hoặc cùng tài khoản nhưng khác tiền tố nội dung `TUA` / `UH`) để đối soát.
-- **BR05:** Bản vẽ vi phạm tiêu chuẩn cộng đồng (phát hiện ở bước PAYMENT_REVIEW) dẫn đến hủy đơn.
+- **BR05:** Thiết kế có nội dung phản cảm, bạo lực hoặc vi phạm bản quyền (kể cả ảnh tải lên) bị từ chối kèm lý do (FR29). Khách sửa và gửi lại, hoặc Staff hủy đơn.
 - **BR06:** Hoàn tiền được Ban tổ chức quyết định theo từng trường hợp và ghi nhận bằng `refund_status`.
 - **BR07:** Đơn ở trạng thái Chờ thanh toán quá thời hạn cấu hình (mặc định 24 giờ) tự động chuyển sang Hết hạn.
 - **BR08:** Số tiền quyên góp tối thiểu là 300.000đ.
@@ -311,7 +342,9 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 | `carts` | customer_id, items (JSON), drafts (JSON), updated_at |
 | `settings` | key, value (JSON): giá, màu, size, vùng in, tài khoản ngân hàng, thời hạn hủy, mục tiêu quỹ, liên hệ Ban tổ chức |
 | `orders` | id, code, source (WEB/WORKSHOP), customer_name, phone, email, fulfillment (DELIVERY/PICKUP), address, preferred_time, pickup_location, note, subtotal, prepay_percent, prepay_amount, paid_amount, status, payment_status (UNPAID/DEPOSIT_PAID/FULLY_PAID), refund_status, cancel_reason, expires_at, created_by, customer_id, created_at |
-| `order_items` | id, order_id, type (PLAIN/CUSTOM/PROTOTYPE), color, size, quantity, unit_price, design_id, prototype_id |
+| `order_items` | id, order_id, type (PLAIN/CUSTOM/PROTOTYPE), color, size, quantity, unit_price, design_id, prototype_id, approval_status, reject_reason, reviewed_by, reviewed_at |
+| `design_reviews` | id, order_item_id, from_status, to_status, reason, changed_by (null = khách gửi lại), design_id, changed_at |
+| `design_assets` | id, customer_id, file_path, width_px, height_px, bytes, created_at (ảnh khách tải lên, bucket riêng tư) |
 | `prototypes` | id, slug, name, description, color, image_urls, design_id (file in), sort_order, is_active, created_at |
 | `designs` | id, source (CANVAS/SCAN/PROTOTYPE), canvas_json, preview_url, created_at |
 | `design_files` | id, design_id, area (vùng 1/2/3), file_url, width_px, height_px |
@@ -349,6 +382,10 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 | 10 | Top 5 tranh, Workshop, khuyến mãi trên trang chủ mới | Giữ lại, đặt sau phần Ý nghĩa dự án |
 | 11 | Cách nhận biết điện thoại | Cạnh ngắn màn hình dưới 600px (iPad mini trở lên được xem là máy tính bảng) |
 | 12 | Khách chọn trả 100% nhưng chuyển thiếu | Staff bấm "Đã cọc" nếu số nhận ≥ 50%; nếu dưới 50% thì trả về Chờ thanh toán |
+| 13 | Giới hạn ảnh khách tải lên | JPG/PNG/WebP, tối đa 10MB mỗi ảnh, 10 ảnh mỗi thiết kế; phải đăng nhập mới chèn ảnh |
+| 14 | Thời gian Staff duyệt thiết kế | Trong 24 giờ kể từ khi đặt hoặc gửi lại (cam kết vận hành, hệ thống không tự động) |
+| 15 | Khách không gửi lại thiết kế bị từ chối | Không tự hủy; Staff liên hệ và quyết định hủy/hoàn tiền |
+| 16 | Thiết kế bị từ chối có được đổi màu/size | Không; chỉ đổi thiết kế. Muốn đổi áo thì hủy và đặt đơn mới |
 
 ---
 
@@ -363,8 +400,9 @@ Mục tiêu ra mắt theo kế hoạch ban đầu: 08/10.
 | 3 | Canvas thiết kế, áo trơn, giỏ hàng | FR02–FR06 | Xong |
 | 4 | Đặt hàng, VietQR, tra cứu đơn, email | FR07, FR11, FR22, FR24 | Xong |
 | 4b | Tài khoản Người mua | FR26 | Xong (đăng nhập Google tạm tắt) |
-| 5 | Admin: đơn hàng, xác nhận Đã cọc / Đã thanh toán 100% / Đã giao, trạng thái, đơn Workshop | FR13–FR16, §5 | Chưa làm |
-| 6 | Áo mẫu (Admin quản lý, trang Áo mẫu, giỏ hàng, đặt hàng) và giới hạn điện thoại cho canvas | FR27, FR28, FR02, FR06, FR03, NFR02 | Chưa làm |
-| 7 | Quyên góp, Bảng vinh danh, Google Sheets, tự hủy đơn | FR08, FR09, FR18, FR23, FR25 | Chưa làm |
-| 8 | Trang chủ mới: Hero, Áo mẫu, Về chúng tôi, Ý nghĩa, Vinh danh | FR01, FR17 | Chưa làm |
-| 9 | Hoàn thiện, kiểm thử trên tablet, deploy, ra mắt | NFR | Chưa làm |
+| 5 | Admin: đơn hàng, xác nhận Đã cọc / Đã thanh toán 100% / Đã giao, duyệt thiết kế, đơn Workshop | FR13–FR16, FR29, §5 | Chưa làm |
+| 6 | Chèn ảnh/sticker vào canvas; khách sửa và gửi lại thiết kế bị từ chối | FR03, FR05, FR26, FR29, BR01 | Chưa làm |
+| 7 | Áo mẫu (Admin quản lý, trang Áo mẫu, giỏ hàng, đặt hàng) và giới hạn điện thoại cho canvas | FR27, FR28, FR02, FR06, FR03, NFR02 | Chưa làm |
+| 8 | Quyên góp, Bảng vinh danh, Google Sheets, tự hủy đơn, dọn ảnh sau 30 ngày | FR08, FR09, FR18, FR23, FR25, NFR06 | Chưa làm |
+| 9 | Trang chủ mới: Hero, Áo mẫu, Về chúng tôi, Ý nghĩa, Vinh danh | FR01, FR17 | Chưa làm |
+| 10 | Hoàn thiện, kiểm thử trên tablet, deploy, ra mắt | NFR | Chưa làm |

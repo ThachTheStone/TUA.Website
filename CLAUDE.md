@@ -17,7 +17,7 @@ Build playbook: `.claude/skills/tua-builder/SKILL.md`.
 - DB migrations live in `supabase/migrations/*.sql`
 
 ## Hard rules (never break)
-1. **No customer image upload anywhere** (BR01). Only staff/admin can upload, and only inside the admin portal (workshop scans, prototype images and print files, content images, sponsor logos).
+1. **Customer uploads only through the canvas "Chèn ảnh" tool** (BR01): signed-in buyers only, type/size checked on the server, stored in a private bucket, never public. Every custom design must be APPROVED by staff before printing (FR29, BR12). Staff/admin upload only inside the admin portal.
 2. **All UI text is Vietnamese.** Money is formatted `129.000đ` via `formatVND()`. Timezone is Asia/Ho_Chi_Minh.
 3. **Prices, colors, sizes, print areas and bank accounts come from the `settings` table.** Never hardcode them.
 4. **Server decides money.** Recompute totals and prepay amounts on the server; never trust client values.

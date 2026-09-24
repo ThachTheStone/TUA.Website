@@ -8,8 +8,8 @@ create type order_source as enum ('WEB','WORKSHOP');
 create type fulfillment_type as enum ('DELIVERY','PICKUP');
 create type order_status as enum ('PENDING_PAYMENT','PAYMENT_REVIEW','CONFIRMED','PRINTING','QC','READY','DELIVERED','EXPIRED','CANCELLED');
 create type refund_status as enum ('NONE','REQUIRED','DONE');
-create type item_type as enum ('PLAIN','CUSTOM');           -- + 'PROTOTYPE' (Phase 6)
-create type design_source as enum ('CANVAS','SCAN');   -- + 'PROTOTYPE' (Phase 6)
+create type item_type as enum ('PLAIN','CUSTOM');           -- + 'PROTOTYPE' (Phase 7)
+create type design_source as enum ('CANVAS','SCAN');   -- + 'PROTOTYPE' (Phase 7)
 create type payment_method as enum ('TRANSFER','CASH');
 create type donation_status as enum ('PENDING','CONFIRMED','CANCELLED');
 
@@ -115,7 +115,7 @@ create table promotions (id uuid primary key default gen_random_uuid(), title te
   is_active boolean default true);
 ```
 
-## Prototypes (Phase 6, FR27/FR28)
+## Prototypes (Phase 7, FR27/FR28)
 ```sql
 alter type item_type add value 'PROTOTYPE';
 alter type design_source add value 'PROTOTYPE';
@@ -185,6 +185,46 @@ export const STATUS_LABEL = { PENDING_PAYMENT:'Chờ thanh toán', PAYMENT_REVIE
   DELIVERED:'Đã giao', EXPIRED:'Hết hạn', CANCELLED:'Đã hủy' };
 ```
 Guards: CONFIRMED requires `paid_amount >= ceil(subtotal*0.5)` (BR02). Cancelling with `paid_amount > 0` sets `refund_status = 'REQUIRED'`.
+
+### Design approval (Phase 5, SRS §5.3, FR29)
+```sql
+create type approval_status as enum ('PENDING_APPROVAL','UNDER_REVIEW','APPROVED','REJECTED');
+alter table order_items
+  add column approval_status approval_status,          -- null for PLAIN/PROTOTYPE
+  add column reject_reason text,
+  add column reviewed_by uuid references profiles,
+  add column reviewed_at timestamptz;
+create table design_reviews (
+  id bigserial primary key,
+  order_item_id uuid references order_items on delete cascade,
+  from_status approval_status, to_status approval_status not null,
+  reason text, design_id uuid references designs,
+  changed_by uuid references profiles,                  -- null = buyer resubmitted
+  changed_at timestamptz default now()
+);
+```
+```ts
+export const APPROVAL_ALLOWED = {
+  PENDING_APPROVAL: ['UNDER_REVIEW','APPROVED','REJECTED'],
+  UNDER_REVIEW: ['APPROVED','REJECTED','PENDING_APPROVAL'],
+  REJECTED: ['PENDING_APPROVAL'],   // buyer resubmits
+  APPROVED: [],
+};
+```
+REJECTED requires a reason. CONFIRMED → PRINTING requires every CUSTOM item APPROVED (BR12).
+
+### Buyer uploads (Phase 6, BR01)
+```sql
+create table design_assets (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references customers on delete cascade,
+  file_path text not null,          -- private bucket 'uploads', '<customer_id>/<id>.<ext>'
+  width_px int not null, height_px int not null, bytes int not null,
+  created_at timestamptz default now()
+);
+alter table design_assets enable row level security;   -- service role only
+```
+Assets not used by any order, or only by EXPIRED/CANCELLED orders, are deleted after 30 days (NFR06, cron in Phase 8).
 
 ### Payment status (Phase 5, SRS §5.2)
 ```sql
