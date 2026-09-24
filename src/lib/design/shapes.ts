@@ -1,9 +1,9 @@
-import type { DesignShape, LineShape } from "@/lib/design/types";
+import { TEXT_FONTS, type DesignShape, type EditableShape, type LineShape } from "@/lib/design/types";
 
 // One mapping from our shapes to Konva attributes, shared by the editor (react-konva)
 // and the offscreen exporter, so what the customer sees is exactly what gets printed.
 
-export type KonvaClass = "Line" | "Rect" | "Ellipse" | "Image";
+export type KonvaClass = "Line" | "Rect" | "Ellipse" | "Text" | "Image";
 
 const ROUND = { lineCap: "round", lineJoin: "round" } as const;
 
@@ -26,7 +26,16 @@ export function shapeKonva(shape: DesignShape): { className: KonvaClass; attrs: 
     case "straight":
       return {
         className: "Line",
-        attrs: { points: shape.points, stroke: shape.color, strokeWidth: shape.strokeWidth, ...ROUND, listening: false },
+        attrs: {
+          x: shape.x ?? 0,
+          y: shape.y ?? 0,
+          rotation: shape.rotation ?? 0,
+          points: shape.points,
+          stroke: shape.color,
+          strokeWidth: shape.strokeWidth,
+          ...ROUND,
+          listening: false,
+        },
       };
     case "rect":
       return {
@@ -36,6 +45,7 @@ export function shapeKonva(shape: DesignShape): { className: KonvaClass; attrs: 
           y: shape.y,
           width: shape.width,
           height: shape.height,
+          rotation: shape.rotation ?? 0,
           ...(shape.filled ? { fill: shape.color } : { stroke: shape.color, strokeWidth: shape.strokeWidth }),
           lineJoin: "round",
           listening: false,
@@ -49,13 +59,58 @@ export function shapeKonva(shape: DesignShape): { className: KonvaClass; attrs: 
           y: shape.y,
           radiusX: shape.radiusX,
           radiusY: shape.radiusY,
+          rotation: shape.rotation ?? 0,
           ...(shape.filled ? { fill: shape.color } : { stroke: shape.color, strokeWidth: shape.strokeWidth }),
+          listening: false,
+        },
+      };
+    case "text":
+      return {
+        className: "Text",
+        attrs: {
+          x: shape.x,
+          y: shape.y,
+          rotation: shape.rotation ?? 0,
+          text: shape.text,
+          fontSize: shape.fontSize,
+          fontFamily: fontFamily(shape.font),
+          fontStyle: shape.bold ? "bold" : "normal",
+          fill: shape.color,
+          lineHeight: 1.15,
           listening: false,
         },
       };
     case "raster":
       return { className: "Image", attrs: { x: 0, y: 0, width: shape.width, height: shape.height, listening: false } };
   }
+}
+
+export type NodeTransform = { x: number; y: number; scaleX: number; scaleY: number; rotation: number };
+
+/**
+ * Bakes a move/resize/rotate from the selection frame into the shape. Scale is folded into the
+ * shape's own size (not kept as a scale factor) so outlines keep an even stroke width.
+ */
+export function applyTransform(shape: EditableShape, t: NodeTransform): EditableShape {
+  const sx = Math.abs(t.scaleX);
+  const sy = Math.abs(t.scaleY);
+  const base = { x: t.x, y: t.y, rotation: t.rotation };
+  switch (shape.kind) {
+    case "rect":
+      return { ...shape, ...base, width: shape.width * sx, height: shape.height * sy };
+    case "ellipse":
+      return { ...shape, ...base, radiusX: shape.radiusX * sx, radiusY: shape.radiusY * sy };
+    case "straight": {
+      const [x1, y1, x2, y2] = shape.points;
+      return { ...shape, ...base, points: [x1 * sx, y1 * sy, x2 * sx, y2 * sy] };
+    }
+    case "text":
+      return { ...shape, ...base, fontSize: Math.max(4, shape.fontSize * sy) };
+  }
+}
+
+export function fontFamily(font: string): string {
+  return (TEXT_FONTS.find((f) => f.key === font) ?? TEXT_FONTS[0]).family;
 }
 
 const imageCache = new Map<string, HTMLImageElement>();

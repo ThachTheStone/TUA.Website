@@ -41,9 +41,9 @@ function withKeys(s: Settings): Settings {
 
 const num = (e: React.ChangeEvent<HTMLInputElement>) => e.target.valueAsNumber;
 
-function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+function Section({ id, title, hint, children }: { id?: string; title: string; hint?: string; children: React.ReactNode }) {
   return (
-    <section className="flex flex-col gap-4 rounded-xl border bg-card p-6">
+    <section id={id} className="flex scroll-mt-4 flex-col gap-4 rounded-xl border bg-card p-6">
       <div className="flex flex-col gap-1">
         <h2 className="text-lg font-semibold">{title}</h2>
         {hint && <p className="text-sm text-muted-foreground">{hint}</p>}
@@ -124,6 +124,17 @@ function RemoveButton({ onClick, disabled, label }: { onClick: () => void; disab
   );
 }
 
+const JUMP_LINKS = [
+  ["gia-ao", "Giá áo"],
+  ["mau-ao", "Màu áo"],
+  ["size", "Size"],
+  ["vung-in", "Vùng in"],
+  ["don-hang", "Đơn hàng"],
+  ["tk-ban-hang", "Tài khoản bán hàng"],
+  ["tk-quy", "Tài khoản quỹ"],
+  ["quyen-gop", "Quyên góp"],
+] as const;
+
 export function SettingsForm({ initial, action }: { initial: Settings; action: FormAction }) {
   const [s, setS] = useState<Settings>(initial);
   const { state, onSubmit, pending, formRef } = useAdminForm(action, "Đã lưu cài đặt");
@@ -138,14 +149,22 @@ export function SettingsForm({ initial, action }: { initial: Settings; action: F
     <form ref={formRef} onSubmit={onSubmit} className="flex flex-col gap-6">
       <input type="hidden" name="settings" value={JSON.stringify(withKeys(s))} />
 
-      <Section title="Giá áo" hint="Giá được chốt vào đơn tại thời điểm đặt (BR09). Đổi giá không ảnh hưởng đơn cũ.">
+      <nav aria-label="Mục cài đặt" className="flex flex-wrap gap-2 text-sm">
+        {JUMP_LINKS.map(([id, label]) => (
+          <a key={id} href={`#${id}`} className="rounded-full border bg-card px-3 py-1.5 hover:bg-muted">
+            {label}
+          </a>
+        ))}
+      </nav>
+
+      <Section id="gia-ao" title="Giá áo" hint="Giá được chốt vào đơn tại thời điểm đặt (BR09). Đổi giá không ảnh hưởng đơn cũ.">
         <div className="grid gap-4 sm:grid-cols-2">
           <MoneyInput id="price-plain" label="Áo trơn" value={s.prices.PLAIN} onChange={(v) => set("prices", { ...s.prices, PLAIN: v })} />
           <MoneyInput id="price-custom" label="Áo custom" value={s.prices.CUSTOM} onChange={(v) => set("prices", { ...s.prices, CUSTOM: v })} />
         </div>
       </Section>
 
-      <Section title="Màu áo" hint="Mã màu được tạo tự động và không đổi sau khi lưu, vì đơn hàng lưu theo mã này.">
+      <Section id="mau-ao" title="Màu áo" hint="Mã màu được tạo tự động và không đổi sau khi lưu, vì đơn hàng lưu theo mã này.">
         <div className="flex flex-col gap-3">
           {s.colors.map((color, i) => (
             <div key={i} className="flex flex-wrap items-end gap-3">
@@ -201,7 +220,7 @@ export function SettingsForm({ initial, action }: { initial: Settings; action: F
         </div>
       </Section>
 
-      <Section title="Size">
+      <Section id="size" title="Size">
         <div className="flex flex-wrap gap-3">
           {s.sizes.map((size, i) => (
             <div key={i} className="flex items-center gap-1">
@@ -226,6 +245,7 @@ export function SettingsForm({ initial, action }: { initial: Settings; action: F
       </Section>
 
       <Section
+        id="vung-in"
         title="Vùng in"
         hint="Kích thước thật của vùng in (cm) và vị trí tâm vùng trên ảnh mockup (% chiều ngang, % chiều dọc)."
       >
@@ -296,7 +316,7 @@ export function SettingsForm({ initial, action }: { initial: Settings; action: F
         </div>
       </Section>
 
-      <Section title="Đơn hàng">
+      <Section id="don-hang" title="Đơn hàng">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Thời hạn tự hủy đơn (giờ)" htmlFor="expire-hours" hint="Đơn chưa thanh toán quá thời hạn sẽ chuyển sang Hết hạn (BR07)">
             <Input id="expire-hours" type="number" min={1} step={1} required value={Number.isFinite(s.order_expire_hours) ? s.order_expire_hours : ""} onChange={(e) => set("order_expire_hours", num(e))} />
@@ -307,15 +327,15 @@ export function SettingsForm({ initial, action }: { initial: Settings; action: F
         </div>
       </Section>
 
-      <Section title="Tài khoản bán hàng" hint="Nhận tiền đặt áo, nội dung chuyển khoản dạng TUA0001.">
+      <Section id="tk-ban-hang" title="Tài khoản bán hàng" hint="Nhận tiền đặt áo, nội dung chuyển khoản dạng TUA0001.">
         <BankFields prefix="bank-sales" value={s.bank_sales} onChange={(v) => set("bank_sales", v)} />
       </Section>
 
-      <Section title="Tài khoản quỹ" hint="Nhận tiền quyên góp, nội dung chuyển khoản dạng UH0001 (BR04).">
+      <Section id="tk-quy" title="Tài khoản quỹ" hint="Nhận tiền quyên góp, nội dung chuyển khoản dạng UH0001 (BR04).">
         <BankFields prefix="bank-fund" value={s.bank_fund} onChange={(v) => set("bank_fund", v)} />
       </Section>
 
-      <Section title="Quyên góp">
+      <Section id="quyen-gop" title="Quyên góp">
         <div className="grid gap-4 sm:grid-cols-2">
           <MoneyInput id="donation-min" label="Số tiền tối thiểu" value={s.donation_min} onChange={(v) => set("donation_min", v)} />
           <MoneyInput id="donation-goal" label="Mục tiêu quyên góp" value={s.donation_goal} onChange={(v) => set("donation_goal", v)} />

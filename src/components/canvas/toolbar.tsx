@@ -1,13 +1,15 @@
 "use client";
 
-import { Brush, Circle, Eraser, Minus, PaintBucket, Square } from "lucide-react";
+import { Bold, Brush, Circle, Eraser, Minus, MousePointer2, PaintBucket, Square, Type } from "lucide-react";
 import type { Tool } from "@/components/canvas/area-stage";
-import { BRUSH_MAX, BRUSH_MIN } from "@/lib/design/types";
+import { BRUSH_MAX, BRUSH_MIN, TEXT_FONTS, type TextFont } from "@/lib/design/types";
 import { cn } from "@/lib/utils";
 
 const TOOLS: { tool: Tool; label: string; Icon: typeof Brush }[] = [
+  { tool: "select", label: "Chọn, di chuyển, phóng to/thu nhỏ", Icon: MousePointer2 },
   { tool: "brush", label: "Cọ vẽ", Icon: Brush },
   { tool: "eraser", label: "Cục tẩy", Icon: Eraser },
+  { tool: "text", label: "Chữ", Icon: Type },
   { tool: "fill", label: "Tô màu", Icon: PaintBucket },
   { tool: "straight", label: "Đường thẳng", Icon: Minus },
   { tool: "rect", label: "Hình chữ nhật", Icon: Square },
@@ -29,11 +31,16 @@ type Props = {
   onSize: (size: number) => void;
   filled: boolean;
   onFilled: (filled: boolean) => void;
+  font: TextFont;
+  onFont: (font: TextFont) => void;
+  bold: boolean;
+  onBold: (bold: boolean) => void;
 };
 
 const TAP = "flex size-11 shrink-0 items-center justify-center rounded-md border transition-colors";
 
-export function Toolbar({ tool, onTool, color, onColor, size, onSize, filled, onFilled }: Props) {
+export function Toolbar(props: Props) {
+  const { tool, onTool, color, onColor, size, onSize, filled, onFilled, font, onFont, bold, onBold } = props;
   const isShape = tool === "rect" || tool === "ellipse";
 
   return (
@@ -73,6 +80,33 @@ export function Toolbar({ tool, onTool, color, onColor, size, onSize, filled, on
         </div>
       )}
 
+      {tool === "text" && (
+        <div className="flex gap-1">
+          <select
+            value={font}
+            onChange={(e) => onFont(e.target.value as TextFont)}
+            className="h-11 rounded-md border bg-background px-2 text-sm"
+            aria-label="Kiểu chữ"
+          >
+            {TEXT_FONTS.map((f) => (
+              <option key={f.key} value={f.key} style={{ fontFamily: f.family }}>
+                {f.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            title="Chữ đậm"
+            aria-label="Chữ đậm"
+            aria-pressed={bold}
+            onClick={() => onBold(!bold)}
+            className={cn(TAP, bold ? "border-primary bg-muted" : "hover:bg-muted")}
+          >
+            <Bold className="size-5" />
+          </button>
+        </div>
+      )}
+
       <label className="flex min-w-40 flex-1 items-center gap-2 text-sm sm:max-w-60">
         <span className="shrink-0 text-muted-foreground">Cỡ</span>
         <input
@@ -82,7 +116,7 @@ export function Toolbar({ tool, onTool, color, onColor, size, onSize, filled, on
           value={size}
           onChange={(e) => onSize(Number(e.target.value))}
           className="h-11 flex-1 accent-primary"
-          aria-label="Kích thước cọ"
+          aria-label={tool === "text" ? "Cỡ chữ" : "Kích thước cọ"}
         />
         <span className="w-6 text-right tabular-nums">{size}</span>
       </label>

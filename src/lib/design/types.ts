@@ -8,6 +8,19 @@ export const HISTORY_LIMIT = 40; // FR03 requires at least 30 undo steps
 export const BRUSH_MIN = 2;
 export const BRUSH_MAX = 60;
 
+/** Fonts for the text tool. System fonts with Vietnamese glyphs, so the export renders them too. */
+export const TEXT_FONTS = [
+  { key: "sans", label: "Không chân", family: "Arial, Helvetica, sans-serif" },
+  { key: "serif", label: "Có chân", family: "Georgia, 'Times New Roman', serif" },
+  { key: "mono", label: "Máy chữ", family: "'Courier New', Courier, monospace" },
+] as const;
+export type TextFont = (typeof TEXT_FONTS)[number]["key"];
+
+/** Text size (logical units) for a given value of the size slider. */
+export function fontSizeFor(size: number): number {
+  return 12 + size * 2;
+}
+
 /** Only the fields of `settings.print_areas` the canvas needs; safe to pass to the client. */
 export type CanvasPrintArea = {
   key: string;
@@ -37,6 +50,7 @@ export type RectShape = {
   color: string;
   strokeWidth: number;
   filled: boolean;
+  rotation?: number;
 };
 export type EllipseShape = {
   id: string;
@@ -48,6 +62,7 @@ export type EllipseShape = {
   color: string;
   strokeWidth: number;
   filled: boolean;
+  rotation?: number;
 };
 export type StraightShape = {
   id: string;
@@ -55,6 +70,22 @@ export type StraightShape = {
   points: [number, number, number, number];
   color: string;
   strokeWidth: number;
+  /** Offset and rotation applied after the points, set when the line is moved or rotated. */
+  x?: number;
+  y?: number;
+  rotation?: number;
+};
+export type TextShape = {
+  id: string;
+  kind: "text";
+  x: number;
+  y: number;
+  text: string;
+  fontSize: number;
+  font: TextFont;
+  bold: boolean;
+  color: string;
+  rotation?: number;
 };
 /** Result of a flood fill: the whole layer rasterized into one PNG. */
 export type RasterShape = {
@@ -65,7 +96,13 @@ export type RasterShape = {
   height: number;
 };
 
-export type DesignShape = LineShape | RectShape | EllipseShape | StraightShape | RasterShape;
+export type DesignShape = LineShape | RectShape | EllipseShape | StraightShape | TextShape | RasterShape;
+/** Shapes that can be selected, moved, resized and rotated after drawing. */
+export type EditableShape = RectShape | EllipseShape | StraightShape | TextShape;
+
+export function isEditable(shape: DesignShape): shape is EditableShape {
+  return shape.kind === "rect" || shape.kind === "ellipse" || shape.kind === "straight" || shape.kind === "text";
+}
 
 export type DesignLayer = { id: string; name: string; visible: boolean; shapes: DesignShape[] };
 export type AreaDesign = { layers: DesignLayer[] };
@@ -82,6 +119,14 @@ export function logicalHeight(area: Pick<CanvasPrintArea, "widthCm" | "heightCm"
   return (LOGICAL_WIDTH * area.heightCm) / area.widthCm;
 }
 
+/** Print-file size of an area: real size in cm at the configured DPI (NFR05). */
+export function printSizePx(area: Pick<CanvasPrintArea, "widthCm" | "heightCm">, dpi: number) {
+  return {
+    widthPx: Math.round((area.widthCm / 2.54) * dpi),
+    heightPx: Math.round((area.heightCm / 2.54) * dpi),
+  };
+}
+
 export function newLayer(index: number): DesignLayer {
   return { id: newId(), name: `Lớp ${index}`, visible: true, shapes: [] };
 }
@@ -93,7 +138,7 @@ export function emptyArea(): AreaDesign {
 /** True when a visible layer holds something printable (eraser strokes alone don't count). */
 export function areaHasContent(design: AreaDesign | undefined): boolean {
   return !!design?.layers.some(
-    (layer) => layer.visible && layer.shapes.some((s) => !(s.kind === "line" && s.erase)),
+    (layer) => layer.visible && layer.shapes.some((s) => !(s.kind === "line" && s.erase) && !(s.kind === "text" && !s.text.trim())),
   );
 }
 

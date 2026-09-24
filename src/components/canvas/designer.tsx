@@ -19,6 +19,7 @@ import {
   type AreaDesign,
   type CanvasPrintArea,
   type DesignAreas,
+  type TextFont,
 } from "@/lib/design/types";
 import { formatVND } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -70,6 +71,8 @@ export function Designer(props: DesignerProps) {
   const [brushColor, setBrushColor] = useState("#111111");
   const [brushSize, setBrushSize] = useState(8);
   const [filled, setFilled] = useState(false);
+  const [font, setFont] = useState<TextFont>("sans");
+  const [bold, setBold] = useState(false);
   const [shirtColor, setShirtColor] = useState(init.color);
   const [size, setSize] = useState(init.size);
   const [agreed, setAgreed] = useState(false);
@@ -191,13 +194,16 @@ export function Designer(props: DesignerProps) {
             color={brushColor}
             size={brushSize}
             filled={filled}
+            font={font}
+            bold={bold}
             shirtHex={shirtHex}
             onCommit={(next) => commit(area.key, next)}
             onBlocked={(msg) => toast.warning(msg)}
           />
         </div>
         <p className="border-t bg-background px-3 pt-1 text-xs text-muted-foreground">
-          {area.label}: {area.widthCm}×{area.heightCm} cm. Nét vẽ ra ngoài khung sẽ bị cắt.
+          {area.label}: {area.widthCm}×{area.heightCm} cm. Nét vẽ ra ngoài khung sẽ bị cắt. Chạm vào hình hoặc chữ
+          vừa vẽ để kéo, phóng to/thu nhỏ bằng khung nét đứt; chạm đúp vào chữ để sửa.
         </p>
 
         <Toolbar
@@ -209,6 +215,10 @@ export function Designer(props: DesignerProps) {
           onSize={setBrushSize}
           filled={filled}
           onFilled={setFilled}
+          font={font}
+          onFont={setFont}
+          bold={bold}
+          onBold={setBold}
         />
       </div>
 

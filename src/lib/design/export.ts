@@ -7,6 +7,7 @@ import {
   LOGICAL_WIDTH,
   areaHasContent,
   logicalHeight,
+  printSizePx,
   type AreaDesign,
   type CanvasPrintArea,
   type DesignAreas,
@@ -17,14 +18,6 @@ import {
 // the editor being mounted or on the size of the customer's screen.
 
 export type AreaExport = { area: string; dataUrl: string; widthPx: number; heightPx: number };
-
-/** Print-file size of an area: real size in cm at the configured DPI. */
-export function printSizePx(area: CanvasPrintArea, dpi: number) {
-  return {
-    widthPx: Math.round((area.widthCm / 2.54) * dpi),
-    heightPx: Math.round((area.heightCm / 2.54) * dpi),
-  };
-}
 
 /**
  * Renders one area to a transparent PNG of exactly `widthPx` × `heightPx` (height defaults to the
@@ -54,6 +47,7 @@ export async function renderArea(
           node = new K.Image({ ...attrs, image: await loadImage(shape.src) });
         } else if (className === "Rect") node = new K.Rect(attrs);
         else if (className === "Ellipse") node = new K.Ellipse(attrs as Konva.EllipseConfig);
+        else if (className === "Text") node = new K.Text(attrs);
         else node = new K.Line(attrs);
         kLayer.add(node);
       }
