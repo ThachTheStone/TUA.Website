@@ -9,6 +9,8 @@ export const metadata: Metadata = { title: "Đăng nhập" };
 
 const ERRORS: Record<string, string> = {
   "xac-thuc": "Liên kết xác thực không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.",
+  "da-xac-thuc": "Email của bạn đã được xác thực. Vui lòng đăng nhập bằng email và mật khẩu.",
+  "het-han": "Liên kết đã hết hạn hoặc đã được dùng. Nếu bạn đã xác thực trước đó, hãy đăng nhập; nếu chưa, hãy đăng ký lại để nhận email mới.",
   google: "Không kết nối được với Google. Vui lòng thử lại.",
   "tai-khoan": "Không tạo được tài khoản. Vui lòng thử lại.",
 };
