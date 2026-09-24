@@ -44,6 +44,8 @@ export default async function AccountPage() {
                   <Badge variant={o.status === "CANCELLED" || o.status === "EXPIRED" || o.overdue ? "destructive" : "secondary"}>
                     {o.statusLabel}
                   </Badge>
+                  <Badge variant="outline">{o.paymentLabel}</Badge>
+                  {o.rejectedDesigns > 0 && <Badge variant="destructive">{o.rejectedDesigns} thiết kế bị từ chối</Badge>}
                   <span className="text-sm text-muted-foreground">{formatDate(o.createdAt)}</span>
                   <span className="ml-auto text-right text-sm tabular-nums">
                     <span className="font-semibold">{formatVND(o.subtotal)}</span>

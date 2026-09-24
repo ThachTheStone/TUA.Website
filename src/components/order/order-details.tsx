@@ -12,6 +12,7 @@ export function OrderDetails({ order }: { order: OrderView }) {
         <Badge variant={order.status === "CANCELLED" || order.status === "EXPIRED" || order.overdue ? "destructive" : "secondary"}>
           {order.statusLabel}
         </Badge>
+        <Badge variant={order.paymentStatus === "UNPAID" ? "outline" : "secondary"}>{order.paymentLabel}</Badge>
         <span className="text-sm text-muted-foreground">Đặt lúc {formatDate(order.createdAt)}</span>
       </div>
 
@@ -20,11 +21,23 @@ export function OrderDetails({ order }: { order: OrderView }) {
           <h3 className="font-semibold">Sản phẩm</h3>
           <ul className="flex flex-col gap-1 text-sm">
             {order.items.map((item, i) => (
-              <li key={i} className="flex justify-between gap-2">
-                <span>
-                  {TYPE_LABEL[item.type]} · {item.colorLabel} · {item.size} × {item.quantity}
-                </span>
-                <span className="tabular-nums">{formatVND(item.unitPrice * item.quantity)}</span>
+              <li key={i} className="flex flex-col gap-1">
+                <div className="flex justify-between gap-2">
+                  <span>
+                    {TYPE_LABEL[item.type]} · {item.colorLabel} · {item.size} × {item.quantity}
+                    {item.approvalLabel && (
+                      <Badge variant={item.approvalStatus === "REJECTED" ? "destructive" : "outline"} className="ml-2">
+                        {item.approvalLabel}
+                      </Badge>
+                    )}
+                  </span>
+                  <span className="tabular-nums">{formatVND(item.unitPrice * item.quantity)}</span>
+                </div>
+                {item.rejectReason && (
+                  <p className="rounded-md bg-red-50 p-2 text-xs text-red-900 dark:bg-red-950 dark:text-red-200">
+                    Thiết kế chưa được duyệt: {item.rejectReason}. Ban tổ chức sẽ liên hệ với bạn.
+                  </p>
+                )}
               </li>
             ))}
           </ul>

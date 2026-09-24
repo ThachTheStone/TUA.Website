@@ -87,3 +87,68 @@ ${row("Còn lại khi nhận áo", formatVND(e.subtotal - e.prepayAmount))}
   );
   return sendEmail(e.to, `[TỰA] Đơn hàng ${e.code} – thông tin thanh toán`, html);
 }
+
+// ─── Phase 5 order updates (FR15, FR29). Phase 5b moves these texts into admin templates. ───
+
+export type OrderEmailBase = {
+  to: string | null;
+  customerName: string;
+  code: string;
+  subtotal: number;
+  paidAmount: number;
+  orderUrl: string;
+};
+
+function orderEmail(e: OrderEmailBase, title: string, intro: string, extraRows = "") {
+  const html = layout(
+    title,
+    `<p>Chào ${escape(e.customerName)},</p>
+<p>${intro}</p>
+<table style="border-collapse:collapse;font-size:14px">
+${row("Mã đơn", e.code)}
+${row("Tổng đơn", formatVND(e.subtotal))}
+${row("Đã thanh toán", formatVND(e.paidAmount))}
+${row("Còn lại", formatVND(Math.max(0, e.subtotal - e.paidAmount)))}
+${extraRows}
+</table>
+<p><a href="${escape(e.orderUrl)}" style="display:inline-block;background:#1c1917;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Xem đơn hàng</a></p>`,
+  );
+  return sendEmail(e.to, `[TỰA] ${title}`, html);
+}
+
+export function sendPaymentConfirmed(e: OrderEmailBase & { full: boolean }) {
+  return e.full
+    ? orderEmail(e, `Đơn ${e.code} đã thanh toán đủ`, "Ban tổ chức đã nhận đủ tiền cho đơn hàng của bạn. Cảm ơn bạn!")
+    : orderEmail(
+        e,
+        `Đã nhận cọc đơn ${e.code}`,
+        "Ban tổ chức đã nhận tiền cọc cho đơn hàng của bạn. Phần còn lại bạn thanh toán khi nhận áo.",
+      );
+}
+
+export function sendDesignRejected(e: OrderEmailBase & { reason: string; itemLabel: string }) {
+  return orderEmail(
+    e,
+    `Thiết kế trong đơn ${e.code} cần chỉnh sửa`,
+    `Thiết kế <strong>${escape(e.itemLabel)}</strong> chưa được duyệt. Ban tổ chức sẽ liên hệ với bạn để trao đổi.
+Bạn có thể sửa và gửi lại thiết kế trong trang tài khoản trên máy tính hoặc máy tính bảng.`,
+    row("Lý do", e.reason),
+  );
+}
+
+export function sendOrderReady(e: OrderEmailBase) {
+  return orderEmail(e, `Đơn ${e.code} đã sẵn sàng`, "Áo của bạn đã sẵn sàng để giao hoặc nhận. Ban tổ chức sẽ liên hệ để hẹn thời gian.");
+}
+
+export function sendOrderDelivered(e: OrderEmailBase) {
+  return orderEmail(e, `Đơn ${e.code} đã giao`, "Đơn hàng đã được giao. Cảm ơn bạn đã đồng hành cùng TỰA – Nét Vẽ Yêu Thương!");
+}
+
+export function sendOrderCancelled(e: OrderEmailBase & { reason: string | null }) {
+  return orderEmail(
+    e,
+    `Đơn ${e.code} đã bị hủy`,
+    "Đơn hàng của bạn đã bị hủy. Nếu bạn đã chuyển khoản, Ban tổ chức sẽ liên hệ để hoàn tiền.",
+    e.reason ? row("Lý do", e.reason) : "",
+  );
+}

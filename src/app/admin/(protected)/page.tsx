@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { requireRole } from "@/lib/supabase/auth";
+import { getOrderCounts } from "@/lib/orders/admin-queries";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export const metadata: Metadata = { title: "Tổng quan" };
+export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage({
   searchParams,
@@ -10,7 +13,16 @@ export default async function AdminDashboardPage({
   searchParams: Promise<{ loi?: string }>;
 }) {
   const staff = await requireRole();
-  const { loi } = await searchParams;
+  const [{ loi }, counts] = await Promise.all([searchParams, getOrderCounts()]);
+
+  // What staff should do next, most urgent first.
+  const todo = [
+    { label: "Đơn chờ xác nhận thanh toán", n: counts.byStatus.PAYMENT_REVIEW ?? 0, href: "/admin/don-hang?status=PAYMENT_REVIEW" },
+    { label: "Đơn có thiết kế cần duyệt", n: counts.pendingDesigns, href: "/admin/don-hang?design=PENDING" },
+    { label: "Đơn đã xác nhận, chờ in", n: counts.byStatus.CONFIRMED ?? 0, href: "/admin/don-hang?status=CONFIRMED" },
+    { label: "Đơn sẵn sàng giao/nhận", n: counts.byStatus.READY ?? 0, href: "/admin/don-hang?status=READY" },
+    { label: "Đơn đã giao còn nợ", n: counts.debts, href: "/admin/don-hang?payment=DEBT" },
+  ];
 
   return (
     <div className="flex max-w-4xl flex-col gap-6">
@@ -20,9 +32,14 @@ export default async function AdminDashboardPage({
           <AlertDescription>Bạn không có quyền truy cập trang đó.</AlertDescription>
         </Alert>
       )}
-      <p className="text-muted-foreground">
-        Chọn một mục ở thanh bên để bắt đầu quản lý đơn hàng, quyên góp và nội dung.
-      </p>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {todo.map((t) => (
+          <Link key={t.label} href={t.href} className="flex flex-col gap-1 rounded-xl border bg-card p-4 hover:bg-muted/50">
+            <span className="text-3xl font-bold tabular-nums">{t.n}</span>
+            <span className="text-sm text-muted-foreground">{t.label}</span>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

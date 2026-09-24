@@ -14,6 +14,8 @@ export type OrderStatus =
   | "EXPIRED"
   | "CANCELLED";
 export type RefundStatus = "NONE" | "REQUIRED" | "DONE";
+export type PaymentStatus = "UNPAID" | "DEPOSIT_PAID" | "FULLY_PAID";
+export type ApprovalStatus = "PENDING_APPROVAL" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
 export type ItemType = "PLAIN" | "CUSTOM";
 export type DesignSource = "CANVAS" | "SCAN";
 export type PaymentMethod = "TRANSFER" | "CASH";
@@ -52,6 +54,7 @@ export interface Order {
   prepay_amount: number;
   paid_amount: number;
   status: OrderStatus;
+  payment_status: PaymentStatus;
   refund_status: RefundStatus;
   cancel_reason: string | null;
   expires_at: string | null;
@@ -82,6 +85,32 @@ export interface OrderItem {
   quantity: number;
   unit_price: number;
   design_id: string | null;
+  /** Custom shirts only (FR29); null for plain shirts. */
+  approval_status: ApprovalStatus | null;
+  reject_reason: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+}
+
+export interface Payment {
+  id: string;
+  order_id: string;
+  amount: number;
+  method: PaymentMethod;
+  note: string | null;
+  recorded_by: string | null;
+  recorded_at: string;
+}
+
+export interface DesignReview {
+  id: number;
+  order_item_id: string;
+  from_status: ApprovalStatus | null;
+  to_status: ApprovalStatus;
+  reason: string | null;
+  design_id: string | null;
+  changed_by: string | null;
+  changed_at: string;
 }
 
 export interface Donation {
