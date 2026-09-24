@@ -8,8 +8,8 @@ create type order_source as enum ('WEB','WORKSHOP');
 create type fulfillment_type as enum ('DELIVERY','PICKUP');
 create type order_status as enum ('PENDING_PAYMENT','PAYMENT_REVIEW','CONFIRMED','PRINTING','QC','READY','DELIVERED','EXPIRED','CANCELLED');
 create type refund_status as enum ('NONE','REQUIRED','DONE');
-create type item_type as enum ('PLAIN','CUSTOM');
-create type design_source as enum ('CANVAS','SCAN');
+create type item_type as enum ('PLAIN','CUSTOM');           -- + 'PROTOTYPE' (Phase 6)
+create type design_source as enum ('CANVAS','SCAN');   -- + 'PROTOTYPE' (Phase 6)
 create type payment_method as enum ('TRANSFER','CASH');
 create type donation_status as enum ('PENDING','CONFIRMED','CANCELLED');
 
@@ -114,6 +114,30 @@ create table promotions (id uuid primary key default gen_random_uuid(), title te
   description text, image_url text, price_text text, starts_at timestamptz, ends_at timestamptz,
   is_active boolean default true);
 ```
+
+## Prototypes (Phase 6, FR27/FR28)
+```sql
+alter type item_type add value 'PROTOTYPE';
+alter type design_source add value 'PROTOTYPE';
+
+create table prototypes (
+  id uuid primary key default gen_random_uuid(),
+  slug text unique not null,
+  name text not null,
+  description text,
+  color text not null,                 -- settings.colors[].key, fixed per prototype
+  image_urls text[] not null default '{}',   -- 1–4 display images (content bucket)
+  design_id uuid not null references designs, -- print files live in design_files
+  sort_order int not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz default now()
+);
+alter table order_items add column prototype_id uuid references prototypes;
+alter table prototypes enable row level security;
+create policy "public read active prototypes" on prototypes
+  for select to anon, authenticated using (is_active);
+```
+Price is always `settings.prices.CUSTOM` (BR09). A prototype referenced by an order is never deleted, only deactivated.
 
 ## Seed settings
 ```json

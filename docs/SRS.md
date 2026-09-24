@@ -11,11 +11,11 @@
 ## 1. Giới thiệu
 
 ### 1.1. Mục đích
-Tài liệu xác định đầy đủ yêu cầu chức năng, phi chức năng, quy tắc nghiệp vụ, mô hình dữ liệu và tích hợp cho website TỰA. Website gây quỹ từ thiện thông qua bán áo thun (áo trơn và áo custom) và nhận quyên góp; toàn bộ lợi nhuận hỗ trợ trẻ em có hoàn cảnh đặc biệt. Tài liệu đồng thời là nguồn tham chiếu cho việc lập trình với AI (Claude Code).
+Tài liệu xác định đầy đủ yêu cầu chức năng, phi chức năng, quy tắc nghiệp vụ, mô hình dữ liệu và tích hợp cho website TỰA. Website gây quỹ từ thiện thông qua bán áo thun (áo custom, áo mẫu và áo trơn) và nhận quyên góp; toàn bộ lợi nhuận hỗ trợ trẻ em có hoàn cảnh đặc biệt. Tài liệu đồng thời là nguồn tham chiếu cho việc lập trình với AI (Claude Code).
 
 ### 1.2. Phạm vi
-- **Trang khách hàng (Public site):** xem câu chuyện dự án, Top 5 tranh của các bé, sự kiện và khuyến mãi; thiết kế áo trên canvas; giỏ hàng; đặt hàng và thanh toán cọc qua VietQR; quyên góp; tra cứu đơn; xem Bảng vinh danh nhà hảo tâm và nhà tài trợ.
-- **Trang quản trị (Admin Portal):** quản lý đơn hàng, xác nhận thanh toán, cập nhật trạng thái, tạo đơn Workshop thủ công, quản lý quyên góp, quản lý nội dung, quản lý nhà tài trợ, quản lý tài khoản.
+- **Trang khách hàng (Public site):** xem giới thiệu, ý nghĩa dự án, Top 5 tranh của các bé, sự kiện và khuyến mãi; mua áo mẫu; thiết kế áo trên canvas; tài khoản Người mua; giỏ hàng; đặt hàng và thanh toán cọc qua VietQR; quyên góp; tra cứu đơn; xem Bảng vinh danh nhà hảo tâm và nhà tài trợ.
+- **Trang quản trị (Admin Portal):** quản lý mẫu áo, quản lý đơn hàng, xác nhận thanh toán, cập nhật trạng thái, tạo đơn Workshop thủ công, quản lý quyên góp, quản lý nội dung, quản lý nhà tài trợ, quản lý tài khoản.
 - **Tích hợp:** VietQR (sinh mã QR), Google Sheets (bản sao dữ liệu để theo dõi minh bạch), Email (thông báo).
 
 ### 1.3. Ngoài phạm vi (phiên bản này)
@@ -28,7 +28,8 @@ Tài liệu xác định đầy đủ yêu cầu chức năng, phi chức năng,
 | Thuật ngữ | Ý nghĩa |
 |---|---|
 | Áo trơn | Áo không in, giá 99.000đ |
-| Áo custom | Áo in bản vẽ của khách, giá 129.000đ |
+| Áo custom | Áo in bản vẽ khách tự vẽ trên canvas, giá 129.000đ |
+| Áo mẫu (Prototype) | Áo in thiết kế có sẵn do Ban tổ chức đăng; mỗi mẫu có một màu áo cố định; giá bằng áo custom |
 | Vùng in (Print Area) | Khu vực trên áo cho phép vẽ. Có 3 vùng |
 | Cọc | Số tiền khách chuyển trước, tối thiểu 50% tổng đơn |
 | Order Code | Mã đơn dạng `TUA0001`, dùng làm nội dung chuyển khoản |
@@ -39,9 +40,9 @@ Tài liệu xác định đầy đủ yêu cầu chức năng, phi chức năng,
 
 ## 2. Tổng quan nghiệp vụ
 
-TỰA là nền tảng thương mại điện tử kết hợp gây quỹ cho chiến dịch "Nét Vẽ Yêu Thương". Khách hàng chọn áo trơn hoặc tự thiết kế áo custom trên canvas của website. Tuyệt đối không có tính năng tải ảnh từ thiết bị, nhằm kiểm soát rủi ro bản quyền.
+TỰA là nền tảng thương mại điện tử kết hợp gây quỹ cho chiến dịch "Nét Vẽ Yêu Thương". Có ba cách mua áo: (1) **Áo custom**: tự thiết kế trên canvas của website; (2) **Áo mẫu**: chọn một thiết kế có sẵn do Ban tổ chức đăng, giá bằng áo custom; (3) **Áo trơn**: chọn màu và size. Tuyệt đối không có tính năng tải ảnh từ thiết bị, nhằm kiểm soát rủi ro bản quyền.
 
-Một đơn hàng có thể chứa nhiều áo. Mỗi áo custom có bản thiết kế riêng. Sau khi thiết kế, khách cam kết bản quyền, điền thông tin và chọn hình thức nhận hàng. Có hai hình thức: giao hàng (khách ở ngoài trường) hoặc nhận tại campus theo lịch hẹn. Khách chọn mức thanh toán trước 50%, 75% hoặc 100%. Hệ thống sinh mã VietQR có sẵn số tiền và nội dung chuyển khoản chứa Order Code. Khách quét mã, chuyển khoản, rồi bấm "Tôi đã chuyển khoản". Staff đối soát thủ công với sao kê ngân hàng và xác nhận.
+Một đơn hàng có thể chứa cả ba loại áo. Mỗi áo custom có bản thiết kế riêng; áo mẫu dùng thiết kế và file in của mẫu. Sau khi thiết kế, khách cam kết bản quyền, điền thông tin và chọn hình thức nhận hàng. Có hai hình thức: giao hàng (khách ở ngoài trường) hoặc nhận tại campus theo lịch hẹn. Khách chọn mức thanh toán trước 50%, 75% hoặc 100%. Hệ thống sinh mã VietQR có sẵn số tiền và nội dung chuyển khoản chứa Order Code. Khách quét mã, chuyển khoản, rồi bấm "Tôi đã chuyển khoản". Staff đối soát thủ công với sao kê ngân hàng và xác nhận.
 
 Khách vẽ tay trên giấy tại Campus Workshop được Staff scan bản vẽ và tạo đơn thủ công trên Admin. Chỉ Staff được phép upload ảnh scan.
 
@@ -69,12 +70,18 @@ Số lượng tài khoản Staff không giới hạn. Admin có thể thêm ho�
 ### 4.1. Phía Khách hàng
 
 **FR01 – Trang chủ và thông tin dự án**
-- Hiển thị câu chuyện dự án, Top 5 tranh của các bé, thông tin Campus Workshop, các khuyến mãi đang hoạt động (gian hàng Hotwheels, combo vẽ áo...).
-- Toàn bộ nội dung lấy từ cơ sở dữ liệu và được chỉnh sửa trong Admin (FR17).
+Trang chủ gồm các phần theo thứ tự:
+1. **Hero:** tiêu đề chiến dịch, câu giới thiệu ngắn, ảnh nền, các nút "Xem áo mẫu", "Tự thiết kế áo", "Quyên góp".
+2. **Áo mẫu:** lưới các mẫu áo đang bán (ảnh, tên, giá), bấm vào để xem chi tiết (FR27). Có nút "Xem tất cả" tới trang Áo mẫu, kèm lối vào "Tự thiết kế áo" và "Mua áo trơn".
+3. **Về chúng tôi:** giới thiệu nhóm thực hiện dự án (văn bản và ảnh).
+4. **Ý nghĩa dự án:** câu chuyện "Nét Vẽ Yêu Thương", lợi nhuận được dùng như thế nào, đối tượng được hỗ trợ.
+5. **Top 5 tranh của các bé, Campus Workshop và khuyến mãi đang hoạt động** (giữ như trước).
+6. **Vinh danh:** tổng tiền đã quyên góp và thanh tiến độ so với mục tiêu; khoảng 10 khoản quyên góp đã xác nhận mới nhất, mỗi khoản hiển thị tên (hoặc "Nhà hảo tâm ẩn danh"), số tiền, lời nhắn, ngày; nút "Xem tất cả" tới Bảng vinh danh (FR09); logo nhà tài trợ theo hạng (FR10).
+- Toàn bộ nội dung lấy từ cơ sở dữ liệu và được chỉnh sửa trong Admin (FR17, FR28). Phần nào chưa có dữ liệu thì ẩn đi.
 
 **FR02 – Chọn sản phẩm**
-- Khách chọn loại áo: Áo trơn (99.000đ) hoặc Áo custom (129.000đ).
-- Chọn màu áo và size từ danh sách do Admin cấu hình.
+- Khách chọn một trong ba loại: Áo custom (129.000đ, tự thiết kế), Áo mẫu (giá bằng áo custom, FR27) hoặc Áo trơn (99.000đ).
+- Áo custom và áo trơn: chọn màu áo và size từ danh sách do Admin cấu hình. Áo mẫu: màu cố định theo mẫu, khách chỉ chọn size.
 - Giá lấy từ bảng cài đặt, không hardcode.
 
 **FR03 – Canvas thiết kế**
@@ -88,11 +95,13 @@ Số lượng tài khoản Staff không giới hạn. Admin có thể thêm ho�
 - Hiển thị bản vẽ áp lên mockup áo theo màu áo đã chọn, xem được cả mặt trước và mặt sau.
 
 **FR05 – Cam kết nội dung**
+- Chỉ áp dụng cho áo custom (áo mẫu do Ban tổ chức thiết kế nên không cần cam kết).
 - Trước khi thêm áo custom vào giỏ, khách phải tick đồng ý: nội dung tự vẽ, không bạo lực, không phản cảm, không vi phạm bản quyền. Nếu chưa tick, nút "Thêm vào giỏ" bị vô hiệu hóa.
 
 **FR06 – Giỏ hàng**
 - Một đơn chứa nhiều áo. Mỗi dòng gồm: loại áo, màu, size, số lượng, bản thiết kế (nếu là áo custom) và thành tiền.
 - Mỗi áo custom là một dòng riêng gắn với một bản thiết kế. Có thể đặt nhiều cái cùng một thiết kế bằng cách tăng số lượng.
+- Áo mẫu: cùng mẫu và cùng size được gộp thành một dòng. Nếu mẫu bị tắt bán, dòng đó được đánh dấu và phải xóa trước khi đặt hàng.
 - Sửa số lượng, xóa dòng, mở lại canvas để sửa thiết kế.
 - Giỏ hàng lưu tạm trên trình duyệt (localStorage) để không mất khi tải lại trang.
 - Khi đã đăng nhập, giỏ hàng được lưu theo tài khoản (xem FR26).
@@ -125,6 +134,12 @@ Số lượng tài khoản Staff không giới hạn. Admin có thể thêm ho�
 - Khách nhập Order Code và Số điện thoại, hệ thống hiển thị trạng thái hiện tại, lịch sử trạng thái, số tiền đã thanh toán và số tiền còn lại.
 - Nếu đơn đang ở trạng thái Chờ thanh toán, hiển thị lại mã QR.
 
+**FR27 – Áo mẫu (Prototype)**
+- Trang "Áo mẫu" (`/mau-ao`) hiển thị lưới các mẫu đang bán theo thứ tự Admin sắp xếp: ảnh, tên, giá.
+- Trang chi tiết mẫu (`/mau-ao/[slug]`): ảnh mặt trước/mặt sau (có thể nhiều ảnh), tên, mô tả, màu áo, giá, chọn size và số lượng, nút "Thêm vào giỏ".
+- Khách không sửa được thiết kế của áo mẫu. Muốn thay đổi thì dùng "Tự thiết kế áo".
+- Giá áo mẫu bằng giá áo custom trong cài đặt (BR09) và được chốt vào đơn khi đặt.
+
 ### 4.2. Phía Ban tổ chức
 
 **FR12 – Đăng nhập**
@@ -136,7 +151,7 @@ Số lượng tài khoản Staff không giới hạn. Admin có thể thêm ho�
 - Bộ đếm theo trạng thái ở đầu trang.
 
 **FR14 – Chi tiết đơn và xác nhận thanh toán**
-- Xem thông tin khách, danh sách áo, ảnh thiết kế từng vùng in (tải file in độ phân giải cao), nội dung chuyển khoản và số tiền dự kiến.
+- Xem thông tin khách, danh sách áo (áo mẫu hiển thị tên mẫu), ảnh thiết kế từng vùng in (tải file in độ phân giải cao; với áo mẫu là file in của mẫu), nội dung chuyển khoản và số tiền dự kiến.
 - Staff nhập số tiền thực nhận và bấm "Xác nhận thanh toán", đơn chuyển sang Đã xác nhận.
 - Staff có thể từ chối: hủy đơn kèm lý do. Nếu khách đã chuyển tiền, đánh dấu cần hoàn tiền (BR06).
 
@@ -147,11 +162,11 @@ Số lượng tài khoản Staff không giới hạn. Admin có thể thêm ho�
 
 **FR16 – Tạo đơn Workshop**
 - Form nhập thông tin khách, danh sách áo, hình thức nhận, phương thức thanh toán (tiền mặt tại chỗ hoặc chuyển khoản).
-- Staff upload ảnh scan bản vẽ (JPG/PNG, tối đa 10MB mỗi ảnh) cho từng áo custom.
+- Staff upload ảnh scan bản vẽ (JPG/PNG, tối đa 10MB mỗi ảnh) cho từng áo custom. Có thể chọn áo mẫu (không cần scan).
 - Nếu khách trả tiền mặt đủ mức cọc, đơn được tạo thẳng ở trạng thái Đã xác nhận.
 
 **FR17 – Quản lý nội dung (Admin)**
-- Sửa câu chuyện dự án (văn bản và ảnh), Top 5 tranh (ảnh, tên bé hoặc biệt danh, mô tả), thông tin sự kiện, khuyến mãi (tiêu đề, mô tả, ảnh, giá, thời gian hiển thị, bật/tắt).
+- Sửa nội dung Hero (tiêu đề, câu giới thiệu, ảnh nền), Về chúng tôi, Ý nghĩa dự án, câu chuyện dự án (văn bản và ảnh), Top 5 tranh (ảnh, tên bé hoặc biệt danh, mô tả), thông tin sự kiện, khuyến mãi (tiêu đề, mô tả, ảnh, giá, thời gian hiển thị, bật/tắt).
 
 **FR18 – Quản lý quyên góp**
 - Danh sách quyên góp; Staff xác nhận đã nhận tiền hoặc hủy. Admin có thể ẩn một mục khỏi Bảng vinh danh.
@@ -164,6 +179,11 @@ Số lượng tài khoản Staff không giới hạn. Admin có thể thêm ho�
 
 **FR21 – Cài đặt hệ thống (Admin)**
 - Giá áo trơn và áo custom, danh sách màu và size, thời hạn tự hủy đơn (mặc định 24 giờ), thông tin 2 tài khoản ngân hàng (bán hàng và quỹ), mục tiêu quyên góp, số tiền quyên góp tối thiểu.
+
+**FR28 – Quản lý mẫu áo (Admin)**
+- Thêm, sửa, bật/tắt bán, sắp xếp thứ tự mẫu áo. Mẫu đã có trong đơn hàng không xóa được, chỉ tắt bán.
+- Mỗi mẫu gồm: tên, đường dẫn (slug), mô tả, màu áo (một màu trong cài đặt), 1–4 ảnh hiển thị (JPG/PNG/WebP, tối đa 5MB mỗi ảnh), và file in PNG cho từng vùng in được dùng (ít nhất 1 vùng, tối đa 20MB mỗi file).
+- Hệ thống kiểm tra file in đủ độ phân giải theo kích thước vùng in và DPI trong cài đặt; nếu thiếu thì cảnh báo.
 
 ### 4.3. Tích hợp
 
@@ -238,7 +258,7 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 
 ## 7. Quy tắc nghiệp vụ
 
-- **BR01:** Không có tính năng upload ảnh từ thiết bị của khách. Chỉ Staff được upload ảnh scan cho đơn Workshop.
+- **BR01:** Không có tính năng upload ảnh từ thiết bị của khách. Chỉ Staff/Admin được upload ảnh, và chỉ trong trang quản trị: ảnh scan cho đơn Workshop, ảnh và file in của áo mẫu, ảnh nội dung và logo nhà tài trợ.
 - **BR02:** Đơn chỉ được đưa vào sản xuất khi đã thanh toán tối thiểu 50% tổng đơn và được Staff xác nhận.
 - **BR03:** Khách chọn trả trước 50%, 75% hoặc 100%. Phần còn lại thanh toán khi giao hoặc nhận hàng.
 - **BR04:** Tiền bán hàng và tiền quyên góp dùng hai tài khoản ngân hàng riêng (hoặc cùng tài khoản nhưng khác tiền tố nội dung `TUA` / `UH`) để đối soát.
@@ -246,7 +266,7 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 - **BR06:** Hoàn tiền được Ban tổ chức quyết định theo từng trường hợp và ghi nhận bằng `refund_status`.
 - **BR07:** Đơn ở trạng thái Chờ thanh toán quá thời hạn cấu hình (mặc định 24 giờ) tự động chuyển sang Hết hạn.
 - **BR08:** Số tiền quyên góp tối thiểu là 300.000đ.
-- **BR09:** Giá áo trơn 99.000đ, áo custom 129.000đ, cấu hình được trong Admin. Giá được "chốt" vào đơn tại thời điểm đặt.
+- **BR09:** Giá áo trơn 99.000đ, áo custom 129.000đ, cấu hình được trong Admin. Áo mẫu dùng giá áo custom. Giá được "chốt" vào đơn tại thời điểm đặt.
 - **BR10:** Phí vận chuyển (nếu giao hàng) do khách trả trực tiếp cho đơn vị vận chuyển, không tính vào tổng đơn trên website.
 
 ---
@@ -260,14 +280,15 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 | `carts` | customer_id, items (JSON), drafts (JSON), updated_at |
 | `settings` | key, value (JSON): giá, màu, size, vùng in, tài khoản ngân hàng, thời hạn hủy, mục tiêu quỹ |
 | `orders` | id, code, source (WEB/WORKSHOP), customer_name, phone, email, fulfillment (DELIVERY/PICKUP), address, preferred_time, pickup_location, note, subtotal, prepay_percent, prepay_amount, paid_amount, status, refund_status, cancel_reason, expires_at, created_by, customer_id, created_at |
-| `order_items` | id, order_id, type (PLAIN/CUSTOM), color, size, quantity, unit_price, design_id |
-| `designs` | id, source (CANVAS/SCAN), canvas_json, preview_url, created_at |
+| `order_items` | id, order_id, type (PLAIN/CUSTOM/PROTOTYPE), color, size, quantity, unit_price, design_id, prototype_id |
+| `prototypes` | id, slug, name, description, color, image_urls, design_id (file in), sort_order, is_active, created_at |
+| `designs` | id, source (CANVAS/SCAN/PROTOTYPE), canvas_json, preview_url, created_at |
 | `design_files` | id, design_id, area (vùng 1/2/3), file_url, width_px, height_px |
 | `order_status_history` | id, order_id, from_status, to_status, note, changed_by, changed_at |
 | `payments` | id, order_id, amount, method (TRANSFER/CASH), note, recorded_by, recorded_at |
 | `donations` | id, code, display_name, contact, amount, message, is_public, is_hidden, status, confirmed_by, created_at |
 | `sponsors` | id, name, logo_url, website_url, tier, sort_order, is_active |
-| `content_blocks` | key (story, event, ...), title, body, image_url |
+| `content_blocks` | key (hero, about, mission, story, event, ...), title, body, image_url |
 | `artworks` | id, image_url, child_name, description, sort_order |
 | `promotions` | id, title, description, image_url, price_text, starts_at, ends_at, is_active |
 
@@ -275,9 +296,9 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 
 ## 9. Danh sách màn hình
 
-**Public:** Trang chủ · Đăng nhập · Đăng ký · Tài khoản (lịch sử đơn) · Thiết kế áo (canvas) · Chọn áo trơn · Giỏ hàng · Thanh toán (thông tin) · Thanh toán (QR) · Tra cứu đơn · Quyên góp · Quyên góp (QR) · Bảng vinh danh · Nhà tài trợ · Chính sách dữ liệu và điều khoản.
+**Public:** Trang chủ · Áo mẫu · Chi tiết áo mẫu · Đăng nhập · Đăng ký · Tài khoản (lịch sử đơn) · Thiết kế áo (canvas) · Chọn áo trơn · Giỏ hàng · Thanh toán (thông tin) · Thanh toán (QR) · Tra cứu đơn · Quyên góp · Quyên góp (QR) · Bảng vinh danh · Nhà tài trợ · Chính sách dữ liệu và điều khoản.
 
-**Admin:** Đăng nhập · Dashboard · Danh sách đơn · Chi tiết đơn · Tạo đơn Workshop · Quyên góp · Nội dung (câu chuyện, Top 5, sự kiện, khuyến mãi) · Nhà tài trợ · Tài khoản · Cài đặt.
+**Admin:** Đăng nhập · Dashboard · Mẫu áo · Danh sách đơn · Chi tiết đơn · Tạo đơn Workshop · Quyên góp · Nội dung (câu chuyện, Top 5, sự kiện, khuyến mãi) · Nhà tài trợ · Tài khoản · Cài đặt.
 
 ---
 
@@ -291,18 +312,26 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 | 4 | Danh sách màu áo và size | Trắng, Đen, Be; S, M, L, XL, XXL |
 | 5 | Ngân hàng và số tài khoản | Cấu hình trong Cài đặt |
 | 6 | Khuyến mãi có giảm giá vào giỏ hàng không | Chỉ hiển thị nội dung, không tự động giảm giá |
+| 7 | Áo mẫu có giới hạn số lượng (tồn kho) không | Không giới hạn; Admin tắt bán khi cần |
+| 8 | Áo mẫu có giá riêng không | Không; luôn bằng giá áo custom trong Cài đặt |
+| 9 | Nội dung "Về chúng tôi" và "Ý nghĩa dự án" | Nhóm dự án cung cấp; Admin nhập trong Nội dung |
+| 10 | Top 5 tranh, Workshop, khuyến mãi trên trang chủ mới | Giữ lại, đặt sau phần Ý nghĩa dự án |
 
 ---
 
 ## 11. Kế hoạch triển khai
 
-| Ngày | Công việc |
-|---|---|
-| 30/09 | Khởi tạo dự án, cơ sở dữ liệu, xác thực, layout |
-| 01/10 | Trang nội dung và Admin quản lý nội dung, nhà tài trợ |
-| 02–03/10 | Canvas thiết kế và xuất file in |
-| 04/10 | Giỏ hàng, đặt hàng, VietQR, email |
-| 05/10 | Admin: đơn hàng, thanh toán, trạng thái, đơn Workshop |
-| 06/10 | Quyên góp, Bảng vinh danh, Google Sheets, tự hủy đơn |
-| 07/10 | Tra cứu đơn, kiểm thử trên tablet, deploy |
-| 08/10 | Sửa lỗi, ra mắt |
+Mục tiêu ra mắt theo kế hoạch ban đầu: 08/10.
+
+| Giai đoạn | Nội dung | Yêu cầu | Trạng thái |
+|---|---|---|---|
+| 1 | Khởi tạo dự án, cơ sở dữ liệu, đăng nhập Admin | FR12 | Xong |
+| 2 | Nội dung và Admin quản lý nội dung, nhà tài trợ, tài khoản, cài đặt | FR01, FR09, FR10, FR17, FR19–FR21 | Xong |
+| 3 | Canvas thiết kế, áo trơn, giỏ hàng | FR02–FR06 | Xong |
+| 4 | Đặt hàng, VietQR, tra cứu đơn, email | FR07, FR11, FR22, FR24 | Xong |
+| 4b | Tài khoản Người mua | FR26 | Xong (đăng nhập Google tạm tắt) |
+| 5 | Admin: đơn hàng, thanh toán, trạng thái, đơn Workshop | FR13–FR16 | Chưa làm |
+| 6 | Áo mẫu: Admin quản lý mẫu; trang Áo mẫu; giỏ hàng và đặt hàng áo mẫu | FR27, FR28, FR02, FR06 | Chưa làm |
+| 7 | Quyên góp, Bảng vinh danh, Google Sheets, tự hủy đơn | FR08, FR09, FR18, FR23, FR25 | Chưa làm |
+| 8 | Trang chủ mới: Hero, Áo mẫu, Về chúng tôi, Ý nghĩa, Vinh danh | FR01, FR17 | Chưa làm |
+| 9 | Hoàn thiện, kiểm thử trên tablet, deploy, ra mắt | NFR | Chưa làm |

@@ -61,6 +61,10 @@ URLs are Vietnamese slugs without diacritics.
 - Send an order-created email.
 **Done when:** placing an order with 2 custom + 1 plain shirt at 75% shows the correct QR amount, and a tampered client price is ignored.
 
+### Phase 4b — Buyer accounts (FR26) ✅ done
+- Email + password sign-up with email confirmation, Google sign-in behind `GOOGLE_LOGIN_ENABLED`.
+- `customers`, `carts`, `orders.customer_id` (migration 0003). Checkout requires login; cart syncs to the account.
+
 ### Phase 5 — Admin orders (FR13–FR16)
 - Orders table with filters, search and status counters.
 - Order detail: design previews plus download of print files (signed URLs), payment recording, and transition buttons that show only valid next states.
@@ -68,13 +72,28 @@ URLs are Vietnamese slugs without diacritics.
 - Emails on CONFIRMED, READY, DELIVERED and CANCELLED.
 **Done when:** an order can go from start to DELIVERED, history is logged, and a STAFF user cannot open accounts or settings.
 
-### Phase 6 — Donations, Sheets, cron (FR08, FR18, FR23, FR25)
+### Phase 6 — Shirt prototypes (FR27, FR28, FR02, FR06) → `references/data-model.md` (Prototypes)
+- Migration: `prototypes` table, `item_type` + `PROTOTYPE`, `design_source` + `PROTOTYPE`, `order_items.prototype_id`.
+- Admin `/admin/mau-ao`: CRUD, sort, active toggle. Staff/Admin upload 1–4 display images (`content` bucket) and one print PNG per print area (`designs` bucket, under `prototypes/<id>/`). Check PNG pixel size against print area × DPI and warn.
+- Public `/mau-ao` grid and `/mau-ao/[slug]` detail: images, name, description, fixed color, size + quantity, "Thêm vào giỏ".
+- Cart: new line kind `{type: "PROTOTYPE", prototypeId, size, quantity}`; same prototype + size merges. Color comes from the prototype.
+- Checkout: server loads the prototype (must be active), uses its color and `prices.CUSTOM`, links `order_items.design_id` to the prototype's design so admin print downloads work unchanged.
+- Workshop form (Phase 5) can pick a prototype.
+**Done when:** admin publishes a prototype, a buyer orders it with a plain and a custom shirt, totals use the custom price, a deactivated prototype blocks checkout, and admin order detail downloads the prototype's print file.
+
+### Phase 7 — Donations, Sheets, cron (FR08, FR09, FR18, FR23, FR25)
 - Donation form (min from settings, default 300.000đ), donation QR using the fund account and prefix `UH`, admin confirm, donor wall and progress bar.
-- `lib/sheets.ts` full-resync approach (see integrations), called after every mutation plus an admin "Đồng bộ lại" button.
+- `lib/sheets.ts` full-resync approach (see integrations), called after every mutation plus an admin "Đồng bộ lại" button. OrderItems sheet includes the prototype name.
 - Expire cron.
 **Done when:** a confirmed donation appears on the wall and in the sheet, and an old unpaid order becomes EXPIRED within 15 minutes.
 
-### Phase 7 — Polish + deploy
+### Phase 8 — New home page (FR01, FR17)
+- Content blocks `hero`, `about`, `mission` (seed + admin editing in Nội dung; hero has title, body, image).
+- Sections in order: Hero (CTAs: Xem áo mẫu, Tự thiết kế áo, Quyên góp) → Áo mẫu grid (+ entries to custom and plain) → Về chúng tôi → Ý nghĩa dự án → Top 5 / Workshop / promotions → Vinh danh (total, progress, latest ~10 confirmed donations via `public_donations`, link to /vinh-danh, sponsor logos by tier).
+- Hide any section with no data. Keep each section a small server component in `components/public/home/`.
+**Done when:** every section is editable in admin, an empty section disappears, and the page works at 390px, 820px and 1440px.
+
+### Phase 9 — Polish + deploy
 - Responsive check at 390px, 820px (iPad) and 1440px; empty and loading states; error toasts in Vietnamese.
 - Policy page (Nghị định 13/2023 consent), OG image and favicon.
 - Deploy to Vercel, set env vars, run through the end-to-end checklist below.
@@ -96,3 +115,6 @@ URLs are Vietnamese slugs without diacritics.
 - [ ] The Sheets tabs match the DB after a resync.
 - [ ] No upload input exists on any public page (search the code for `type="file"` outside `admin/`).
 - [ ] The service key is not in the client bundle.
+- [ ] Checkout while logged out redirects to login; the cart survives login and shows on a second device.
+- [ ] A prototype order uses the custom price and the prototype's print file; a deactivated prototype cannot be ordered.
+- [ ] Home page: every section editable in admin; latest donations and sponsors shown.
