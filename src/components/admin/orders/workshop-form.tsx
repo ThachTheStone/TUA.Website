@@ -10,13 +10,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { submitWorkshopOrder, uploadWorkshopScan } from "@/lib/admin/workshop-actions";
+import { prepareScanUpload, submitWorkshopOrder } from "@/lib/admin/workshop-actions";
+import { createBrowserSupabase } from "@/lib/supabase/client";
 import { formatVND } from "@/lib/format";
 import { PREPAY_PERCENTS, prepayAmount, subtotalOf } from "@/lib/orders/pricing";
 import { newId } from "@/lib/design/types";
 
-// FR16: staff enter a Workshop order. Scans upload one per request (hosting body limit),
-// then the order is created. Totals shown here are estimates; the server recomputes them.
+// FR16: staff enter a Workshop order. Each scan uploads straight to private storage through a
+// one-time signed URL (too big for a server action), then the order is created and the server
+// checks every scan's bytes. Totals shown here are estimates; the server recomputes them.
 // Prototype lines need no scan: the prototype's print files are used (FR16).
 
 type Line = {
@@ -74,11 +76,13 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
           let scanPath: string | undefined;
           if (l.type === "CUSTOM" && l.scan) {
             setProgress(`Đang tải ảnh scan ${++done}/${custom}…`);
-            const up = new FormData();
-            up.set("file", l.scan);
-            const res = await uploadWorkshopScan(up);
-            if (!res.ok) throw new Error(res.error);
-            scanPath = res.data.path;
+            const slot = await prepareScanUpload({ contentType: l.scan.type, size: l.scan.size });
+            if (!slot.ok) throw new Error(slot.error);
+            const { error } = await createBrowserSupabase()
+              .storage.from("scans")
+              .uploadToSignedUrl(slot.data.path, slot.data.token, l.scan, { contentType: l.scan.type });
+            if (error) throw new Error(`Không tải được ảnh scan "${l.scan.name}". Vui lòng thử lại.`);
+            scanPath = slot.data.path;
           }
           items.push({
             type: l.type,

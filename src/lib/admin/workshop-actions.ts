@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { notifyOrder } from "@/lib/orders/notify";
-import { createWorkshopOrder, saveScan, type WorkshopOrderInput } from "@/lib/orders/workshop";
+import { createScanSlot, createWorkshopOrder, type WorkshopOrderInput } from "@/lib/orders/workshop";
 import { getSettings } from "@/lib/settings";
 import { requireRole } from "@/lib/supabase/auth";
 import { isBankConfigured } from "@/lib/vietqr";
@@ -11,11 +11,13 @@ import type { ActionResult } from "@/types/action";
 
 // FR16 server actions. Staff only (hard rule 8).
 
-export async function uploadWorkshopScan(formData: FormData): Promise<ActionResult<{ path: string }>> {
+/** A one-time upload URL for one scan; the browser uploads the file itself (see createScanSlot). */
+export async function prepareScanUpload(input: { contentType: string; size: number }): Promise<ActionResult<{ path: string; token: string }>> {
   await requireRole();
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) return { ok: false, error: "Chưa chọn ảnh scan" };
-  return saveScan(file);
+  if (typeof input?.contentType !== "string" || !Number.isInteger(input.size) || input.size <= 0) {
+    return { ok: false, error: "Chưa chọn ảnh scan" };
+  }
+  return createScanSlot(input.contentType, input.size);
 }
 
 export async function submitWorkshopOrder(input: WorkshopOrderInput): Promise<ActionResult<{ code: string }>> {

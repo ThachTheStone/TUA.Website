@@ -5,6 +5,7 @@ import { phoneSchema } from "@/lib/orders/checkout-schema";
 import { PREPAY_PERCENTS, prepayAmount, subtotalOf, unitPrice } from "@/lib/orders/pricing";
 import { orderablePrototypes } from "@/lib/prototypes/queries";
 import { getSettings } from "@/lib/settings";
+import { readHead } from "@/lib/storage-head";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/types/action";
 
@@ -23,22 +24,33 @@ function scanType(bytes: Uint8Array): "png" | "jpg" | null {
   return null;
 }
 
-/** Stores one scan and returns its storage path. Checks the real file type, not the name. */
-export async function saveScan(file: File): Promise<ActionResult<{ path: string }>> {
-  if (file.size > MAX_SCAN_BYTES) return { ok: false, error: "Ảnh scan tối đa 10MB" };
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  const ext = scanType(bytes);
+/**
+ * Step 1 of a scan upload: a one-time signed URL for one path in the private `scans` bucket.
+ * Scans (up to 10MB) go straight from the browser to storage: sent through a server action
+ * they were cut off by the middleware's 10MB body limit ("Unexpected end of form") and would
+ * also exceed the hosting request limit.
+ */
+export async function createScanSlot(contentType: string, size: number): Promise<ActionResult<{ path: string; token: string }>> {
+  const ext = contentType === "image/png" ? "png" : contentType === "image/jpeg" ? "jpg" : null;
   if (!ext) return { ok: false, error: "Ảnh scan phải là JPG hoặc PNG" };
+  if (size > MAX_SCAN_BYTES) return { ok: false, error: "Ảnh scan tối đa 10MB" };
 
-  const path = `workshop/${randomUUID()}.${ext}`;
-  const { error } = await createServiceClient()
+  const { data, error } = await createServiceClient()
     .storage.from(SCANS_BUCKET)
-    .upload(path, bytes, { contentType: ext === "png" ? "image/png" : "image/jpeg", upsert: false });
-  if (error) {
-    console.error("[workshop] scan upload failed", error.message);
-    return { ok: false, error: "Không tải được ảnh scan lên. Vui lòng thử lại." };
+    .createSignedUploadUrl(`workshop/${randomUUID()}.${ext}`);
+  if (error || !data) {
+    console.error("[workshop] signed upload url", error?.message);
+    return { ok: false, error: "Không chuẩn bị được việc tải ảnh scan. Vui lòng thử lại." };
   }
-  return { ok: true, data: { path } };
+  return { ok: true, data: { path: data.path, token: data.token } };
+}
+
+/** Step 2 (on order creation): the uploaded scan exists and really is the image its name says. */
+async function verifyScan(path: string): Promise<string | null> {
+  const head = await readHead(SCANS_BUCKET, path);
+  if (!head) return "Không tìm thấy ảnh scan vừa tải lên. Vui lòng tải lại.";
+  if (scanType(head) !== path.split(".").pop()) return "Ảnh scan phải là JPG hoặc PNG";
+  return null;
 }
 
 const text = (max: number, label: string) => z.string().trim().max(max, `${label} tối đa ${max} ký tự`);
@@ -121,6 +133,11 @@ export async function createWorkshopOrder(input: WorkshopOrderInput, staffId: st
   }
   const scanPaths = v.items.flatMap((i) => (i.scanPath ? [i.scanPath] : []));
   if (new Set(scanPaths).size !== scanPaths.length) return { ok: false, error: "Mỗi ảnh scan chỉ dùng cho một áo" };
+
+  for (const path of scanPaths) {
+    const problem = await verifyScan(path);
+    if (problem) return { ok: false, error: problem };
+  }
 
   const db = createServiceClient();
   if (scanPaths.length) {
