@@ -24,8 +24,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi">
-      <body className={`${beVietnamPro.variable} antialiased`}>
+    // Browser extensions (Liner, grammar/translate tools…) add attributes to <html> and <body>
+    // before React loads. suppressHydrationWarning ignores only those two elements' attributes;
+    // mismatches deeper in the tree are still reported.
+    <html lang="vi" suppressHydrationWarning>
+      <body className={`${beVietnamPro.variable} antialiased`} suppressHydrationWarning>
         {children}
         <Toaster richColors position="top-center" />
       </body>
