@@ -118,7 +118,7 @@ Trang chủ gồm các phần theo thứ tự:
 - Khách nhập: Họ tên, Số điện thoại, Email.
 - Khách chọn hình thức nhận hàng:
   - **Giao hàng:** địa chỉ nhận, thời gian mong muốn nhận hàng (văn bản), ghi chú.
-  - **Nhận tại campus:** thời gian hẹn nhận, địa điểm hẹn (văn bản tự do, ví dụ "sảnh tòa Alpha").
+  - **Nhận tại campus:** thời gian hẹn nhận (chọn ngày trên lịch và chọn giờ; phải sau thời điểm đặt hàng), địa điểm hẹn (văn bản tự do, ví dụ "sảnh tòa Alpha").
 - Khách chọn mức thanh toán trước: 50% / 75% / 100%.
 - Khách tick đồng ý chính sách xử lý dữ liệu cá nhân.
 - Hệ thống tạo Order Code, tính tổng tiền và số tiền cần chuyển (làm tròn lên hàng nghìn), rồi sinh mã VietQR kèm số tiền và nội dung `TUA0001`.

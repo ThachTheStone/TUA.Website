@@ -21,6 +21,7 @@ import {
   checkoutFormSchema,
   type CheckoutForm as CheckoutValues,
   type CheckoutFormInput,
+  todayInVietnam,
 } from "@/lib/orders/checkout-schema";
 import { PREPAY_PERCENTS, prepayAmount } from "@/lib/orders/pricing";
 import { cn } from "@/lib/utils";
@@ -54,6 +55,8 @@ export function CheckoutForm({ catalog, contact }: { catalog: Catalog; contact: 
       fulfillment: "PICKUP",
       address: "",
       preferred_time: "",
+      pickup_date: "",
+      pickup_time: "",
       pickup_location: "",
       note: "",
       prepay_percent: 50,
@@ -173,11 +176,21 @@ export function CheckoutForm({ catalog, contact }: { catalog: Catalog; contact: 
             </>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="preferred_time">Thời gian hẹn nhận</Label>
-                <Input id="preferred_time" placeholder="Ví dụ: 12h thứ Sáu 10/10" {...register("preferred_time")} />
-                <FieldError message={errors.preferred_time?.message} />
-              </div>
+              <fieldset className="flex flex-col gap-2">
+                <legend className="mb-2 text-sm font-medium">Thời gian hẹn nhận</legend>
+                <div className="grid grid-cols-[1fr_8rem] gap-2">
+                  <Input
+                    id="pickup_date"
+                    type="date"
+                    aria-label="Ngày hẹn nhận"
+                    min={todayInVietnam()}
+                    className="h-11"
+                    {...register("pickup_date")}
+                  />
+                  <Input id="pickup_time" type="time" aria-label="Giờ hẹn nhận" step={300} className="h-11" {...register("pickup_time")} />
+                </div>
+                <FieldError message={errors.pickup_date?.message ?? errors.pickup_time?.message} />
+              </fieldset>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="pickup_location">Địa điểm hẹn</Label>
                 <Input id="pickup_location" placeholder="Ví dụ: sảnh tòa Alpha" {...register("pickup_location")} />

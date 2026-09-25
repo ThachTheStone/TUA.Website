@@ -1,7 +1,7 @@
 import "server-only";
 import { foreignAssets } from "@/lib/design/assets.server";
 import { collectUploadedDesign, type UploadedDesign } from "@/lib/orders/design-upload";
-import { createOrderSchema, type CreateOrderInput } from "@/lib/orders/checkout-schema";
+import { createOrderSchema, formatPickupTime, type CreateOrderInput } from "@/lib/orders/checkout-schema";
 import { prepayAmount, subtotalOf, unitPrice } from "@/lib/orders/pricing";
 import { orderablePrototypes } from "@/lib/prototypes/queries";
 import { getSettings } from "@/lib/settings";
@@ -94,7 +94,7 @@ export async function createWebOrder(
       email: form.email,
       fulfillment: form.fulfillment,
       address: isDelivery ? form.address : null,
-      preferred_time: form.preferred_time || null,
+      preferred_time: isDelivery ? form.preferred_time || null : formatPickupTime(form.pickup_date, form.pickup_time),
       pickup_location: isDelivery ? null : form.pickup_location,
       note: form.note || null,
       subtotal,

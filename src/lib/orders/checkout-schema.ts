@@ -26,6 +26,29 @@ export const orderCodeSchema = z
   .toUpperCase()
   .refine((v) => ORDER_CODE_RE.test(v), "Mã đơn có dạng TUA0001");
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+const WEEKDAYS = ["Chủ nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+
+/** `2026-09-29` + `14:30` read as Vietnam time (Asia/Ho_Chi_Minh, UTC+7, no DST). */
+export function pickupInstant(date: string, time: string): Date | null {
+  if (!DATE_RE.test(date) || !TIME_RE.test(time)) return null;
+  const d = new Date(`${date}T${time}:00+07:00`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** Today's date in Vietnam as `YYYY-MM-DD` (for the date picker's minimum). */
+export function todayInVietnam(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
+}
+
+/** Stored text for a pickup appointment: "Thứ Hai, 29/09/2026 lúc 14:30". */
+export function formatPickupTime(date: string, time: string): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const weekday = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  return `${weekday}, ${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y} lúc ${time}`;
+}
+
 const text = (max: number, label: string) =>
   z.string().trim().max(max, `${label} tối đa ${max} ký tự`);
 
@@ -42,6 +65,9 @@ export const checkoutFormSchema = z
     fulfillment: z.enum(["DELIVERY", "PICKUP"], { error: "Vui lòng chọn hình thức nhận hàng" }),
     address: text(300, "Địa chỉ"),
     preferred_time: text(200, "Thời gian"),
+    /** PICKUP: chosen with the date and time pickers; the server turns them into `preferred_time`. */
+    pickup_date: z.string().trim().max(10),
+    pickup_time: z.string().trim().max(5),
     pickup_location: text(200, "Địa điểm"),
     note: text(500, "Ghi chú"),
     prepay_percent: z.coerce
@@ -53,8 +79,18 @@ export const checkoutFormSchema = z
     if (v.fulfillment === "DELIVERY" && !v.address) {
       ctx.addIssue({ code: "custom", path: ["address"], message: "Vui lòng nhập địa chỉ nhận hàng" });
     }
-    if (v.fulfillment === "PICKUP" && !v.preferred_time) {
-      ctx.addIssue({ code: "custom", path: ["preferred_time"], message: "Vui lòng nhập thời gian hẹn nhận" });
+    if (v.fulfillment === "PICKUP") {
+      if (!v.pickup_date) {
+        ctx.addIssue({ code: "custom", path: ["pickup_date"], message: "Vui lòng chọn ngày hẹn nhận" });
+      } else if (!v.pickup_time) {
+        ctx.addIssue({ code: "custom", path: ["pickup_time"], message: "Vui lòng chọn giờ hẹn nhận" });
+      } else {
+        const at = pickupInstant(v.pickup_date, v.pickup_time);
+        if (!at) ctx.addIssue({ code: "custom", path: ["pickup_date"], message: "Ngày hoặc giờ hẹn nhận không hợp lệ" });
+        else if (at.getTime() <= Date.now()) {
+          ctx.addIssue({ code: "custom", path: ["pickup_time"], message: "Thời gian hẹn nhận phải sau thời điểm hiện tại" });
+        }
+      }
     }
     if (v.fulfillment === "PICKUP" && !v.pickup_location) {
       ctx.addIssue({ code: "custom", path: ["pickup_location"], message: "Vui lòng nhập địa điểm hẹn nhận" });
