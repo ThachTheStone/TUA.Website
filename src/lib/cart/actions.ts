@@ -14,11 +14,12 @@ const MAX_CART_BYTES = 8 * 1024 * 1024;
 
 const cartItemSchema = z.object({
   id: z.string().min(1).max(64),
-  type: z.enum(["PLAIN", "CUSTOM"]),
+  type: z.enum(["PLAIN", "CUSTOM", "PROTOTYPE"]),
   color: z.string().min(1).max(50),
   size: z.string().min(1).max(20),
   quantity: z.number().int().min(1).max(50),
   designDraftId: z.string().min(1).max(64).optional(),
+  prototypeId: z.uuid().optional(),
 });
 
 const cartSchema = z.object({

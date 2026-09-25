@@ -4,18 +4,29 @@ import { ConfirmActionButton } from "@/components/admin/form-kit";
 import { ApprovalBadge } from "@/components/admin/orders/badges";
 import { RejectDesignForm } from "@/components/admin/orders/order-forms";
 import { setDesignStatus, rejectDesign } from "@/lib/admin/order-actions";
+import { TYPE_LABEL } from "@/components/cart/catalog";
 import { formatDate, formatVND } from "@/lib/format";
 import type { AdminOrderItem } from "@/lib/orders/admin-queries";
 
-const TYPE_LABEL = { PLAIN: "Áo trơn", CUSTOM: "Áo custom" } as const;
-
-/** One order line; custom shirts show the design, print files and the FR29 review buttons. */
+/**
+ * One order line; custom shirts show the design, print files and the FR29 review buttons.
+ * Prototype lines show the prototype and its print files (FR14), with no review.
+ */
 export function ItemCard({ item, code, locked }: { item: AdminOrderItem; code: string; locked: boolean }) {
   const status = item.approvalStatus;
   const canReview = !locked && (status === "PENDING_APPROVAL" || status === "UNDER_REVIEW");
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border bg-card p-4 sm:flex-row">
+      {item.prototype && (
+        <div className="w-full shrink-0 sm:w-40">
+          {item.prototype.image ? (
+            <img src={item.prototype.image} alt={item.prototype.name} className="aspect-square w-full rounded-lg border bg-muted object-cover" />
+          ) : (
+            <div className="flex aspect-square items-center justify-center rounded-lg border bg-muted text-xs text-muted-foreground">Không có ảnh</div>
+          )}
+        </div>
+      )}
       {item.type === "CUSTOM" && (
         <div className="w-full shrink-0 sm:w-64">
           {item.previewUrl ? (
@@ -35,6 +46,7 @@ export function ItemCard({ item, code, locked }: { item: AdminOrderItem; code: s
           <div>
             <p className="font-semibold">
               Áo {item.index}: {TYPE_LABEL[item.type]}
+              {item.prototype && ` "${item.prototype.name}"`}
               {item.designSource === "SCAN" && <span className="font-normal text-muted-foreground"> (scan Workshop)</span>}
             </p>
             <p className="text-sm text-muted-foreground">

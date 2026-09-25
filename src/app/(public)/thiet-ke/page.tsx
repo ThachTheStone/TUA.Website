@@ -19,6 +19,7 @@ export default async function DesignPage({ searchParams }: { searchParams: Promi
       dpi={settings.export_dpi}
       editItemId={typeof sua === "string" ? sua : null}
       signedIn={!!session}
+      contact={settings.contact}
     />
   );
 }

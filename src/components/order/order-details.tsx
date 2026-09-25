@@ -30,7 +30,8 @@ export function OrderDetails({ order, editHref }: { order: OrderView; editHref?:
               <li key={i} className="flex flex-col gap-1">
                 <div className="flex justify-between gap-2">
                   <span>
-                    {TYPE_LABEL[item.type]} · {item.colorLabel} · {item.size} × {item.quantity}
+                    {TYPE_LABEL[item.type]}
+                    {item.prototypeName && ` "${item.prototypeName}"`} · {item.colorLabel} · {item.size} × {item.quantity}
                     {item.approvalLabel && (
                       <Badge variant={item.approvalStatus === "REJECTED" ? "destructive" : "outline"} className="ml-2">
                         {item.approvalLabel}

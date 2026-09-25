@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { TYPE_LABEL, cartSubtotal, unavailableItems, type Catalog } from "@/components/cart/catalog";
+import { TYPE_LABEL, cartSubtotal, findPrototype, linePrice, unavailableItems, type Catalog } from "@/components/cart/catalog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,7 +79,7 @@ export function CheckoutForm({ catalog, contact }: { catalog: Catalog; contact: 
   if (unavailableItems(items, catalog).size && !progress) {
     return (
       <div className="flex flex-col items-center gap-4 py-16 text-center">
-        <p className="text-lg">Một số áo trong giỏ có màu hoặc size không còn bán.</p>
+        <p className="text-lg">Một số áo trong giỏ không còn bán (mẫu đã tắt, hoặc màu/size đã thay đổi).</p>
         <Button asChild>
           <Link href="/gio-hang">Cập nhật giỏ hàng</Link>
         </Button>
@@ -103,6 +103,7 @@ export function CheckoutForm({ catalog, contact }: { catalog: Catalog; contact: 
           size: i.size,
           quantity: i.quantity,
           uploadId: uploads.get(i.id),
+          prototypeId: i.type === "PROTOTYPE" ? i.prototypeId : undefined,
         })),
       });
       if (!result.ok) throw new Error(result.error);
@@ -229,9 +230,10 @@ export function CheckoutForm({ catalog, contact }: { catalog: Catalog; contact: 
           {items.map((i) => (
             <li key={i.id} className="flex justify-between gap-2">
               <span>
-                {TYPE_LABEL[i.type]} · {catalog.colors.find((c) => c.key === i.color)?.label ?? i.color} · {i.size} × {i.quantity}
+                {i.type === "PROTOTYPE" ? `${TYPE_LABEL.PROTOTYPE} "${findPrototype(catalog, i.prototypeId)?.name ?? ""}"` : TYPE_LABEL[i.type]} ·{" "}
+                {catalog.colors.find((c) => c.key === i.color)?.label ?? i.color} · {i.size} × {i.quantity}
               </span>
-              <span className="tabular-nums">{formatVND(catalog.prices[i.type] * i.quantity)}</span>
+              <span className="tabular-nums">{formatVND(linePrice(i.type, catalog) * i.quantity)}</span>
             </li>
           ))}
         </ul>

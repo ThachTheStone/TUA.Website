@@ -139,6 +139,8 @@ create policy "public read active prototypes" on prototypes
 ```
 Price is always `settings.prices.CUSTOM` (BR09). A prototype referenced by an order is never deleted, only deactivated.
 
+As built (migration 0007): `order_items.prototype_id` is `on delete restrict`, and `create_order` links a PROTOTYPE line to the prototype's current `design_id` (failing if it is inactive). `save_prototype(p_id, p_fields, p_files)` creates a **new** `designs` row whenever print files change, so earlier orders keep the files they were sold with. Admin files upload through one-time signed upload URLs (`lib/prototypes/files.ts`) because they exceed the server action body limit; the server checks the bytes before saving. Settings key `contact` (`{phone, facebook, email}`) holds the organizer contact shown on phones (FR03, FR21).
+
 ## Seed settings
 ```json
 {

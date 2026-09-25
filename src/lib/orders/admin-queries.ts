@@ -7,6 +7,7 @@ import type {
   ApprovalStatus,
   DesignSource,
   FulfillmentType,
+  ItemType,
   Order,
   OrderSource,
   OrderStatus,
@@ -108,7 +109,9 @@ export type DesignFileView = { area: string; areaLabel: string; downloadUrl: str
 export type AdminOrderItem = {
   id: string;
   index: number;
-  type: "PLAIN" | "CUSTOM";
+  type: ItemType;
+  /** FR14: prototype lines show the prototype's name and cover image. */
+  prototype: { name: string; slug: string; image: string | null } | null;
   colorLabel: string;
   size: string;
   quantity: number;
@@ -139,7 +142,8 @@ export type AdminOrder = Omit<Order, "access_token"> & {
 
 type ItemRow = {
   id: string;
-  type: "PLAIN" | "CUSTOM";
+  type: ItemType;
+  prototypes: { name: string; slug: string; image_urls: string[] } | null;
   color: string;
   size: string;
   quantity: number;
@@ -172,7 +176,7 @@ export async function getAdminOrder(code: string): Promise<AdminOrder | null> {
     db
       .from("order_items")
       .select(
-        "id, type, color, size, quantity, unit_price, approval_status, reject_reason, reviewed_by, reviewed_at, designs(source, preview_url, canvas_json, design_files(area, file_path, width_px, height_px))",
+        "id, type, color, size, quantity, unit_price, approval_status, reject_reason, reviewed_by, reviewed_at, prototypes(name, slug, image_urls), designs(source, preview_url, canvas_json, design_files(area, file_path, width_px, height_px))",
       )
       .eq("order_id", order.id)
       .order("id"),
@@ -215,6 +219,7 @@ export async function getAdminOrder(code: string): Promise<AdminOrder | null> {
         id: i.id,
         index: n + 1,
         type: i.type,
+        prototype: i.prototypes ? { name: i.prototypes.name, slug: i.prototypes.slug, image: i.prototypes.image_urls[0] ?? null } : null,
         colorLabel: colorLabel(i.color),
         size: i.size,
         quantity: i.quantity,

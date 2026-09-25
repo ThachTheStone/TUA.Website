@@ -40,25 +40,32 @@ export function ShirtOptions({ colors, sizes, color, size, onColor, onSize }: Pr
           ))}
         </div>
       </fieldset>
-      <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-sm font-semibold">Size</legend>
-        <div className="flex flex-wrap gap-2">
-          {sizes.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => onSize(s)}
-              aria-pressed={s === size}
-              className={cn(
-                "h-11 min-w-11 rounded-md border px-3 text-sm font-medium",
-                s === size ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
-              )}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      </fieldset>
+      <SizeOptions sizes={sizes} size={size} onSize={onSize} />
     </div>
+  );
+}
+
+/** Size buttons alone, for prototypes whose colour is fixed (FR02). */
+export function SizeOptions({ sizes, size, onSize }: Pick<Props, "sizes" | "size" | "onSize">) {
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="mb-2 text-sm font-semibold">Size</legend>
+      <div className="flex flex-wrap gap-2">
+        {sizes.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => onSize(s)}
+            aria-pressed={s === size}
+            className={cn(
+              "h-11 min-w-11 rounded-md border px-3 text-sm font-medium",
+              s === size ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
+            )}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+    </fieldset>
   );
 }

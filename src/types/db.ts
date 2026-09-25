@@ -16,8 +16,8 @@ export type OrderStatus =
 export type RefundStatus = "NONE" | "REQUIRED" | "DONE";
 export type PaymentStatus = "UNPAID" | "DEPOSIT_PAID" | "FULLY_PAID";
 export type ApprovalStatus = "PENDING_APPROVAL" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
-export type ItemType = "PLAIN" | "CUSTOM";
-export type DesignSource = "CANVAS" | "SCAN";
+export type ItemType = "PLAIN" | "CUSTOM" | "PROTOTYPE";
+export type DesignSource = "CANVAS" | "SCAN" | "PROTOTYPE";
 export type PaymentMethod = "TRANSFER" | "CASH";
 export type DonationStatus = "PENDING" | "CONFIRMED" | "CANCELLED";
 
@@ -85,11 +85,30 @@ export interface OrderItem {
   quantity: number;
   unit_price: number;
   design_id: string | null;
-  /** Custom shirts only (FR29); null for plain shirts. */
+  /** PROTOTYPE lines only (FR27). */
+  prototype_id: string | null;
+  /** Custom shirts only (FR29); null for plain and prototype shirts. */
   approval_status: ApprovalStatus | null;
   reject_reason: string | null;
   reviewed_by: string | null;
   reviewed_at: string | null;
+}
+
+/** FR27/FR28 "Áo mẫu": a ready-made design sold at the custom price (BR09). */
+export interface Prototype {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  /** settings.colors[].key, fixed per prototype. */
+  color: string;
+  /** Public URLs in the `content` bucket, 1–4. */
+  image_urls: string[];
+  design_id: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Payment {

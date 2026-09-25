@@ -5,21 +5,15 @@ import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatVND } from "@/lib/format";
+import { slugify } from "@/lib/slug";
 import type { BankAccount, PrintArea, Settings, ShirtColor } from "@/lib/settings";
 import { Field, FormError, SubmitButton, useAdminForm, type FormAction } from "./form-kit";
 
 // FR21: every value the shop reads from `settings` (hard rule 3), edited in one form.
 
 /** Stable key from a Vietnamese label: "Xanh lá" → "xanh-la". */
-function slugify(label: string, taken: string[]): string {
-  const base =
-    label
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .replace(/đ/gi, "d")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "") || "muc";
+function uniqueSlug(label: string, taken: string[]): string {
+  const base = slugify(label) || "muc";
   let key = base;
   for (let i = 2; taken.includes(key); i++) key = `${base}-${i}`;
   return key;
@@ -31,7 +25,7 @@ function withKeys(s: Settings): Settings {
     const taken = rows.map((r) => r.key).filter(Boolean);
     return rows.map((r) => {
       if (r.key || !r.label.trim()) return r;
-      const key = slugify(r.label, taken);
+      const key = uniqueSlug(r.label, taken);
       taken.push(key);
       return { ...r, key };
     });
@@ -133,6 +127,7 @@ const JUMP_LINKS = [
   ["tk-ban-hang", "Tài khoản bán hàng"],
   ["tk-quy", "Tài khoản quỹ"],
   ["quyen-gop", "Quyên góp"],
+  ["lien-he", "Liên hệ"],
 ] as const;
 
 export function SettingsForm({ initial, action }: { initial: Settings; action: FormAction }) {
@@ -176,7 +171,7 @@ export function SettingsForm({ initial, action }: { initial: Settings; action: F
                   onChange={(e) => setColor(i, { label: e.target.value })}
                   onBlur={() => {
                     if (!color.key && color.label.trim()) {
-                      setColor(i, { key: slugify(color.label, s.colors.map((c) => c.key)) });
+                      setColor(i, { key: uniqueSlug(color.label, s.colors.map((c) => c.key)) });
                     }
                   }}
                 />
@@ -261,7 +256,7 @@ export function SettingsForm({ initial, action }: { initial: Settings; action: F
                     onChange={(e) => setArea(i, { label: e.target.value })}
                     onBlur={() => {
                       if (!area.key && area.label.trim()) {
-                        setArea(i, { key: slugify(area.label, s.print_areas.map((a) => a.key)) });
+                        setArea(i, { key: uniqueSlug(area.label, s.print_areas.map((a) => a.key)) });
                       }
                     }}
                   />
@@ -339,6 +334,20 @@ export function SettingsForm({ initial, action }: { initial: Settings; action: F
         <div className="grid gap-4 sm:grid-cols-2">
           <MoneyInput id="donation-min" label="Số tiền tối thiểu" value={s.donation_min} onChange={(v) => set("donation_min", v)} />
           <MoneyInput id="donation-goal" label="Mục tiêu quyên góp" value={s.donation_goal} onChange={(v) => set("donation_goal", v)} />
+        </div>
+      </Section>
+
+      <Section id="lien-he" title="Liên hệ Ban tổ chức" hint="Hiển thị cho khách cần hỗ trợ thiết kế, ví dụ khi mở trang Thiết kế áo trên điện thoại (FR03, FR21).">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Số điện thoại / Zalo" htmlFor="contact-phone">
+            <Input id="contact-phone" type="tel" maxLength={50} value={s.contact.phone} onChange={(e) => set("contact", { ...s.contact, phone: e.target.value })} />
+          </Field>
+          <Field label="Facebook" htmlFor="contact-facebook" hint="Link trang hoặc nhóm">
+            <Input id="contact-facebook" type="url" placeholder="https://" maxLength={300} value={s.contact.facebook} onChange={(e) => set("contact", { ...s.contact, facebook: e.target.value.trim() })} />
+          </Field>
+          <Field label="Email" htmlFor="contact-email">
+            <Input id="contact-email" type="email" maxLength={200} value={s.contact.email} onChange={(e) => set("contact", { ...s.contact, email: e.target.value.trim() })} />
+          </Field>
         </div>
       </Section>
 

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Field } from "@/components/admin/form-kit";
-import { TYPE_LABEL, type Catalog } from "@/components/cart/catalog";
+import { TYPE_LABEL, linePrice, type Catalog } from "@/components/cart/catalog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,8 +17,18 @@ import { newId } from "@/lib/design/types";
 
 // FR16: staff enter a Workshop order. Scans upload one per request (hosting body limit),
 // then the order is created. Totals shown here are estimates; the server recomputes them.
+// Prototype lines need no scan: the prototype's print files are used (FR16).
 
-type Line = { id: string; type: "PLAIN" | "CUSTOM"; color: string; size: string; quantity: number; area: string; scan: File | null };
+type Line = {
+  id: string;
+  type: "PLAIN" | "CUSTOM" | "PROTOTYPE";
+  color: string;
+  size: string;
+  quantity: number;
+  area: string;
+  scan: File | null;
+  prototypeId: string;
+};
 
 const selectClass = "h-9 rounded-md border border-input bg-transparent px-2 text-sm shadow-xs";
 
@@ -35,7 +45,9 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
     quantity: 1,
     area: catalog.printAreas[0]?.key ?? "",
     scan: null,
+    prototypeId: "",
   });
+  const prototypes = catalog.prototypes.filter((p) => p.active);
   const [lines, setLines] = useState<Line[]>(() => [newLine()]);
   const [fulfillment, setFulfillment] = useState<"PICKUP" | "DELIVERY">("PICKUP");
   const [percent, setPercent] = useState<number>(100);
@@ -51,6 +63,7 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
     const get = (k: string) => String(fd.get(k) ?? "");
     setError(null);
     if (lines.some((l) => l.type === "CUSTOM" && !l.scan)) return setError("Mỗi áo custom cần ảnh scan bản vẽ");
+    if (lines.some((l) => l.type === "PROTOTYPE" && !l.prototypeId)) return setError("Vui lòng chọn áo mẫu");
 
     startTransition(async () => {
       try {
@@ -74,6 +87,7 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
             quantity: l.quantity,
             area: l.type === "CUSTOM" ? l.area : undefined,
             scanPath,
+            prototypeId: l.type === "PROTOTYPE" ? l.prototypeId : undefined,
           });
         }
         setProgress("Đang tạo đơn…");
@@ -124,23 +138,39 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
               <label className="flex flex-col gap-1 text-xs text-muted-foreground">
                 Loại
                 <select className={selectClass} value={l.type} onChange={(e) => update(l.id, { type: e.target.value as Line["type"] })}>
-                  {(["CUSTOM", "PLAIN"] as const).map((t) => (
-                    <option key={t} value={t}>
-                      {TYPE_LABEL[t]} ({formatVND(catalog.prices[t])})
-                    </option>
-                  ))}
+                  {(["CUSTOM", "PROTOTYPE", "PLAIN"] as const)
+                    .filter((t) => t !== "PROTOTYPE" || prototypes.length > 0)
+                    .map((t) => (
+                      <option key={t} value={t}>
+                        {TYPE_LABEL[t]} ({formatVND(linePrice(t, catalog))})
+                      </option>
+                    ))}
                 </select>
               </label>
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                Màu
-                <select className={selectClass} value={l.color} onChange={(e) => update(l.id, { color: e.target.value })}>
-                  {catalog.colors.map((c) => (
-                    <option key={c.key} value={c.key}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              {l.type === "PROTOTYPE" ? (
+                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  Mẫu
+                  <select className={selectClass} value={l.prototypeId} onChange={(e) => update(l.id, { prototypeId: e.target.value })}>
+                    <option value="">Chọn áo mẫu…</option>
+                    {prototypes.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({catalog.colors.find((c) => c.key === p.color)?.label ?? p.color})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  Màu
+                  <select className={selectClass} value={l.color} onChange={(e) => update(l.id, { color: e.target.value })}>
+                    {catalog.colors.map((c) => (
+                      <option key={c.key} value={c.key}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <label className="flex flex-col gap-1 text-xs text-muted-foreground">
                 Size
                 <select className={selectClass} value={l.size} onChange={(e) => update(l.id, { size: e.target.value })}>

@@ -5,6 +5,7 @@ import type { CustomerSession } from "@/lib/customers/session";
 
 // Links are added here as later phases ship their pages (quyên góp).
 const NAV = [
+  { href: "/mau-ao", label: "Áo mẫu" },
   { href: "/thiet-ke", label: "Thiết kế áo" },
   { href: "/ao-tron", label: "Áo trơn" },
   { href: "/tra-cuu", label: "Tra cứu đơn" },

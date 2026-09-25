@@ -45,6 +45,7 @@ export default async function ResubmitPage({ params }: Props) {
       sizes={settings.sizes}
       price={settings.prices.CUSTOM}
       dpi={settings.export_dpi}
+      contact={settings.contact}
     />
   );
 }

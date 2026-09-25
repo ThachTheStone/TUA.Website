@@ -1,4 +1,5 @@
 import "server-only";
+import { readPngSize } from "@/lib/design/png";
 import { MAX_IMAGES, assetIdsIn, printSizePx } from "@/lib/design/types";
 import type { Settings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -14,16 +15,8 @@ export const DESIGNS_BUCKET = "designs";
 export const MAX_AREA_BYTES = 4 * 1024 * 1024;
 const MAX_PREVIEW_BYTES = 1024 * 1024;
 const MAX_JSON_BYTES = 4 * 1024 * 1024;
-const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
 export type UploadKind = "area" | "preview" | "json";
-
-/** Width and height from a PNG header, or null if the bytes are not a PNG. */
-export function readPngSize(buf: Uint8Array): { width: number; height: number } | null {
-  if (buf.length < 24 || PNG_SIGNATURE.some((b, i) => buf[i] !== b)) return null;
-  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
-  return { width: view.getUint32(16), height: view.getUint32(20) };
-}
 
 const folder = (uploadId: string) => `web/${uploadId}`;
 

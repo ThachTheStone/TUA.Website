@@ -36,6 +36,8 @@ export type OrderView = {
   items: {
     id: string;
     type: ItemType;
+    /** FR27: the prototype's name for "Áo mẫu" lines. */
+    prototypeName: string | null;
     colorLabel: string;
     size: string;
     quantity: number;
@@ -79,7 +81,11 @@ async function buildView(order: OrderRow): Promise<OrderView> {
   const db = createServiceClient();
   const [settings, items, history] = await Promise.all([
     getSettings(),
-    db.from("order_items").select("id, type, color, size, quantity, unit_price, approval_status, reject_reason").eq("order_id", order.id).order("id"),
+    db
+      .from("order_items")
+      .select("id, type, color, size, quantity, unit_price, approval_status, reject_reason, prototypes(name)")
+      .eq("order_id", order.id)
+      .order("id"),
     db
       .from("order_status_history")
       .select("to_status, changed_at")
@@ -106,6 +112,7 @@ async function buildView(order: OrderRow): Promise<OrderView> {
     items: (items.data ?? []).map((i) => ({
       id: i.id,
       type: i.type,
+      prototypeName: (i.prototypes as unknown as { name: string } | null)?.name ?? null,
       colorLabel: colorLabel(i.color),
       size: i.size,
       quantity: i.quantity,

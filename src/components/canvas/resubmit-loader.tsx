@@ -4,8 +4,10 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { DesignerProps } from "@/components/canvas/designer";
+import { PhoneGate } from "@/components/canvas/phone-gate";
 import { uploadDesign } from "@/lib/cart/submit";
 import type { DesignAreas } from "@/lib/design/types";
+import type { Contact } from "@/lib/settings";
 import { resubmitDesignAction } from "@/lib/orders/actions";
 
 // FR29: the designer opened on a rejected shirt of a placed order.
@@ -23,9 +25,10 @@ type Props = Omit<DesignerProps, "onSaved" | "editItemId" | "signedIn" | "resubm
   color: string;
   size: string;
   rejectReason: string | null;
+  contact: Contact;
 };
 
-export function ResubmitLoader({ code, itemId, areas, color, size, rejectReason, ...designer }: Props) {
+export function ResubmitLoader({ code, itemId, areas, color, size, rejectReason, contact, ...designer }: Props) {
   const router = useRouter();
   const hex = designer.colors.find((c) => c.key === color)?.hex ?? "#ffffff";
 
@@ -38,12 +41,14 @@ export function ResubmitLoader({ code, itemId, areas, color, size, rejectReason,
   }
 
   return (
-    <Designer
-      {...designer}
-      editItemId={null}
-      onSaved={() => {}}
-      signedIn
-      resubmit={{ areas, color, size, rejectReason, submit }}
-    />
+    <PhoneGate contact={contact} back={{ href: `/tai-khoan/don-hang/${code}`, label: "Quay lại đơn hàng" }}>
+      <Designer
+        {...designer}
+        editItemId={null}
+        onSaved={() => {}}
+        signedIn
+        resubmit={{ areas, color, size, rejectReason, submit }}
+      />
+    </PhoneGate>
   );
 }

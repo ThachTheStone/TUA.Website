@@ -21,6 +21,7 @@ const SECTION_LABEL: Record<keyof Settings, string> = {
   bank_fund: "Tài khoản quỹ",
   donation_min: "Quyên góp tối thiểu",
   donation_goal: "Mục tiêu quyên góp",
+  contact: "Liên hệ Ban tổ chức",
 };
 
 function duplicate(values: string[]): string | undefined {
@@ -37,6 +38,9 @@ function checkRows(s: Settings): string | null {
   if (size) return `Size "${size}" bị trùng`;
   const area = duplicate(s.print_areas.map((a) => a.key));
   if (area) return `Mã vùng in "${area}" bị trùng`;
+  const { email, facebook } = s.contact;
+  if (email && !z.email().safeParse(email).success) return "Email liên hệ không hợp lệ";
+  if (facebook && !/^https?:\/\/\S+$/i.test(facebook)) return "Link Facebook phải bắt đầu bằng http:// hoặc https://";
   return null;
 }
 

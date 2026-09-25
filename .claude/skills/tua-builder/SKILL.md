@@ -93,7 +93,7 @@ URLs are Vietnamese slugs without diacritics.
 - Account page: rejected shirt → "Sửa thiết kế" opens the canvas with that design → "Gửi lại" uploads new print files, replaces `order_items.design_id`, sets PENDING_APPROVAL, logs `design_reviews` (changed_by null). Color/size/qty/price unchanged; APPROVED designs are locked.
 **Done when:** a buyer inserts two photos, orders, staff rejects with a reason, the buyer sees it, edits, resubmits, staff approves, and the print file contains the photos at full quality. A logged-out visitor cannot upload; a renamed .exe as .png is refused.
 
-### Phase 7 — Shirt prototypes (FR27, FR28, FR02, FR06) → `references/data-model.md` (Prototypes)
+### Phase 7 — Shirt prototypes (FR27, FR28, FR02, FR06) → `references/data-model.md` (Prototypes) ✅ done (migration 0007)
 - Migration: `prototypes` table, `item_type` + `PROTOTYPE`, `design_source` + `PROTOTYPE`, `order_items.prototype_id`.
 - Admin `/admin/mau-ao`: CRUD, sort, active toggle. Staff/Admin upload 1–4 display images (`content` bucket) and one print PNG per print area (`designs` bucket, under `prototypes/<id>/`). Check PNG pixel size against print area × DPI and warn.
 - Public `/mau-ao` grid and `/mau-ao/[slug]` detail: images, name, description, fixed color, size + quantity, "Thêm vào giỏ".

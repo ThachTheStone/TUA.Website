@@ -6,15 +6,19 @@ import { newId, type DesignAreas } from "@/lib/design/types";
 
 // FR06: the cart lives in localStorage. It holds no prices: the server recomputes every
 // amount from `settings` at checkout (hard rule 4). Custom shirts keep their design as JSON
-// so the customer can reopen and edit it.
+// so the customer can reopen and edit it. Prototype lines keep only the prototype id; the
+// server takes the colour and print files from the prototype itself.
 
 export type CartItem = {
   id: string;
-  type: "PLAIN" | "CUSTOM";
-  color: string; // settings.colors[].key
+  type: "PLAIN" | "CUSTOM" | "PROTOTYPE";
+  /** settings.colors[].key. PROTOTYPE: a copy of the prototype's colour, for display only. */
+  color: string;
   size: string;
   quantity: number;
   designDraftId?: string;
+  /** PROTOTYPE only (FR27). */
+  prototypeId?: string;
 };
 
 /** The design currently open in the canvas, kept so a reload doesn't lose the drawing. */
@@ -29,6 +33,8 @@ type CartState = {
   /** Local changes not yet saved to the owner's account. */
   dirty: boolean;
   addPlain: (input: { color: string; size: string; quantity: number }) => void;
+  /** FR06: the same prototype in the same size merges into one line. */
+  addPrototype: (input: { prototypeId: string; color: string; size: string; quantity: number }) => void;
   /** Adds a custom shirt, or updates `wip.editingItemId` when the customer reopened one. */
   saveCustom: (input: { itemId: string | null; color: string; size: string; areas: DesignAreas }) => void;
   setQuantity: (itemId: string, quantity: number) => void;
@@ -89,6 +95,19 @@ export const useCart = create<CartState>()(
             };
           }
           return { items: [...s.items, { id: newId(), type: "PLAIN", color, size, quantity: clampQty(quantity) }] };
+        }),
+
+      addPrototype: ({ prototypeId, color, size, quantity }) =>
+        set((s) => {
+          const same = s.items.find((i) => i.type === "PROTOTYPE" && i.prototypeId === prototypeId && i.size === size);
+          if (same) {
+            return {
+              items: s.items.map((i) => (i === same ? { ...i, color, quantity: clampQty(i.quantity + quantity) } : i)),
+            };
+          }
+          return {
+            items: [...s.items, { id: newId(), type: "PROTOTYPE", prototypeId, color, size, quantity: clampQty(quantity) }],
+          };
         }),
 
       saveCustom: ({ itemId, color, size, areas }) =>

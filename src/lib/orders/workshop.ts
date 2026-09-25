@@ -3,13 +3,15 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { phoneSchema } from "@/lib/orders/checkout-schema";
 import { PREPAY_PERCENTS, prepayAmount, subtotalOf, unitPrice } from "@/lib/orders/pricing";
+import { orderablePrototypes } from "@/lib/prototypes/queries";
 import { getSettings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/types/action";
 
 // FR16: orders staff create at the Campus Workshop. Scans of paper drawings go to the
 // private `scans` bucket (BR01: staff upload inside the admin portal). Scans are approved
-// on creation because staff saw the drawing in person (FR16, FR29).
+// on creation because staff saw the drawing in person (FR16, FR29). Prototype lines use the
+// prototype's colour and print files, like on the website.
 
 export const SCANS_BUCKET = "scans";
 const MAX_SCAN_BYTES = 10 * 1024 * 1024;
@@ -60,12 +62,14 @@ export const workshopOrderSchema = z
     items: z
       .array(
         z.object({
-          type: z.enum(["PLAIN", "CUSTOM"]),
+          type: z.enum(["PLAIN", "CUSTOM", "PROTOTYPE"]),
           color: z.string().min(1).max(50),
           size: z.string().min(1).max(20),
           quantity: z.number().int().min(1, "Số lượng tối thiểu là 1").max(50, "Số lượng tối đa 50"),
           area: z.string().max(50).optional(),
           scanPath: z.string().regex(SCAN_PATH_RE).optional(),
+          /** PROTOTYPE only: no scan needed, colour comes from the prototype (FR16). */
+          prototypeId: z.uuid().optional(),
         }),
       )
       .min(1, "Thêm ít nhất 1 áo")
@@ -76,6 +80,9 @@ export const workshopOrderSchema = z
     if (v.fulfillment === "PICKUP" && !v.pickup_location) ctx.addIssue({ code: "custom", message: "Vui lòng nhập địa điểm hẹn nhận" });
     if (v.items.some((i) => i.type === "CUSTOM" && (!i.scanPath || !i.area))) {
       ctx.addIssue({ code: "custom", message: "Mỗi áo custom cần ảnh scan và vùng in" });
+    }
+    if (v.items.some((i) => i.type === "PROTOTYPE" && !i.prototypeId)) {
+      ctx.addIssue({ code: "custom", message: "Vui lòng chọn áo mẫu" });
     }
   });
 
@@ -99,9 +106,16 @@ export async function createWorkshopOrder(input: WorkshopOrderInput, staffId: st
   const v = parsed.data;
   const settings = await getSettings();
 
+  const protos = await orderablePrototypes(
+    v.items.flatMap((i) => (i.type === "PROTOTYPE" && i.prototypeId ? [i.prototypeId] : [])),
+    settings,
+  );
+  if (!protos.ok) return protos;
+
   const colors = new Set(settings.colors.map((c) => c.key));
   const areas = new Set(settings.print_areas.map((a) => a.key));
   for (const item of v.items) {
+    if (item.type === "PROTOTYPE") item.color = protos.colors.get(item.prototypeId!)!;
     if (!colors.has(item.color) || !settings.sizes.includes(item.size)) return { ok: false, error: "Màu hoặc size không hợp lệ" };
     if (item.type === "CUSTOM" && !areas.has(item.area!)) return { ok: false, error: "Vùng in không hợp lệ" };
   }
@@ -152,6 +166,7 @@ export async function createWorkshopOrder(input: WorkshopOrderInput, staffId: st
       quantity: item.quantity,
       unit_price: unitPrice(item.type, settings.prices), // BR09
       approval_status: item.type === "CUSTOM" ? "APPROVED" : undefined,
+      prototype_id: item.type === "PROTOTYPE" ? item.prototypeId : null,
       design:
         item.type === "CUSTOM"
           ? {

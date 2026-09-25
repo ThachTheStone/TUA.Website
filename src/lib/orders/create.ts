@@ -3,6 +3,7 @@ import { foreignAssets } from "@/lib/design/assets.server";
 import { collectUploadedDesign, type UploadedDesign } from "@/lib/orders/design-upload";
 import { createOrderSchema, type CreateOrderInput } from "@/lib/orders/checkout-schema";
 import { prepayAmount, subtotalOf, unitPrice } from "@/lib/orders/pricing";
+import { orderablePrototypes } from "@/lib/prototypes/queries";
 import { getSettings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
 import { isBankConfigured } from "@/lib/vietqr";
@@ -37,9 +38,20 @@ export async function createWebOrder(
     return { ok: false, error: "Hệ thống chưa sẵn sàng nhận thanh toán. Vui lòng liên hệ Ban tổ chức." };
   }
 
+  // FR27: a prototype line takes its colour from the prototype, which must still be on sale.
+  const protos = await orderablePrototypes(
+    items.flatMap((i) => (i.type === "PROTOTYPE" && i.prototypeId ? [i.prototypeId] : [])),
+    settings,
+  );
+  if (!protos.ok) return protos;
+
   const colorKeys = new Set(settings.colors.map((c) => c.key));
   const designs = new Map<string, UploadedDesign>();
   for (const item of items) {
+    if (item.type === "PROTOTYPE") {
+      if (!item.prototypeId) return { ok: false, error: "Thiếu áo mẫu trong giỏ hàng" };
+      item.color = protos.colors.get(item.prototypeId)!;
+    }
     if (!colorKeys.has(item.color) || !settings.sizes.includes(item.size)) {
       return { ok: false, error: "Màu hoặc size trong giỏ hàng không còn được bán. Vui lòng cập nhật giỏ hàng." };
     }
@@ -99,6 +111,8 @@ export async function createWebOrder(
       quantity: item.quantity,
       unit_price: unitPrice(item.type, settings.prices), // BR09: price locked into the order
       design: item.type === "CUSTOM" ? designs.get(item.uploadId!) : null,
+      // The RPC links the prototype's current print files (and re-checks it is active).
+      prototype_id: item.type === "PROTOTYPE" ? item.prototypeId : null,
     })),
   });
   if (error || !data) {

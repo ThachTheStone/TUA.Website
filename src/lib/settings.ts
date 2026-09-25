@@ -34,6 +34,10 @@ export const settingsSchema = z.object({
   bank_fund: bankSchema,
   donation_min: z.number().int().nonnegative(),
   donation_goal: z.number().int().nonnegative(),
+  /** FR21: organizer contact shown to buyers who need design help (e.g. on phones, FR03). */
+  contact: z
+    .object({ phone: z.string().max(50), facebook: z.string().max(300), email: z.string().max(200) })
+    .default({ phone: "", facebook: "", email: "" }),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;
@@ -41,6 +45,7 @@ export type SettingKey = keyof Settings;
 export type BankAccount = z.infer<typeof bankSchema>;
 export type PrintArea = Settings["print_areas"][number];
 export type ShirtColor = Settings["colors"][number];
+export type Contact = Settings["contact"];
 
 /** All settings, validated. Cached per request. Throws if a key is missing or malformed. */
 export const getSettings = cache(async (): Promise<Settings> => {

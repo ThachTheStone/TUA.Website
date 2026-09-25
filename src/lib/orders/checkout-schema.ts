@@ -65,12 +65,15 @@ export type CheckoutFormInput = z.input<typeof checkoutFormSchema>;
 export type CheckoutForm = z.output<typeof checkoutFormSchema>;
 
 export const checkoutItemSchema = z.object({
-  type: z.enum(["PLAIN", "CUSTOM"]),
+  type: z.enum(["PLAIN", "CUSTOM", "PROTOTYPE"]),
+  /** Ignored for PROTOTYPE: the server uses the prototype's colour. */
   color: z.string().min(1).max(50),
   size: z.string().min(1).max(20),
   quantity: z.number().int().min(1, "Số lượng tối thiểu là 1").max(50, "Số lượng tối đa 50"),
   /** Folder the design files were uploaded to (CUSTOM only). */
   uploadId: z.uuid().optional(),
+  /** PROTOTYPE only (FR27). */
+  prototypeId: z.uuid().optional(),
 });
 
 export const createOrderSchema = z.object({

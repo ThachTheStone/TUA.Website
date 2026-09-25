@@ -4,20 +4,24 @@
 import { Minus, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { ShirtPreview } from "@/components/canvas/shirt-preview";
-import { TYPE_LABEL, cartSubtotal, unavailableItems, type Catalog } from "@/components/cart/catalog";
+import { TYPE_LABEL, cartSubtotal, findPrototype, linePrice, unavailableItems, type Catalog } from "@/components/cart/catalog";
 import { Button } from "@/components/ui/button";
 import { MAX_QUANTITY, useCart, type CartItem } from "@/lib/cart/store";
 import { useHydrated } from "@/lib/cart/use-hydrated";
 import { shirtSvgUrl } from "@/lib/design/mockup";
 import { formatVND } from "@/lib/format";
+import { useIsPhone } from "@/lib/use-is-phone";
 
 function CartLine({ item, catalog, unavailable }: { item: CartItem; catalog: Catalog; unavailable: boolean }) {
   const draft = useCart((s) => (item.designDraftId ? s.drafts[item.designDraftId] : undefined));
   const setQuantity = useCart((s) => s.setQuantity);
   const removeItem = useCart((s) => s.removeItem);
-  const color = catalog.colors.find((c) => c.key === item.color);
+  // FR06: no canvas on phones, so no "Sửa thiết kế" there.
+  const isPhone = useIsPhone();
+  const proto = item.type === "PROTOTYPE" ? findPrototype(catalog, item.prototypeId) : undefined;
+  const color = catalog.colors.find((c) => c.key === (proto?.color ?? item.color));
   const hex = color?.hex ?? "#ffffff";
-  const price = catalog.prices[item.type];
+  const price = linePrice(item.type, catalog);
 
   function remove() {
     if (item.type === "CUSTOM" && !window.confirm("Xóa áo này cùng bản thiết kế khỏi giỏ hàng?")) return;
@@ -29,6 +33,8 @@ function CartLine({ item, catalog, unavailable }: { item: CartItem; catalog: Cat
       <div className="w-full shrink-0 rounded-lg bg-muted/50 p-2 sm:w-56">
         {item.type === "CUSTOM" && draft ? (
           <ShirtPreview areas={draft} printAreas={catalog.printAreas} colorHex={hex} debounceMs={0} />
+        ) : proto?.image ? (
+          <img src={proto.image} alt={proto.name} className="mx-auto aspect-square w-40 rounded-md object-cover sm:w-full" />
         ) : (
           <img src={shirtSvgUrl("front", hex)} alt="" className="mx-auto w-28" />
         )}
@@ -36,12 +42,30 @@ function CartLine({ item, catalog, unavailable }: { item: CartItem; catalog: Cat
       <div className="flex flex-1 flex-col gap-3">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="font-semibold">{TYPE_LABEL[item.type]}</p>
+            <p className="font-semibold">
+              {TYPE_LABEL[item.type]}
+              {proto && (
+                <>
+                  {": "}
+                  {proto.active ? (
+                    <Link href={`/mau-ao/${proto.slug}`} className="underline-offset-4 hover:underline">
+                      {proto.name}
+                    </Link>
+                  ) : (
+                    proto.name
+                  )}
+                </>
+              )}
+            </p>
             <p className="text-sm text-muted-foreground">
               Màu {color?.label ?? item.color} · Size {item.size} · {formatVND(price)}/áo
             </p>
             {unavailable && (
-              <p className="mt-1 text-sm text-destructive">Màu hoặc size này không còn bán. Vui lòng xóa hoặc thiết kế lại.</p>
+              <p className="mt-1 text-sm text-destructive">
+                {item.type === "PROTOTYPE"
+                  ? "Mẫu áo này đã ngừng bán. Vui lòng xóa khỏi giỏ hàng để đặt hàng."
+                  : "Màu hoặc size này không còn bán. Vui lòng xóa hoặc thiết kế lại."}
+              </p>
             )}
             {item.type === "CUSTOM" && !draft && (
               <p className="mt-1 text-sm text-destructive">Không tìm thấy bản thiết kế. Vui lòng xóa dòng này.</p>
@@ -58,7 +82,7 @@ function CartLine({ item, catalog, unavailable }: { item: CartItem; catalog: Cat
             <Plus />
           </Button>
           <div className="ml-auto flex gap-2">
-            {item.type === "CUSTOM" && draft && (
+            {item.type === "CUSTOM" && draft && isPhone === false && (
               <Button asChild variant="outline" className="h-11">
                 <Link href={`/thiet-ke?sua=${item.id}`}>
                   <Pencil /> Sửa thiết kế
@@ -88,6 +112,9 @@ export function CartView({ catalog, signedIn }: { catalog: Catalog; signedIn: bo
         <p className="text-lg">Giỏ hàng đang trống.</p>
         <div className="flex flex-wrap justify-center gap-3">
           <Button asChild size="lg">
+            <Link href="/mau-ao">Xem áo mẫu</Link>
+          </Button>
+          <Button asChild size="lg" variant="outline">
             <Link href="/thiet-ke">Tự thiết kế áo</Link>
           </Button>
           <Button asChild size="lg" variant="outline">
@@ -129,9 +156,14 @@ export function CartView({ catalog, signedIn }: { catalog: Catalog; signedIn: bo
             để đặt hàng. Giỏ hàng sẽ được giữ nguyên.
           </p>
         )}
-        <Link href="/thiet-ke" className="text-center text-sm underline underline-offset-4">
-          Thiết kế thêm áo
-        </Link>
+        <div className="flex justify-center gap-4 text-sm">
+          <Link href="/mau-ao" className="underline underline-offset-4">
+            Xem áo mẫu
+          </Link>
+          <Link href="/thiet-ke" className="underline underline-offset-4">
+            Thiết kế thêm áo
+          </Link>
+        </div>
       </aside>
     </div>
   );
