@@ -131,7 +131,8 @@ URLs are Vietnamese slugs without diacritics.
 
 ## End-to-end checklist (run before launch)
 - [ ] Custom order on an iPad, then pay 50%, confirm in admin, and move through PRINTING → QC → READY → DELIVERED. The customer receives emails and the lookup shows the history.
-- [ ] A pickup order stores the free-text location and time.
+- [ ] A pickup order stores the free-text location and the date/time picked on the calendar (a past time is refused).
+- [ ] "Quên mật khẩu" emails a reset link that works on another device and ends on /tai-khoan with the new password.
 - [ ] An unpaid order expires.
 - [ ] A workshop cash order with a scanned image.
 - [ ] A donation under 300.000đ is rejected; an anonymous donation shows "Nhà hảo tâm ẩn danh".

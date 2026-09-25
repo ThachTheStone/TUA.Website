@@ -13,7 +13,11 @@ import { createSessionClient } from "@/lib/supabase/auth";
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const next = safeNext(params.get("next"));
-  const fail = (reason: string) => NextResponse.redirect(new URL(`/dang-nhap?loi=${reason}`, request.url));
+  // "Quên mật khẩu" links come back here too (type=recovery, next=/dat-lai-mat-khau); a broken
+  // one should offer a new link rather than a sign-in message.
+  const recovery = params.get("type") === "recovery" || next.startsWith("/dat-lai-mat-khau");
+  const fail = (reason: string) =>
+    NextResponse.redirect(new URL(recovery ? "/quen-mat-khau?loi=het-han" : `/dang-nhap?loi=${reason}`, request.url));
 
   if (params.get("error")) {
     console.error("[auth/callback]", params.get("error_code"), params.get("error_description"));

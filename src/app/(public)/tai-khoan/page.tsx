@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LogoutButton } from "@/components/account/logout-button";
 import { ProfileForm } from "@/components/account/profile-form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { requireCustomer } from "@/lib/customers/session";
@@ -12,8 +13,9 @@ export const metadata: Metadata = { title: "Tài khoản", robots: { index: fals
 export const dynamic = "force-dynamic";
 
 /** FR26: profile and order history of the signed-in buyer. */
-export default async function AccountPage() {
+export default async function AccountPage({ searchParams }: { searchParams: Promise<{ mk?: string }> }) {
   const { userId, email, customer } = await requireCustomer("/tai-khoan");
+  const { mk } = await searchParams;
   const orders = await listCustomerOrders(userId);
 
   return (
@@ -22,6 +24,11 @@ export default async function AccountPage() {
         <h1 className="text-3xl font-bold tracking-tight">Xin chào, {customer.full_name}</h1>
         <LogoutButton />
       </div>
+      {mk === "moi" && (
+        <Alert>
+          <AlertDescription>Đã đặt mật khẩu mới. Lần sau hãy đăng nhập bằng mật khẩu này.</AlertDescription>
+        </Alert>
+      )}
 
       <section className="flex flex-col gap-4">
         <h2 className="text-xl font-semibold">Đơn hàng của tôi</h2>

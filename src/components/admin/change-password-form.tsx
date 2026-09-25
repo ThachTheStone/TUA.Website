@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import { changePassword } from "@/lib/auth-actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 
 const FIELDS = [
   { name: "currentPassword", label: "Mật khẩu hiện tại", autoComplete: "current-password" },
@@ -35,7 +35,7 @@ export function ChangePasswordForm() {
       {FIELDS.map((f) => (
         <div key={f.name} className="flex flex-col gap-2">
           <Label htmlFor={f.name}>{f.label}</Label>
-          <Input id={f.name} name={f.name} type="password" autoComplete={f.autoComplete} required />
+          <PasswordInput id={f.name} name={f.name} autoComplete={f.autoComplete} required />
         </div>
       ))}
       <Button type="submit" disabled={pending}>

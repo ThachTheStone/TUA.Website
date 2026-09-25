@@ -7,7 +7,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signIn, signInWithGoogle, signUp } from "@/lib/customers/actions";
+import { PasswordInput } from "@/components/ui/password-input";
+import { requestPasswordReset, resetPassword, signIn, signInWithGoogle, signUp } from "@/lib/customers/actions";
 
 // FR26 buyer auth forms. `next` is where to go after signing in (already sanitized server-side).
 
@@ -52,6 +53,23 @@ function Field({ id, label, ...props }: { id: string; label: string } & React.Co
   );
 }
 
+function PasswordField({
+  id,
+  label,
+  aside,
+  ...props
+}: { id: string; label: string; aside?: React.ReactNode } & Omit<React.ComponentProps<typeof Input>, "type">) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-baseline justify-between gap-2">
+        <Label htmlFor={id}>{label}</Label>
+        {aside}
+      </div>
+      <PasswordInput id={id} name={id} className="h-11" {...props} />
+    </div>
+  );
+}
+
 /** Submits without React's automatic form reset, so typed values survive an error. */
 function keepValues(action: (fd: FormData) => void) {
   return (e: React.FormEvent<HTMLFormElement>) => {
@@ -72,7 +90,17 @@ export function SignInForm({ next }: { next: string }) {
         </Alert>
       )}
       <Field id="email" label="Email" type="email" autoComplete="email" required />
-      <Field id="password" label="Mật khẩu" type="password" autoComplete="current-password" required />
+      <PasswordField
+        id="password"
+        label="Mật khẩu"
+        autoComplete="current-password"
+        required
+        aside={
+          <Link href="/quen-mat-khau" className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+            Quên mật khẩu?
+          </Link>
+        }
+      />
       <Button type="submit" size="lg" className="h-12" disabled={pending}>
         {pending ? "Đang đăng nhập…" : "Đăng nhập"}
       </Button>
@@ -111,8 +139,8 @@ export function SignUpForm({ next }: { next: string }) {
       <Field id="full_name" label="Họ tên" autoComplete="name" required />
       <Field id="phone" label="Số điện thoại" type="tel" inputMode="tel" autoComplete="tel" required />
       <Field id="email" label="Email" type="email" autoComplete="email" required />
-      <Field id="password" label="Mật khẩu (tối thiểu 8 ký tự)" type="password" autoComplete="new-password" minLength={8} required />
-      <Field id="confirm" label="Nhập lại mật khẩu" type="password" autoComplete="new-password" required />
+      <PasswordField id="password" label="Mật khẩu (tối thiểu 8 ký tự)" autoComplete="new-password" minLength={8} required />
+      <PasswordField id="confirm" label="Nhập lại mật khẩu" autoComplete="new-password" required />
       <Button type="submit" size="lg" className="h-12" disabled={pending}>
         {pending ? "Đang đăng ký…" : "Đăng ký"}
       </Button>
@@ -122,6 +150,61 @@ export function SignUpForm({ next }: { next: string }) {
           Đăng nhập
         </Link>
       </p>
+    </form>
+  );
+}
+
+/** Step 1 of "Quên mật khẩu": email the reset link. The answer never says whether the email exists. */
+export function ForgotPasswordForm() {
+  const [state, action, pending] = useActionState(requestPasswordReset, null);
+
+  if (state?.ok) {
+    return (
+      <Alert>
+        <AlertDescription>
+          Nếu <strong>{state.data.email}</strong> đã đăng ký tài khoản, chúng tôi đã gửi liên kết đặt lại mật khẩu tới email này. Vui lòng mở
+          email và bấm liên kết (kiểm tra cả mục Spam). Liên kết chỉ dùng được một lần.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return (
+    <form onSubmit={keepValues(action)} className="flex flex-col gap-4">
+      {state && !state.ok && (
+        <Alert variant="destructive">
+          <AlertDescription>{state.error}</AlertDescription>
+        </Alert>
+      )}
+      <Field id="email" label="Email đã đăng ký" type="email" autoComplete="email" required />
+      <Button type="submit" size="lg" className="h-12" disabled={pending}>
+        {pending ? "Đang gửi…" : "Gửi liên kết đặt lại mật khẩu"}
+      </Button>
+      <p className="text-center text-sm text-muted-foreground">
+        Nhớ ra mật khẩu?{" "}
+        <Link href="/dang-nhap" className="font-medium text-foreground underline underline-offset-4">
+          Đăng nhập
+        </Link>
+      </p>
+    </form>
+  );
+}
+
+/** Step 2: the reset link signed the buyer in; choose the new password. */
+export function ResetPasswordForm() {
+  const [state, action, pending] = useActionState(resetPassword, null);
+  return (
+    <form onSubmit={keepValues(action)} className="flex flex-col gap-4">
+      {state && !state.ok && (
+        <Alert variant="destructive">
+          <AlertDescription>{state.error}</AlertDescription>
+        </Alert>
+      )}
+      <PasswordField id="password" label="Mật khẩu mới (tối thiểu 8 ký tự)" autoComplete="new-password" minLength={8} required />
+      <PasswordField id="confirm" label="Nhập lại mật khẩu mới" autoComplete="new-password" required />
+      <Button type="submit" size="lg" className="h-12" disabled={pending}>
+        {pending ? "Đang lưu…" : "Đặt mật khẩu mới"}
+      </Button>
     </form>
   );
 }

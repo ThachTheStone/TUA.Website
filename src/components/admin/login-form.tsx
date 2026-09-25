@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export function LoginForm() {
   const [state, action, pending] = useActionState(login, null);
@@ -30,17 +31,13 @@ export function LoginForm() {
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="password">Mật khẩu</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-            />
+            <PasswordInput id="password" name="password" autoComplete="current-password" required />
           </div>
           <Button type="submit" size="lg" disabled={pending}>
             {pending ? "Đang đăng nhập…" : "Đăng nhập"}
           </Button>
+          {/* FR20: staff passwords are reset by an Admin in "Tài khoản". */}
+          <p className="text-center text-sm text-muted-foreground">Quên mật khẩu? Liên hệ Admin để được đặt lại.</p>
         </form>
       </CardContent>
     </Card>

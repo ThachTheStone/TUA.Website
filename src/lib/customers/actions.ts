@@ -129,3 +129,52 @@ export async function updateProfile(_prev: ActionResult | null, formData: FormDa
   revalidatePath("/", "layout");
   return { ok: true, data: undefined };
 }
+
+// ─── Quên mật khẩu (FR26) ──────────────────────────────────────────────────
+
+const RESET_PASSWORD_PATH = "/dat-lai-mat-khau";
+
+export type ResetRequestResult = ActionResult<{ email: string }>;
+
+/** Emails a one-time link that signs the buyer in on the "set a new password" page. */
+export async function requestPasswordReset(_prev: ResetRequestResult | null, formData: FormData): Promise<ResetRequestResult> {
+  const parsed = emailSchema.safeParse(formData.get("email"));
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+
+  const supabase = await createSessionClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo: callbackUrl(RESET_PASSWORD_PATH) });
+  if (error) {
+    console.error("[customers] resetPasswordForEmail", error.code, error.message);
+    if (error.code === "over_email_send_rate_limit") {
+      return { ok: false, error: "Hệ thống đang gửi quá nhiều email. Vui lòng thử lại sau ít phút." };
+    }
+    // Other errors (e.g. unknown email) get the same answer, so the form can't reveal who has an account.
+  }
+  return { ok: true, data: { email: parsed.data } };
+}
+
+const newPasswordSchema = z
+  .object({
+    password: z.string().min(8, "Mật khẩu phải có ít nhất 8 ký tự").max(72, "Mật khẩu tối đa 72 ký tự"),
+    confirm: z.string(),
+  })
+  .refine((v) => v.password === v.confirm, { message: "Mật khẩu xác nhận không khớp" });
+
+/** Sets the new password for the session the reset link opened. */
+export async function resetPassword(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const parsed = newPasswordSchema.safeParse({ password: formData.get("password"), confirm: formData.get("confirm") });
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+
+  const supabase = await createSessionClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Liên kết đặt lại mật khẩu đã hết hạn. Vui lòng yêu cầu liên kết mới." };
+
+  const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
+  if (error) {
+    console.error("[customers] resetPassword", error.code, error.message);
+    if (error.code === "same_password") return { ok: false, error: "Mật khẩu mới phải khác mật khẩu cũ." };
+    if (error.code === "weak_password") return { ok: false, error: "Mật khẩu quá yếu. Vui lòng chọn mật khẩu khác." };
+    return { ok: false, error: "Không đặt được mật khẩu mới. Vui lòng thử lại." };
+  }
+  redirect("/tai-khoan?mk=moi");
+}
