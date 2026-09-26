@@ -34,7 +34,7 @@ const NAV: NavItem[] = [
   { href: "/admin/workshop", label: "Tạo đơn Workshop", icon: NotebookPen },
   { href: "/admin/quyen-gop", label: "Quyên góp", icon: HandHeart },
   { href: "/admin/noi-dung", label: "Nội dung", icon: FileText, adminOnly: true },
-  { href: "/admin/mau-ao", label: "Áo mẫu", icon: Shirt, adminOnly: true },
+  { href: "/admin/mau-ao", label: "Áo mẫu", icon: Shirt },
   { href: "/admin/nha-tai-tro", label: "Nhà tài trợ", icon: Handshake, adminOnly: true },
   { href: "/admin/mau-email", label: "Mẫu email", icon: Mail, adminOnly: true },
   { href: "/admin/tai-khoan", label: "Tài khoản", icon: Users, adminOnly: true },

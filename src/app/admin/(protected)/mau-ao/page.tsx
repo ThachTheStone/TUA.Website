@@ -25,9 +25,9 @@ async function orderCounts(): Promise<Map<string, number>> {
   return counts;
 }
 
-/** FR28: prototype management (Admin only). */
+/** FR28: prototype management (Staff and Admin). */
 export default async function PrototypesPage() {
-  await requireRole(["ADMIN"]);
+  await requireRole();
   const [settings, prototypes, counts] = await Promise.all([getSettings(), listPrototypes(), orderCounts()]);
   const files = await prototypeFiles(prototypes);
 

@@ -95,7 +95,7 @@ URLs are Vietnamese slugs without diacritics.
 
 ### Phase 7 — Shirt prototypes (FR27, FR28, FR02, FR06) → `references/data-model.md` (Prototypes) ✅ done (migration 0007)
 - Migration: `prototypes` table, `item_type` + `PROTOTYPE`, `design_source` + `PROTOTYPE`, `order_items.prototype_id`.
-- Admin `/admin/mau-ao`: CRUD, sort, active toggle. Staff/Admin upload 1–4 display images (`content` bucket) and one print PNG per print area (`designs` bucket, under `prototypes/<id>/`). Check PNG pixel size against print area × DPI and warn.
+- Staff/Admin `/admin/mau-ao`: CRUD, sort, active toggle. Staff/Admin upload 1–4 display images (`content` bucket) and one print PNG per print area (`designs` bucket, under `prototypes/<id>/`). Check PNG pixel size against print area × DPI and warn.
 - Public `/mau-ao` grid and `/mau-ao/[slug]` detail: images, name, description, fixed color, size + quantity, "Thêm vào giỏ".
 - Cart: new line kind `{type: "PROTOTYPE", prototypeId, size, quantity}`; same prototype + size merges. Color comes from the prototype.
 - Checkout: server loads the prototype (must be active), uses its color and `prices.CUSTOM`, links `order_items.design_id` to the prototype's design so admin print downloads work unchanged.

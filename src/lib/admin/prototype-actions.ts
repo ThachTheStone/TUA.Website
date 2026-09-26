@@ -23,7 +23,7 @@ import { requireRole } from "@/lib/supabase/auth";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/types/action";
 
-// FR28: prototype ("Áo mẫu") management. Admin only (hard rule 8), checked in every action.
+// FR28: prototype ("Áo mẫu") management. Staff and Admin (hard rule 8), checked in every action.
 
 const slotSchema = z.object({
   prototypeId: z.uuid(),
@@ -37,7 +37,7 @@ export type UploadSlot = { bucket: string; path: string; token: string };
 
 /** Step 1 of an upload: a signed URL for exactly one file under `prototypes/<id>/`. */
 export async function prepareProtoUpload(input: z.input<typeof slotSchema>): Promise<ActionResult<UploadSlot>> {
-  await requireRole(["ADMIN"]);
+  await requireRole();
   const parsed = slotSchema.safeParse(input);
   if (!parsed.success) return fail("Dữ liệu file không hợp lệ");
   if (parsed.data.kind === "print") {
@@ -83,7 +83,7 @@ function refresh(slug?: string) {
  * for the print files (FR28), which never block saving.
  */
 export async function savePrototype(input: SavePrototypeInput): Promise<ActionResult<{ warnings: string[] }>> {
-  await requireRole(["ADMIN"]);
+  await requireRole();
   const parsed = saveSchema.safeParse(input);
   if (!parsed.success) return fail(parsed.error);
   const v = parsed.data;
@@ -180,7 +180,7 @@ export async function savePrototype(input: SavePrototypeInput): Promise<ActionRe
 
 /** Quick on/off from the list (FR28). */
 export async function setPrototypeActive(id: string, isActive: boolean): Promise<ActionResult> {
-  await requireRole(["ADMIN"]);
+  await requireRole();
   const { data, error } = await createServiceClient()
     .from("prototypes")
     .update({ is_active: isActive, updated_at: new Date().toISOString() })
@@ -194,7 +194,7 @@ export async function setPrototypeActive(id: string, isActive: boolean): Promise
 
 /** Deletes a prototype that no order uses (FR28); otherwise the admin must deactivate it. */
 export async function deletePrototype(id: string): Promise<ActionResult> {
-  await requireRole(["ADMIN"]);
+  await requireRole();
   const db = createServiceClient();
   const { count, error: countError } = await db
     .from("order_items")

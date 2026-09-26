@@ -193,7 +193,7 @@ Trang chủ gồm các phần theo thứ tự:
 **FR21 – Cài đặt hệ thống (Admin)**
 - Giá áo trơn và áo custom, danh sách màu và size, thời hạn tự hủy đơn (mặc định 24 giờ), thông tin 2 tài khoản ngân hàng (bán hàng và quỹ), mục tiêu quyên góp, số tiền quyên góp tối thiểu, thông tin liên hệ Ban tổ chức (số điện thoại/Zalo, Facebook, email) hiển thị cho khách cần hỗ trợ thiết kế.
 
-**FR28 – Quản lý mẫu áo (Admin)**
+**FR28 – Quản lý mẫu áo (Staff/Admin)**
 - Thêm, sửa, bật/tắt bán, sắp xếp thứ tự mẫu áo. Mẫu đã có trong đơn hàng không xóa được, chỉ tắt bán.
 - Mỗi mẫu gồm: tên, đường dẫn (slug), mô tả, màu áo (một màu trong cài đặt), 1–4 ảnh hiển thị (JPG/PNG/WebP, tối đa 5MB mỗi ảnh), và file in PNG cho từng vùng in được dùng (ít nhất 1 vùng, tối đa 20MB mỗi file).
 - Hệ thống kiểm tra file in đủ độ phân giải theo kích thước vùng in và DPI trong cài đặt; nếu thiếu thì cảnh báo.
@@ -429,7 +429,7 @@ Mục tiêu ra mắt theo kế hoạch ban đầu: 08/10.
 | 5 | Admin: đơn hàng, xác nhận Đã cọc / Đã thanh toán 100% / Đã giao, duyệt thiết kế, đơn Workshop | FR13–FR16, FR29, §5 | Đã code, chờ kiểm thử với cơ sở dữ liệu |
 | 5b | Mẫu email: trang Admin, biến, xem trước, gửi thử; chuyển mọi email sang dùng mẫu | FR24, FR30 | Đã code, chờ kiểm thử với cơ sở dữ liệu |
 | 6 | Chèn ảnh/sticker vào canvas; khách sửa và gửi lại thiết kế bị từ chối | FR03, FR05, FR26, FR29, BR01 | Đã code, chờ kiểm thử với cơ sở dữ liệu |
-| 7 | Áo mẫu (Admin quản lý, trang Áo mẫu, giỏ hàng, đặt hàng) và giới hạn điện thoại cho canvas | FR27, FR28, FR02, FR06, FR03, NFR02 | Đã code, chờ kiểm thử với cơ sở dữ liệu |
+| 7 | Áo mẫu (Staff/Admin quản lý, trang Áo mẫu, giỏ hàng, đặt hàng) và giới hạn điện thoại cho canvas | FR27, FR28, FR02, FR06, FR03, NFR02 | Đã code, chờ kiểm thử với cơ sở dữ liệu |
 | 8 | Quyên góp, Bảng vinh danh, Google Sheets, tự hủy đơn, dọn ảnh sau 30 ngày | FR08, FR09, FR18, FR23, FR25, NFR06 | Chưa làm |
 | 9 | Trang chủ mới: Hero, Áo mẫu, Về chúng tôi, Ý nghĩa, Vinh danh | FR01, FR17 | Chưa làm |
 | 10 | Hoàn thiện, kiểm thử trên tablet, deploy, ra mắt | NFR | Chưa làm |
