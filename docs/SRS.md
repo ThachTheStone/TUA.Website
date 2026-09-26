@@ -391,7 +391,8 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 | `order_items` | id, order_id, type (PLAIN/CUSTOM/PROTOTYPE/BLINDBOX), color, size, quantity, unit_price, design_id, prototype_id, approval_status, reject_reason, reviewed_by, reviewed_at |
 | `design_reviews` | id, order_item_id, from_status, to_status, reason, changed_by (null = khách gửi lại), design_id, changed_at |
 | `design_assets` | id, customer_id, file_path, width_px, height_px, bytes, created_at (ảnh khách tải lên, bucket riêng tư) |
-| `prototypes` | id, slug, name, description, color, image_urls, design_id (file in), sort_order, is_active, created_at |
+| `prototypes` | id, slug, name, description, color, image_urls, design_id (file in), sort_order, stock_limit (giới hạn số lượng, null = không giới hạn), is_active, created_at |
+| `shirt_stock` | color, size, quantity (tổng số áo trơn Ban tổ chức có; không có dòng = không giới hạn), updated_at. Còn lại = quantity − số áo cùng màu/size trong các đơn chưa Hủy/Hết hạn |
 | `designs` | id, source (CANVAS/SCAN/PROTOTYPE), canvas_json, preview_url, created_at |
 | `design_files` | id, design_id, area (vùng 1/2/3), file_url, width_px, height_px |
 | `order_status_history` | id, order_id, from_status, to_status, note, changed_by, changed_at |
@@ -459,5 +460,6 @@ Mục tiêu ra mắt theo kế hoạch ban đầu: 08/10.
 | 7 | Áo mẫu (Staff/Admin quản lý, trang Áo mẫu, giỏ hàng, đặt hàng) và giới hạn điện thoại cho canvas | FR27, FR28, FR02, FR06, FR03, NFR02 | Đã code, chờ kiểm thử với cơ sở dữ liệu |
 | 8 | Quyên góp, Bảng vinh danh, Google Sheets, tự hủy đơn, dọn ảnh sau 30 ngày | FR08, FR09, FR18, FR23, FR25, NFR06 | Đã code, chờ kiểm thử với cơ sở dữ liệu |
 | 8b | Blindbox Hot Wheels, mã giảm giá, combo; giá mới; chỉ bán màu Đen | FR31, FR32, BR09, BR13 | Đã code, chờ kiểm thử với cơ sở dữ liệu (migration 0010) |
-| 9 | Trang chủ mới: Hero, Áo mẫu, Về chúng tôi, Ý nghĩa, Vinh danh | FR01, FR17 | Đã code (migration 0011); chờ nội dung thật và kiểm thử giao diện 390/820/1440px |
+| 9 | Trang chủ mới: Hero, Áo mẫu, Về chúng tôi, Ý nghĩa, Vinh danh | FR01, FR17 | Đã code (migration 0011); đã kiểm thử giao diện 390/820/1440px (thêm menu điện thoại, sửa font); chờ nội dung thật |
+| 9b | Kho áo: tồn kho áo trơn theo màu × size (trang Kho áo), giới hạn số lượng từng mẫu áo, trừ kho khi đặt hàng, trả lại khi Hủy/Hết hạn, chặn đặt khi hết hàng (web, giỏ hàng, Workshop), nhãn "Hết hàng" trên lưới Áo mẫu | §10 #7, FR02, FR06, FR16, FR27, FR28 | Đã code (migration 0012); đã kiểm thử với cơ sở dữ liệu và trên trình duyệt (trang khách, giỏ hàng); chờ kiểm thử trang Kho áo, form Workshop và bước đặt hàng (cần đăng nhập) |
 | 10 | Hoàn thiện, kiểm thử trên tablet, deploy, ra mắt | NFR | Chưa làm |
