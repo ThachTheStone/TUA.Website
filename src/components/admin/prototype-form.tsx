@@ -2,7 +2,6 @@
 
 /* eslint-disable @next/next/no-img-element -- local blob previews and signed URLs */
 import { ArrowLeft, ArrowRight, Download, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Field } from "@/components/admin/form-kit";
@@ -65,7 +64,6 @@ export function PrototypeForm({
   printAreas: AreaInfo[];
   dpi: number;
 }) {
-  const router = useRouter();
   const isNew = !prototype;
   const [pending, startTransition] = useTransition();
   const [progress, setProgress] = useState<string | null>(null);
@@ -145,29 +143,29 @@ export function PrototypeForm({
 
     startTransition(async () => {
       try {
+        // Uploads run in parallel; the order of display images is kept.
         const newFiles = f.images.filter((i) => i.file).length + [...changedAreas].filter((a) => f.prints[a]?.file).length;
         let done = 0;
-        const step = () => setProgress(`Đang tải file ${++done}/${newFiles}…`);
+        const tick = (path: string) => {
+          setProgress(`Đã tải ${++done}/${newFiles} file…`);
+          return path;
+        };
+        if (newFiles) setProgress(`Đang tải ${newFiles} file…`);
 
-        const images: SavePrototypeInput["images"] = [];
-        for (const image of f.images) {
-          if (image.file) {
-            step();
-            images.push({ path: await upload(protoId, "image", image.file) });
-          } else {
-            images.push({ url: image.url });
-          }
-        }
-        const prints: Record<string, string | null> = {};
-        for (const area of changedAreas) {
-          const file = f.prints[area]?.file;
-          if (file) {
-            step();
-            prints[area] = await upload(protoId, "print", file, area);
-          } else if (!f.prints[area]) {
-            prints[area] = null;
-          }
-        }
+        const imagesTask = Promise.all(
+          f.images.map(async (image): Promise<SavePrototypeInput["images"][number]> =>
+            image.file ? { path: tick(await upload(protoId, "image", image.file)) } : { url: image.url },
+          ),
+        );
+        const printsTask = Promise.all(
+          [...changedAreas].map(async (area): Promise<[string, string | null] | null> => {
+            const file = f.prints[area]?.file;
+            if (file) return [area, tick(await upload(protoId, "print", file, area))];
+            return f.prints[area] ? null : [area, null];
+          }),
+        );
+        const [images, printEntries] = await Promise.all([imagesTask, printsTask]);
+        const prints: Record<string, string | null> = Object.fromEntries(printEntries.filter((e) => e !== null));
 
         setProgress("Đang lưu…");
         const result = await savePrototype({
@@ -190,7 +188,7 @@ export function PrototypeForm({
           f.images.forEach((i) => i.file && URL.revokeObjectURL(i.url));
           setF(initial());
         }
-        router.refresh();
+        // No router.refresh(): savePrototype's revalidatePath already sends the updated page.
       } catch (err) {
         setError(err instanceof Error ? err.message : "Không lưu được mẫu áo. Vui lòng thử lại");
       } finally {
@@ -260,7 +258,7 @@ export function PrototypeForm({
             <div className="flex flex-wrap gap-3">
               {f.images.map((image, i) => (
                 <div key={image.key} className="flex flex-col items-center gap-1">
-                  <img src={image.url} alt="" className="size-28 rounded-md border bg-muted object-cover" />
+                  <img src={image.url} alt="" loading="lazy" decoding="async" className="size-28 rounded-md border bg-muted object-cover" />
                   <div className="flex gap-1">
                     <Button type="button" variant="ghost" size="icon" className="size-7" aria-label="Lên trước" disabled={i === 0} onClick={() => moveImage(i, -1)}>
                       <ArrowLeft />

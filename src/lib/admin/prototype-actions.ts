@@ -102,40 +102,36 @@ export async function savePrototype(input: SavePrototypeInput): Promise<ActionRe
   };
 
   // Display images: kept URLs must already belong to this prototype; new ones are checked by their bytes.
-  const imageUrls: string[] = [];
   for (const image of v.images) {
-    if ("url" in image) {
-      if (!current?.image_urls.includes(image.url)) return fail("Ảnh hiển thị không hợp lệ. Vui lòng tải lại trang.");
-      imageUrls.push(image.url);
-      continue;
+    if ("url" in image ? !current?.image_urls.includes(image.url) : !image.path.startsWith(folder)) {
+      return fail("Ảnh hiển thị không hợp lệ. Vui lòng tải lại trang.");
     }
-    if (!image.path.startsWith(folder)) return fail("Ảnh hiển thị không hợp lệ");
-    const problem = await verifyImage(image.path);
-    if (problem) {
-      await discard();
-      return fail(problem);
-    }
-    imageUrls.push(publicImageUrl(image.path));
   }
-
-  // Print files: start from the current design, apply the changes.
-  const { data: currentFiles } = current
-    ? await db.from("design_files").select("area, file_path, width_px, height_px").eq("design_id", current.design_id)
-    : { data: [] as { area: string; file_path: string; width_px: number | null; height_px: number | null }[] };
-  const files = new Map((currentFiles ?? []).map((f) => [f.area, f]));
   for (const [area, path] of Object.entries(v.prints)) {
     if (!settings.print_areas.some((a) => a.key === area)) return fail("Vùng in không hợp lệ");
-    if (path === null) {
-      files.delete(area);
-      continue;
-    }
-    if (!path.startsWith(`${folder}${area}-`)) return fail("File in không hợp lệ");
-    const png = await verifyPrint(path);
-    if (!png.ok) {
-      await discard();
-      return fail(png.error);
-    }
-    files.set(area, { area, file_path: path, width_px: png.width, height_px: png.height });
+    if (path !== null && !path.startsWith(`${folder}${area}-`)) return fail("File in không hợp lệ");
+  }
+
+  // Byte checks of every new upload, plus the current print files, all at once.
+  const [imageProblems, printChecks, { data: currentFiles }] = await Promise.all([
+    Promise.all(v.images.map((image) => ("path" in image ? verifyImage(image.path) : null))),
+    Promise.all(Object.entries(v.prints).map(async ([area, path]) => [area, path, path ? await verifyPrint(path) : null] as const)),
+    current
+      ? db.from("design_files").select("area, file_path, width_px, height_px").eq("design_id", current.design_id)
+      : Promise.resolve({ data: [] as { area: string; file_path: string; width_px: number | null; height_px: number | null }[] }),
+  ]);
+  const problem = imageProblems.find(Boolean) ?? printChecks.flatMap(([, , png]) => (png && !png.ok ? [png.error] : []))[0];
+  if (problem) {
+    await discard();
+    return fail(problem);
+  }
+  const imageUrls = v.images.map((image) => ("url" in image ? image.url : publicImageUrl(image.path)));
+
+  // Print files: start from the current design, apply the changes.
+  const files = new Map((currentFiles ?? []).map((f) => [f.area, f]));
+  for (const [area, path, png] of printChecks) {
+    if (path === null || !png?.ok) files.delete(area);
+    else files.set(area, { area, file_path: path, width_px: png.width, height_px: png.height });
   }
   if (!files.size) {
     await discard();
