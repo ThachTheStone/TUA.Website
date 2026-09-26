@@ -11,8 +11,8 @@ import { newId, type DesignAreas } from "@/lib/design/types";
 
 export type CartItem = {
   id: string;
-  type: "PLAIN" | "CUSTOM" | "PROTOTYPE";
-  /** settings.colors[].key. PROTOTYPE: a copy of the prototype's colour, for display only. */
+  type: "PLAIN" | "CUSTOM" | "PROTOTYPE" | "BLINDBOX";
+  /** settings.colors[].key. PROTOTYPE: a copy of the prototype's colour, for display only. BLINDBOX: "". */
   color: string;
   size: string;
   quantity: number;
@@ -35,6 +35,8 @@ type CartState = {
   addPlain: (input: { color: string; size: string; quantity: number }) => void;
   /** FR06: the same prototype in the same size merges into one line. */
   addPrototype: (input: { prototypeId: string; color: string; size: string; quantity: number }) => void;
+  /** FR32: all blindboxes share one line. */
+  addBlindbox: (quantity: number) => void;
   /** Adds a custom shirt, or updates `wip.editingItemId` when the customer reopened one. */
   saveCustom: (input: { itemId: string | null; color: string; size: string; areas: DesignAreas }) => void;
   setQuantity: (itemId: string, quantity: number) => void;
@@ -108,6 +110,15 @@ export const useCart = create<CartState>()(
           return {
             items: [...s.items, { id: newId(), type: "PROTOTYPE", prototypeId, color, size, quantity: clampQty(quantity) }],
           };
+        }),
+
+      addBlindbox: (quantity) =>
+        set((s) => {
+          const same = s.items.find((i) => i.type === "BLINDBOX");
+          if (same) {
+            return { items: s.items.map((i) => (i === same ? { ...i, quantity: clampQty(i.quantity + quantity) } : i)) };
+          }
+          return { items: [...s.items, { id: newId(), type: "BLINDBOX", color: "", size: "", quantity: clampQty(quantity) }] };
         }),
 
       saveCustom: ({ itemId, color, size, areas }) =>

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { TYPE_LABEL, cartSubtotal, findPrototype, linePrice, unavailableItems, type Catalog } from "@/components/cart/catalog";
+import { TYPE_LABEL, findPrototype, linePrice, unavailableItems, type Catalog } from "@/components/cart/catalog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,14 +15,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCart } from "@/lib/cart/store";
 import { uploadCartDesigns, type SubmitProgress } from "@/lib/cart/submit";
 import { useHydrated } from "@/lib/cart/use-hydrated";
-import { formatVND } from "@/lib/format";
-import { createOrder } from "@/lib/orders/actions";
+import { colorLabel, formatVND } from "@/lib/format";
+import { checkPromoCode, createOrder } from "@/lib/orders/actions";
 import {
   checkoutFormSchema,
   type CheckoutForm as CheckoutValues,
   type CheckoutFormInput,
   todayInVietnam,
 } from "@/lib/orders/checkout-schema";
+import { computeDiscount, promoSummary, type PromoRule } from "@/lib/orders/discounts";
 import { PREPAY_PERCENTS, prepayAmount } from "@/lib/orders/pricing";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +48,11 @@ export function CheckoutForm({ catalog, contact }: { catalog: Catalog; contact: 
   const clearCart = useCart((s) => s.clear);
   const [progress, setProgress] = useState<SubmitProgress | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
+  // FR31: the code as typed, and the rule once the server accepted it.
+  const [codeInput, setCodeInput] = useState("");
+  const [promo, setPromo] = useState<PromoRule | null>(null);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [checkingCode, setCheckingCode] = useState(false);
 
   const form = useForm<CheckoutFormInput, unknown, CheckoutValues>({
     resolver: zodResolver(checkoutFormSchema),
@@ -90,8 +96,29 @@ export function CheckoutForm({ catalog, contact }: { catalog: Catalog; contact: 
     );
   }
 
-  const subtotal = cartSubtotal(items, catalog);
+  const discount = computeDiscount(items, catalog.prices, catalog.combos, promo);
+  const subtotal = discount.total;
   const submitting = progress !== null;
+
+  async function applyCode() {
+    const code = codeInput.trim();
+    if (!code) return;
+    setCheckingCode(true);
+    setCodeError(null);
+    const result = await checkPromoCode(code);
+    setCheckingCode(false);
+    if (result.ok) setPromo(result.data);
+    else {
+      setPromo(null);
+      setCodeError(result.error);
+    }
+  }
+
+  function removeCode() {
+    setPromo(null);
+    setCodeInput("");
+    setCodeError(null);
+  }
 
   async function onSubmit(values: CheckoutValues) {
     setServerError(null);
@@ -108,6 +135,7 @@ export function CheckoutForm({ catalog, contact }: { catalog: Catalog; contact: 
           uploadId: uploads.get(i.id),
           prototypeId: i.type === "PROTOTYPE" ? i.prototypeId : undefined,
         })),
+        promoCode: promo?.code,
       });
       if (!result.ok) throw new Error(result.error);
       clearCart();
@@ -238,19 +266,77 @@ export function CheckoutForm({ catalog, contact }: { catalog: Catalog; contact: 
       </fieldset>
 
       <aside className="flex h-fit flex-col gap-4 rounded-xl border p-5 lg:sticky lg:top-20">
-        <h2 className="font-semibold">Đơn hàng ({items.reduce((n, i) => n + i.quantity, 0)} áo)</h2>
+        <h2 className="font-semibold">Đơn hàng ({items.reduce((n, i) => n + i.quantity, 0)} sản phẩm)</h2>
         <ul className="flex flex-col gap-2 text-sm">
           {items.map((i) => (
             <li key={i.id} className="flex justify-between gap-2">
               <span>
-                {i.type === "PROTOTYPE" ? `${TYPE_LABEL.PROTOTYPE} "${findPrototype(catalog, i.prototypeId)?.name ?? ""}"` : TYPE_LABEL[i.type]} ·{" "}
-                {catalog.colors.find((c) => c.key === i.color)?.label ?? i.color} · {i.size} × {i.quantity}
+                {i.type === "BLINDBOX"
+                  ? `${catalog.blindbox?.name ?? TYPE_LABEL.BLINDBOX} × ${i.quantity}`
+                  : `${i.type === "PROTOTYPE" ? `${TYPE_LABEL.PROTOTYPE} "${findPrototype(catalog, i.prototypeId)?.name ?? ""}"` : TYPE_LABEL[i.type]} · ${colorLabel(catalog.colors, i.color)} · ${i.size} × ${i.quantity}`}
               </span>
               <span className="tabular-nums">{formatVND(linePrice(i.type, catalog) * i.quantity)}</span>
             </li>
           ))}
         </ul>
+        <div className="flex flex-col gap-2 border-t pt-3">
+          <Label htmlFor="promo_code">Mã giảm giá</Label>
+          {promo && !discount.promoProblem ? (
+            <div className="flex items-center justify-between gap-2 rounded-md border border-emerald-600/40 bg-emerald-50 px-3 py-2 text-sm dark:bg-emerald-950">
+              <span>
+                <span className="font-semibold">{promo.code}</span>
+                <span className="block text-xs text-muted-foreground">{promoSummary(promo)}</span>
+              </span>
+              <Button type="button" variant="ghost" size="sm" onClick={removeCode} disabled={submitting}>
+                Bỏ mã
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Input
+                id="promo_code"
+                value={codeInput}
+                onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void applyCode();
+                  }
+                }}
+                maxLength={30}
+                autoComplete="off"
+                disabled={submitting}
+              />
+              <Button type="button" variant="outline" onClick={() => void applyCode()} disabled={submitting || checkingCode || !codeInput.trim()}>
+                {checkingCode ? <Loader2 className="animate-spin" /> : "Áp dụng"}
+              </Button>
+            </div>
+          )}
+          {(codeError ?? discount.promoProblem) && <p className="text-sm text-destructive">{codeError ?? discount.promoProblem}</p>}
+        </div>
         <div className="flex flex-col gap-1 border-t pt-3 text-sm">
+          {discount.discount > 0 && (
+            <>
+              <p className="flex justify-between">
+                <span className="text-muted-foreground">Tiền hàng</span>
+                <span className="tabular-nums">{formatVND(discount.itemsTotal)}</span>
+              </p>
+              {discount.combos.map((c) => (
+                <p key={c.id} className="flex justify-between gap-2 text-emerald-700 dark:text-emerald-400">
+                  <span>
+                    Combo {c.name} ×{c.times}
+                  </span>
+                  <span className="tabular-nums">−{formatVND(c.saving)}</span>
+                </p>
+              ))}
+              {discount.promo && (
+                <p className="flex justify-between gap-2 text-emerald-700 dark:text-emerald-400">
+                  <span>Mã {discount.promo.code}</span>
+                  <span className="tabular-nums">−{formatVND(discount.promo.discount)}</span>
+                </p>
+              )}
+            </>
+          )}
           <p className="flex justify-between">
             <span className="text-muted-foreground">Tổng đơn</span>
             <span className="font-semibold tabular-nums">{formatVND(subtotal)}</span>

@@ -23,7 +23,7 @@ export default async function PromotionsPage() {
   return (
     <div className="flex flex-col gap-6">
       <p className="text-sm text-muted-foreground">
-        Khuyến mãi chỉ là nội dung hiển thị trên trang chủ, không tự động giảm giá trong giỏ hàng.
+        Khuyến mãi ở đây chỉ là nội dung hiển thị trên trang chủ. Mã giảm giá và combo tự trừ tiền nằm ở mục Giảm giá.
       </p>
 
       <EditPanel summary={<span className="font-medium">+ Thêm khuyến mãi</span>} defaultOpen={promotions.length === 0}>

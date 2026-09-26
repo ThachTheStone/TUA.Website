@@ -14,7 +14,7 @@ export function CartLink() {
     <Link
       href="/gio-hang"
       className="relative flex size-10 items-center justify-center rounded-md hover:bg-muted"
-      aria-label={shown ? `Giỏ hàng (${shown} áo)` : "Giỏ hàng"}
+      aria-label={shown ? `Giỏ hàng (${shown} sản phẩm)` : "Giỏ hàng"}
     >
       <ShoppingCart className="size-5" />
       {shown > 0 && (

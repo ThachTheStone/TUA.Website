@@ -3,6 +3,7 @@ import { formatVND } from "@/lib/format";
 import { minConfirmAmount } from "@/lib/orders/pricing";
 import { CLOSED_STATUSES, PAYMENT_ALLOWED, PAYMENT_LABEL, STATUS_LABEL } from "@/lib/orders/state-machine";
 import { transitionOrder } from "@/lib/orders/transition";
+import { syncSheetsLater } from "@/lib/sheets";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/types/action";
 import type { OrderStatus, PaymentMethod, PaymentStatus } from "@/types/db";
@@ -91,5 +92,6 @@ export async function confirmPayment(orderId: string, input: ConfirmPaymentInput
   }
   if (!changed) return { ok: false, error: "Đơn hàng vừa được cập nhật bởi người khác. Vui lòng tải lại trang." };
 
+  syncSheetsLater();
   return { ok: true, data: { amount, paymentStatus: to, statusChanged: nextStatus !== status } };
 }

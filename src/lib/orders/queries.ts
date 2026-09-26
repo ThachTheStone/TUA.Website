@@ -1,4 +1,5 @@
 import "server-only";
+import { colorLabel } from "@/lib/format";
 import { APPROVAL_LABEL, PAYMENT_LABEL, STATUS_LABEL } from "@/lib/orders/state-machine";
 import { getSettings, type Settings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -27,6 +28,10 @@ export type OrderView = {
   paymentLabel: string;
   createdAt: string;
   fulfillment: FulfillmentType;
+  /** FR31: before discount, the discount, and what was applied. */
+  itemsTotal: number;
+  discountAmount: number;
+  discountNote: string | null;
   subtotal: number;
   prepayAmount: number;
   paidAmount: number;
@@ -53,11 +58,11 @@ export type OrderView = {
 };
 
 const ORDER_FIELDS =
-  "id, code, access_token, status, payment_status, created_at, fulfillment, subtotal, prepay_amount, paid_amount, expires_at";
+  "id, code, access_token, status, payment_status, created_at, fulfillment, items_total, discount_amount, discount_note, subtotal, prepay_amount, paid_amount, expires_at";
 
 type OrderRow = Pick<
   Order,
-  "id" | "code" | "access_token" | "status" | "payment_status" | "created_at" | "fulfillment" | "subtotal" | "prepay_amount" | "paid_amount" | "expires_at"
+  "id" | "code" | "access_token" | "status" | "payment_status" | "created_at" | "fulfillment" | "items_total" | "discount_amount" | "discount_note" | "subtotal" | "prepay_amount" | "paid_amount" | "expires_at"
 >;
 
 export function isOverdue(order: Pick<Order, "status" | "expires_at">): boolean {
@@ -92,7 +97,6 @@ async function buildView(order: OrderRow): Promise<OrderView> {
       .eq("order_id", order.id)
       .order("changed_at", { ascending: true }),
   ]);
-  const colorLabel = (key: string) => settings.colors.find((c) => c.key === key)?.label ?? key;
   const overdue = isOverdue(order);
 
   return {
@@ -104,6 +108,9 @@ async function buildView(order: OrderRow): Promise<OrderView> {
     paymentLabel: order.status === "DELIVERED" && order.payment_status === "DEPOSIT_PAID" ? "Còn nợ" : PAYMENT_LABEL[order.payment_status],
     createdAt: order.created_at,
     fulfillment: order.fulfillment,
+    itemsTotal: order.items_total,
+    discountAmount: order.discount_amount,
+    discountNote: order.discount_note,
     subtotal: order.subtotal,
     prepayAmount: order.prepay_amount,
     paidAmount: order.paid_amount,
@@ -113,7 +120,7 @@ async function buildView(order: OrderRow): Promise<OrderView> {
       id: i.id,
       type: i.type,
       prototypeName: (i.prototypes as unknown as { name: string } | null)?.name ?? null,
-      colorLabel: colorLabel(i.color),
+      colorLabel: colorLabel(settings.colors, i.color),
       size: i.size,
       quantity: i.quantity,
       unitPrice: i.unit_price,

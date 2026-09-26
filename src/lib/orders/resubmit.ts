@@ -4,6 +4,7 @@ import type { DesignAreas } from "@/lib/design/types";
 import { DESIGNS_BUCKET, collectUploadedDesign } from "@/lib/orders/design-upload";
 import { CLOSED_STATUSES } from "@/lib/orders/state-machine";
 import { getSettings } from "@/lib/settings";
+import { syncSheetsLater } from "@/lib/sheets";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/types/action";
 import type { OrderStatus } from "@/types/db";
@@ -90,5 +91,6 @@ export async function resubmitDesign(customerId: string, code: string, itemId: s
     return { ok: false, error: "Không gửi lại được thiết kế. Vui lòng thử lại." };
   }
   if (!changed) return { ok: false, error: "Thiết kế vừa được cập nhật. Vui lòng tải lại trang." };
+  syncSheetsLater();
   return { ok: true, data: undefined };
 }

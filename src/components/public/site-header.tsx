@@ -3,11 +3,12 @@ import { AccountLink } from "@/components/account/account-link";
 import { CartLink } from "@/components/public/cart-link";
 import type { CustomerSession } from "@/lib/customers/session";
 
-// Links are added here as later phases ship their pages (quyên góp).
 const NAV = [
   { href: "/mau-ao", label: "Áo mẫu" },
   { href: "/thiet-ke", label: "Thiết kế áo" },
   { href: "/ao-tron", label: "Áo trơn" },
+  { href: "/blindbox", label: "Blindbox" },
+  { href: "/quyen-gop", label: "Quyên góp" },
   { href: "/tra-cuu", label: "Tra cứu đơn" },
   { href: "/vinh-danh", label: "Vinh danh" },
 ];

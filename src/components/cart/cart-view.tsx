@@ -1,15 +1,16 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element -- inline SVG mockup */
-import { Minus, Pencil, Plus, Trash2 } from "lucide-react";
+import { Minus, Package, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { ShirtPreview } from "@/components/canvas/shirt-preview";
-import { TYPE_LABEL, cartSubtotal, findPrototype, linePrice, unavailableItems, type Catalog } from "@/components/cart/catalog";
+import { TYPE_LABEL, findPrototype, linePrice, unavailableItems, variantText, type Catalog } from "@/components/cart/catalog";
 import { Button } from "@/components/ui/button";
 import { MAX_QUANTITY, useCart, type CartItem } from "@/lib/cart/store";
 import { useHydrated } from "@/lib/cart/use-hydrated";
 import { shirtSvgUrl } from "@/lib/design/mockup";
-import { formatVND } from "@/lib/format";
+import { colorLabel, formatVND } from "@/lib/format";
+import { computeDiscount } from "@/lib/orders/discounts";
 import { useIsPhone } from "@/lib/use-is-phone";
 
 function CartLine({ item, catalog, unavailable }: { item: CartItem; catalog: Catalog; unavailable: boolean }) {
@@ -22,6 +23,9 @@ function CartLine({ item, catalog, unavailable }: { item: CartItem; catalog: Cat
   const color = catalog.colors.find((c) => c.key === (proto?.color ?? item.color));
   const hex = color?.hex ?? "#ffffff";
   const price = linePrice(item.type, catalog);
+  const isBox = item.type === "BLINDBOX";
+  const box = isBox ? catalog.blindbox : null;
+  const maxQty = box ? Math.max(1, Math.min(MAX_QUANTITY, box.remaining)) : MAX_QUANTITY;
 
   function remove() {
     if (item.type === "CUSTOM" && !window.confirm("Xóa áo này cùng bản thiết kế khỏi giỏ hàng?")) return;
@@ -35,6 +39,12 @@ function CartLine({ item, catalog, unavailable }: { item: CartItem; catalog: Cat
           <ShirtPreview areas={draft} printAreas={catalog.printAreas} colorHex={hex} debounceMs={0} />
         ) : proto?.image ? (
           <img src={proto.image} alt={proto.name} className="mx-auto aspect-square w-40 rounded-md object-cover sm:w-full" />
+        ) : isBox ? (
+          box?.image ? (
+            <img src={box.image} alt={box.name} className="mx-auto aspect-square w-40 rounded-md object-cover sm:w-full" />
+          ) : (
+            <Package className="mx-auto size-20 text-muted-foreground" aria-hidden />
+          )
         ) : (
           <img src={shirtSvgUrl("front", hex)} alt="" className="mx-auto w-28" />
         )}
@@ -43,7 +53,13 @@ function CartLine({ item, catalog, unavailable }: { item: CartItem; catalog: Cat
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="font-semibold">
-              {TYPE_LABEL[item.type]}
+              {isBox ? (
+                <Link href="/blindbox" className="underline-offset-4 hover:underline">
+                  {box?.name ?? TYPE_LABEL.BLINDBOX}
+                </Link>
+              ) : (
+                TYPE_LABEL[item.type]
+              )}
               {proto && (
                 <>
                   {": "}
@@ -58,13 +74,19 @@ function CartLine({ item, catalog, unavailable }: { item: CartItem; catalog: Cat
               )}
             </p>
             <p className="text-sm text-muted-foreground">
-              Màu {color?.label ?? item.color} · Size {item.size} · {formatVND(price)}/áo
+              {isBox
+                ? `${formatVND(price)}/hộp`
+                : `${variantText(item, color?.label ?? colorLabel(catalog.colors, item.color))} · ${formatVND(price)}/áo`}
             </p>
             {unavailable && (
               <p className="mt-1 text-sm text-destructive">
-                {item.type === "PROTOTYPE"
-                  ? "Mẫu áo này đã ngừng bán. Vui lòng xóa khỏi giỏ hàng để đặt hàng."
-                  : "Màu hoặc size này không còn bán. Vui lòng xóa hoặc thiết kế lại."}
+                {isBox
+                  ? box && box.active && box.remaining > 0
+                    ? `Chỉ còn ${box.remaining} hộp. Vui lòng giảm số lượng.`
+                    : "Blindbox đã hết hàng hoặc ngừng bán. Vui lòng xóa khỏi giỏ hàng."
+                  : item.type === "PROTOTYPE"
+                    ? "Mẫu áo này đã ngừng bán. Vui lòng xóa khỏi giỏ hàng để đặt hàng."
+                    : "Màu hoặc size này không còn bán. Vui lòng xóa hoặc thiết kế lại."}
               </p>
             )}
             {item.type === "CUSTOM" && !draft && (
@@ -78,7 +100,7 @@ function CartLine({ item, catalog, unavailable }: { item: CartItem; catalog: Cat
             <Minus />
           </Button>
           <span className="w-8 text-center tabular-nums">{item.quantity}</span>
-          <Button type="button" variant="outline" size="icon" className="size-11" aria-label="Tăng" disabled={item.quantity >= MAX_QUANTITY} onClick={() => setQuantity(item.id, item.quantity + 1)}>
+          <Button type="button" variant="outline" size="icon" className="size-11" aria-label="Tăng" disabled={item.quantity >= maxQty} onClick={() => setQuantity(item.id, item.quantity + 1)}>
             <Plus />
           </Button>
           <div className="ml-auto flex gap-2">
@@ -120,6 +142,11 @@ export function CartView({ catalog, signedIn }: { catalog: Catalog; signedIn: bo
           <Button asChild size="lg" variant="outline">
             <Link href="/ao-tron">Mua áo trơn</Link>
           </Button>
+          {catalog.blindbox?.active && (
+            <Button asChild size="lg" variant="outline">
+              <Link href="/blindbox">Blindbox Hot Wheels</Link>
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -128,6 +155,8 @@ export function CartView({ catalog, signedIn }: { catalog: Catalog; signedIn: bo
   const unavailable = unavailableItems(items, catalog);
   const missingDesign = items.some((i) => i.type === "CUSTOM" && !i.designDraftId);
   const blocked = unavailable.size > 0 || missingDesign;
+  // FR31: combos apply by themselves; a promo code is entered at checkout.
+  const discount = computeDiscount(items, catalog.prices, catalog.combos, null);
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
@@ -137,10 +166,27 @@ export function CartView({ catalog, signedIn }: { catalog: Catalog; signedIn: bo
         ))}
       </ul>
       <aside className="flex h-fit flex-col gap-4 rounded-xl border p-5 lg:sticky lg:top-20">
+        {discount.discount > 0 && (
+          <div className="flex flex-col gap-1 text-sm">
+            <p className="flex justify-between">
+              <span className="text-muted-foreground">Tiền hàng</span>
+              <span className="tabular-nums">{formatVND(discount.itemsTotal)}</span>
+            </p>
+            {discount.combos.map((c) => (
+              <p key={c.id} className="flex justify-between gap-2 text-emerald-700 dark:text-emerald-400">
+                <span>
+                  Combo {c.name} ×{c.times}
+                </span>
+                <span className="tabular-nums">−{formatVND(c.saving)}</span>
+              </p>
+            ))}
+          </div>
+        )}
         <p className="flex items-baseline justify-between">
           <span className="text-muted-foreground">Tạm tính</span>
-          <span className="text-xl font-bold">{formatVND(cartSubtotal(items, catalog))}</span>
+          <span className="text-xl font-bold">{formatVND(discount.total)}</span>
         </p>
+        <p className="text-sm text-muted-foreground">Có mã giảm giá? Nhập ở bước đặt hàng.</p>
         <p className="text-sm text-muted-foreground">
           Phí vận chuyển (nếu giao hàng) bạn trả trực tiếp cho đơn vị vận chuyển.
         </p>

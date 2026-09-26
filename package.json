@@ -11,6 +11,7 @@
     "create-admin": "tsx --env-file=.env.local scripts/create-admin.ts"
   },
   "dependencies": {
+    "@googleapis/sheets": "^18.0.1",
     "@hookform/resolvers": "^5.9.1",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.0",

@@ -8,6 +8,7 @@ import { reviewDesign } from "@/lib/orders/approval";
 import { notifyOrder } from "@/lib/orders/notify";
 import { confirmPayment } from "@/lib/orders/payments";
 import { transitionOrder } from "@/lib/orders/transition";
+import { syncSheetsLater } from "@/lib/sheets";
 import { requireRole } from "@/lib/supabase/auth";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/types/action";
@@ -105,6 +106,7 @@ export async function markRefunded(orderId: string, code: string): Promise<Actio
     .select("id");
   if (error) return fail("Không cập nhật được trạng thái hoàn tiền");
   if (!data?.length) return fail("Đơn không ở trạng thái cần hoàn tiền");
+  syncSheetsLater();
   refresh(code);
   return OK;
 }

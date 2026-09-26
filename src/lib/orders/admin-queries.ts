@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { signedAssetUrls } from "@/lib/design/assets.server";
+import { colorLabel } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
 import type {
@@ -207,7 +208,6 @@ export async function getAdminOrder(code: string): Promise<AdminOrder | null> {
   const assetIds = itemRows.flatMap((i) => i.designs?.canvas_json?.assets ?? []);
   const assetUrlById = await signedAssetUrls(assetIds, null);
 
-  const colorLabel = (key: string) => settings.colors.find((c) => c.key === key)?.label ?? key;
   const areaLabel = (key: string) => settings.print_areas.find((a) => a.key === key)?.label ?? key;
   const itemIndex = new Map(itemRows.map((i, n) => [i.id, n + 1]));
 
@@ -220,7 +220,7 @@ export async function getAdminOrder(code: string): Promise<AdminOrder | null> {
         index: n + 1,
         type: i.type,
         prototype: i.prototypes ? { name: i.prototypes.name, slug: i.prototypes.slug, image: i.prototypes.image_urls[0] ?? null } : null,
-        colorLabel: colorLabel(i.color),
+        colorLabel: colorLabel(settings.colors, i.color),
         size: i.size,
         quantity: i.quantity,
         unitPrice: i.unit_price,

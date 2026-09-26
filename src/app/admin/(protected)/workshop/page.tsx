@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { WorkshopForm } from "@/components/admin/orders/workshop-form";
-import { toCatalog } from "@/components/cart/catalog";
-import { listProtoSummaries } from "@/lib/prototypes/queries";
-import { getSettings } from "@/lib/settings";
+import { loadCatalog } from "@/lib/catalog";
 import { requireRole } from "@/lib/supabase/auth";
 
 export const metadata: Metadata = { title: "Tạo đơn Workshop" };
@@ -11,7 +9,7 @@ export const dynamic = "force-dynamic";
 /** FR16: orders taken at the Campus Workshop, with scanned paper drawings. */
 export default async function WorkshopPage() {
   await requireRole();
-  const [settings, prototypes] = await Promise.all([getSettings(), listProtoSummaries()]);
+  const catalog = await loadCatalog();
   return (
     <div className="flex max-w-6xl flex-col gap-6">
       <div className="flex flex-col gap-1">
@@ -20,7 +18,7 @@ export default async function WorkshopPage() {
           Áo custom từ Workshop được duyệt sẵn vì Staff đã xem bản vẽ tại chỗ. Khách trả tiền mặt thì đơn vào thẳng Đã xác nhận.
         </p>
       </div>
-      <WorkshopForm catalog={toCatalog(settings, prototypes)} />
+      <WorkshopForm catalog={catalog} />
     </div>
   );
 }

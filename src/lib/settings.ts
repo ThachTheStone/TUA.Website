@@ -12,7 +12,12 @@ const bankSchema = z.object({
 });
 
 export const settingsSchema = z.object({
-  prices: z.object({ PLAIN: z.number().int().nonnegative(), CUSTOM: z.number().int().nonnegative() }),
+  prices: z.object({
+    PLAIN: z.number().int().nonnegative(),
+    CUSTOM: z.number().int().nonnegative(),
+    /** FR32: Hot Wheels blindbox. */
+    BLINDBOX: z.number().int().nonnegative().default(69000),
+  }),
   colors: z.array(z.object({ key: z.string(), label: z.string(), hex: z.string() })).min(1),
   sizes: z.array(z.string()).min(1),
   print_areas: z
@@ -38,6 +43,16 @@ export const settingsSchema = z.object({
   contact: z
     .object({ phone: z.string().max(50), facebook: z.string().max(300), email: z.string().max(200) })
     .default({ phone: "", facebook: "", email: "" }),
+  /** FR32: the one blindbox product. Boxes left = stock − boxes in live orders. */
+  blindbox: z
+    .object({
+      name: z.string().min(1).max(100),
+      description: z.string().max(2000),
+      image_url: z.string().nullable(),
+      stock: z.number().int().nonnegative(),
+      is_active: z.boolean(),
+    })
+    .default({ name: "Blindbox Hot Wheels", description: "", image_url: null, stock: 0, is_active: false }),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;
@@ -46,6 +61,7 @@ export type BankAccount = z.infer<typeof bankSchema>;
 export type PrintArea = Settings["print_areas"][number];
 export type ShirtColor = Settings["colors"][number];
 export type Contact = Settings["contact"];
+export type Blindbox = Settings["blindbox"];
 
 /** All settings, validated. Cached per request. Throws if a key is missing or malformed. */
 export const getSettings = cache(async (): Promise<Settings> => {

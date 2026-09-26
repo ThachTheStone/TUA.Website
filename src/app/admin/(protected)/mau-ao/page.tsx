@@ -5,7 +5,7 @@ import { EditPanel } from "@/components/admin/edit-panel";
 import { PrototypeForm, type ProtoFormData } from "@/components/admin/prototype-form";
 import { Badge } from "@/components/ui/badge";
 import { deletePrototype, setPrototypeActive } from "@/lib/admin/prototype-actions";
-import { formatVND } from "@/lib/format";
+import { colorLabel, formatVND } from "@/lib/format";
 import { DESIGNS_BUCKET } from "@/lib/orders/design-upload";
 import { listPrototypes, prototypeFiles } from "@/lib/prototypes/queries";
 import { resolutionWarning } from "@/lib/prototypes/resolution";
@@ -38,7 +38,7 @@ export default async function PrototypesPage() {
     : { data: [] };
   const urlOf = (path: string) => signed?.find((s) => s.path === path)?.signedUrl ?? null;
 
-  const colorLabel = (key: string) => settings.colors.find((c) => c.key === key)?.label ?? key;
+  const labelOf = (key: string) => colorLabel(settings.colors, key);
   const formProps = { colors: settings.colors, printAreas: settings.print_areas, dpi: settings.export_dpi };
 
   return (
@@ -86,7 +86,7 @@ export default async function PrototypesPage() {
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium">{p.name}</div>
                       <div className="text-xs text-muted-foreground">
-                        {colorLabel(p.color)} · {protoFiles.length} vùng in · Thứ tự {p.sort_order}
+                        {labelOf(p.color)} · {protoFiles.length} vùng in · Thứ tự {p.sort_order}
                         {orders > 0 && ` · ${orders} dòng đơn hàng`}
                       </div>
                       {(warnings.length > 0 || colorMissing) && (

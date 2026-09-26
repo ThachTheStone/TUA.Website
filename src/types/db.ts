@@ -16,7 +16,7 @@ export type OrderStatus =
 export type RefundStatus = "NONE" | "REQUIRED" | "DONE";
 export type PaymentStatus = "UNPAID" | "DEPOSIT_PAID" | "FULLY_PAID";
 export type ApprovalStatus = "PENDING_APPROVAL" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
-export type ItemType = "PLAIN" | "CUSTOM" | "PROTOTYPE";
+export type ItemType = "PLAIN" | "CUSTOM" | "PROTOTYPE" | "BLINDBOX";
 export type DesignSource = "CANVAS" | "SCAN" | "PROTOTYPE";
 export type PaymentMethod = "TRANSFER" | "CASH";
 export type DonationStatus = "PENDING" | "CONFIRMED" | "CANCELLED";
@@ -49,6 +49,13 @@ export interface Order {
   preferred_time: string | null;
   pickup_location: string | null;
   note: string | null;
+  /** Sum of the lines before any discount (FR31). */
+  items_total: number;
+  discount_amount: number;
+  /** What was applied, e.g. "Combo Áo + Blindbox ×1" or "Mã TUA10". */
+  discount_note: string | null;
+  promo_code_id: string | null;
+  /** Amount the buyer owes: items_total − discount_amount. Payments are checked against this. */
   subtotal: number;
   prepay_percent: 50 | 75 | 100;
   prepay_amount: number;
@@ -80,6 +87,7 @@ export interface OrderItem {
   id: string;
   order_id: string;
   type: ItemType;
+  /** "" for BLINDBOX lines (no colour or size). */
   color: string;
   size: string;
   quantity: number;
@@ -143,7 +151,11 @@ export interface Donation {
   is_hidden: boolean;
   status: DonationStatus;
   confirmed_by: string | null;
+  confirmed_at: string | null;
+  /** Opens the donation QR page (FR08); never shown in lists. */
+  access_token: string;
   created_at: string;
+  updated_at: string;
 }
 
 export interface ContentBlock {
@@ -171,6 +183,38 @@ export interface Promotion {
   starts_at: string | null;
   ends_at: string | null;
   is_active: boolean;
+}
+
+/** FR31: a code the buyer types at checkout. */
+export interface PromoCode {
+  id: string;
+  code: string;
+  description: string | null;
+  kind: "PERCENT" | "AMOUNT";
+  value: number;
+  /** PERCENT only: largest discount in VND; null = no cap. */
+  max_discount: number | null;
+  min_subtotal: number;
+  /** null = unlimited. Counted over orders that are not cancelled or expired. */
+  max_uses: number | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+/** FR31: a bundle sold at a set price, applied automatically when the cart contains it. */
+export interface Combo {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  items: { type: ItemType; quantity: number }[];
+  starts_at: string | null;
+  ends_at: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
 }
 
 export interface Sponsor {

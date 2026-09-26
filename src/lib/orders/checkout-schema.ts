@@ -101,10 +101,10 @@ export type CheckoutFormInput = z.input<typeof checkoutFormSchema>;
 export type CheckoutForm = z.output<typeof checkoutFormSchema>;
 
 export const checkoutItemSchema = z.object({
-  type: z.enum(["PLAIN", "CUSTOM", "PROTOTYPE"]),
-  /** Ignored for PROTOTYPE: the server uses the prototype's colour. */
-  color: z.string().min(1).max(50),
-  size: z.string().min(1).max(20),
+  type: z.enum(["PLAIN", "CUSTOM", "PROTOTYPE", "BLINDBOX"]),
+  /** Ignored for PROTOTYPE (the prototype's colour) and BLINDBOX (no colour or size). */
+  color: z.string().max(50),
+  size: z.string().max(20),
   quantity: z.number().int().min(1, "Số lượng tối thiểu là 1").max(50, "Số lượng tối đa 50"),
   /** Folder the design files were uploaded to (CUSTOM only). */
   uploadId: z.uuid().optional(),
@@ -115,6 +115,8 @@ export const checkoutItemSchema = z.object({
 export const createOrderSchema = z.object({
   form: checkoutFormSchema,
   items: z.array(checkoutItemSchema).min(1, "Giỏ hàng đang trống").max(MAX_CART_LINES, "Giỏ hàng quá nhiều dòng"),
+  /** FR31: optional promo code; the server checks it again. */
+  promoCode: z.string().trim().max(30).optional(),
 });
 
 export type CreateOrderInput = z.input<typeof createOrderSchema>;

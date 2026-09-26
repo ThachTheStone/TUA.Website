@@ -8,6 +8,14 @@ export function formatVND(amount: number): string {
   return `${vndFormatter.format(Math.round(amount))}đ`;
 }
 
+// Colours no longer sold (SRS §10 #4) but still on older orders.
+const RETIRED_COLORS: Record<string, string> = { white: "Trắng", beige: "Be" };
+
+/** Label of a shirt colour key from `settings.colors`, falling back to retired colours. */
+export function colorLabel(colors: { key: string; label: string }[], key: string): string {
+  return colors.find((c) => c.key === key)?.label ?? RETIRED_COLORS[key] ?? key;
+}
+
 const dateTimeFormatter = new Intl.DateTimeFormat("en-GB", {
   timeZone: TIME_ZONE,
   day: "2-digit",

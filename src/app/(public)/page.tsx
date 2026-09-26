@@ -8,6 +8,8 @@ import {
   listPromotions,
   listSponsors,
 } from "@/lib/content";
+import { ComboList } from "@/components/public/combo-list";
+import { listCombos } from "@/lib/discounts/queries";
 import { formatVND } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
 import {
@@ -23,13 +25,14 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [settings, blocks, artworks, promotions, sponsors, wall] = await Promise.all([
+  const [settings, blocks, artworks, promotions, sponsors, wall, combos] = await Promise.all([
     getSettings(),
     getContentBlocks(),
     listArtworks(HOME_ARTWORK_LIMIT),
     listPromotions({ visibleOnly: true }),
     listSponsors({ activeOnly: true }),
     getDonorWall(),
+    listCombos({ liveOnly: true }),
   ]);
 
   return (
@@ -43,6 +46,12 @@ export default async function HomePage() {
           <p className="text-sm">
             Áo trơn <strong>{formatVND(settings.prices.PLAIN)}</strong> · Áo custom{" "}
             <strong>{formatVND(settings.prices.CUSTOM)}</strong>
+            {settings.blindbox.is_active && (
+              <>
+                {" "}
+                · Blindbox Hot Wheels <strong>{formatVND(settings.prices.BLINDBOX)}</strong>
+              </>
+            )}
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Button asChild size="lg">
@@ -71,6 +80,12 @@ export default async function HomePage() {
       {promotions.length > 0 && (
         <Section id="khuyen-mai" title="Khuyến mãi" muted>
           <PromotionList promotions={promotions} />
+        </Section>
+      )}
+
+      {combos.length > 0 && (
+        <Section id="combo" title="Combo ưu đãi">
+          <ComboList combos={combos} prices={settings.prices} />
         </Section>
       )}
 

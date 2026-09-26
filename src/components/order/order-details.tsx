@@ -31,7 +31,8 @@ export function OrderDetails({ order, editHref }: { order: OrderView; editHref?:
                 <div className="flex justify-between gap-2">
                   <span>
                     {TYPE_LABEL[item.type]}
-                    {item.prototypeName && ` "${item.prototypeName}"`} · {item.colorLabel} · {item.size} × {item.quantity}
+                    {item.prototypeName && ` "${item.prototypeName}"`}
+                    {item.type !== "BLINDBOX" && ` · ${item.colorLabel} · ${item.size}`} × {item.quantity}
                     {item.approvalLabel && (
                       <Badge variant={item.approvalStatus === "REJECTED" ? "destructive" : "outline"} className="ml-2">
                         {item.approvalLabel}
@@ -54,6 +55,18 @@ export function OrderDetails({ order, editHref }: { order: OrderView; editHref?:
             ))}
           </ul>
           <dl className="mt-2 flex flex-col gap-1 border-t pt-2 text-sm">
+            {order.discountAmount > 0 && (
+              <>
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Tiền hàng</dt>
+                  <dd className="tabular-nums">{formatVND(order.itemsTotal)}</dd>
+                </div>
+                <div className="flex justify-between gap-2 text-emerald-700 dark:text-emerald-400">
+                  <dt>Ưu đãi{order.discountNote && `: ${order.discountNote}`}</dt>
+                  <dd className="tabular-nums">−{formatVND(order.discountAmount)}</dd>
+                </div>
+              </>
+            )}
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Tổng đơn</dt>
               <dd className="font-semibold tabular-nums">{formatVND(order.subtotal)}</dd>

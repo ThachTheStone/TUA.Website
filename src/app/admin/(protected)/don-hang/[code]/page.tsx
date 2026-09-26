@@ -104,6 +104,12 @@ export default async function AdminOrderPage({ params }: Props) {
             </Card>
 
             <Card title="Tiền">
+              {order.discount_amount > 0 && (
+                <>
+                  <Row label="Tiền hàng" value={formatVND(order.items_total)} />
+                  <Row label={`Ưu đãi${order.discount_note ? ` (${order.discount_note})` : ""}`} value={`−${formatVND(order.discount_amount)}`} />
+                </>
+              )}
               <Row label="Tổng đơn" value={formatVND(order.subtotal)} />
               <Row label={`Khách chọn trả trước (${order.prepay_percent}%)`} value={formatVND(order.prepay_amount)} />
               <Row label="Đã nhận" value={formatVND(order.paid_amount)} />
@@ -134,7 +140,7 @@ export default async function AdminOrderPage({ params }: Props) {
 
           <section className="flex flex-col gap-3">
             <h2 className="font-semibold">
-              Sản phẩm ({order.items.reduce((n, i) => n + i.quantity, 0)} áo)
+              Sản phẩm ({order.items.reduce((n, i) => n + i.quantity, 0)})
               {customItems.length > 0 && (
                 <span className="ml-2 text-sm font-normal text-muted-foreground">
                   {unapproved ? `${unapproved}/${customItems.length} thiết kế chưa duyệt` : "Mọi thiết kế đã duyệt"}

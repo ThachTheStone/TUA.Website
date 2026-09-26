@@ -13,7 +13,7 @@ type Props = {
   endsAt?: string;
 };
 
-/** FR17: create or edit a promotion. Display-only content (SRS §10 #6: no cart discount). */
+/** FR17: create or edit a promotion. Display-only content; real discounts are codes and combos (FR31). */
 export function PromotionForm({ action, promotion, startsAt = "", endsAt = "" }: Props) {
   const isNew = !promotion;
   const { state, onSubmit, pending, formRef, key } = useAdminForm(

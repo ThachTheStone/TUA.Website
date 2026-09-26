@@ -1,5 +1,6 @@
 import "server-only";
 import { canTransition, STATUS_LABEL } from "@/lib/orders/state-machine";
+import { syncSheetsLater } from "@/lib/sheets";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { OrderStatus, RefundStatus } from "@/types/db";
 import type { ActionResult } from "@/types/action";
@@ -72,6 +73,7 @@ export async function transitionOrder(
   if (rpcError) return { ok: false, error: `Không cập nhật được trạng thái: ${rpcError.message}` };
   if (!changed) return { ok: false, error: "Đơn hàng vừa được cập nhật bởi người khác. Vui lòng tải lại trang." };
 
-  // Emails are sent by the caller (lib/orders/notify.ts); the Sheets sync (Phase 8) hooks in here.
+  // Emails are sent by the caller (lib/orders/notify.ts).
+  syncSheetsLater();
   return { ok: true, data: { from, to } };
 }

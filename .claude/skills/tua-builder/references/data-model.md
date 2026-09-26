@@ -76,7 +76,7 @@ create table order_items (
   quantity int not null check (quantity > 0),
   unit_price int not null,       -- price locked at order time (BR09)
   design_id uuid references designs,
-  check ((type = 'CUSTOM') = (design_id is not null))
+  check ((type = 'CUSTOM') = (design_id is not null))  -- widened in migration 0009: CUSTOM and PROTOTYPE have a design
 );
 
 create table order_status_history (
@@ -104,12 +104,16 @@ create table donations (
   status donation_status not null default 'PENDING',
   confirmed_by uuid references profiles, created_at timestamptz default now()
 );
+-- 0008: access_token uuid (QR page link /quyen-gop/<code>?t=<token>), confirmed_at, updated_at;
+-- length checks on display_name (100), contact (200), message (300).
 
 create table sponsors (id uuid primary key default gen_random_uuid(), name text not null,
   logo_url text, website_url text, tier text, sort_order int default 0, is_active boolean default true);
 create table content_blocks (key text primary key, title text, body text, image_url text, updated_at timestamptz default now());
 create table artworks (id uuid primary key default gen_random_uuid(), image_url text not null,
   child_name text, description text, sort_order int default 0);
+-- promo_codes, combos, orders.items_total/discount_amount/discount_note/promo_code_id,
+-- item_type 'BLINDBOX' and settings.blindbox: see supabase/migrations/0010_discounts_blindbox.sql (FR31, FR32).
 create table promotions (id uuid primary key default gen_random_uuid(), title text not null,
   description text, image_url text, price_text text, starts_at timestamptz, ends_at timestamptz,
   is_active boolean default true);
@@ -139,7 +143,7 @@ create policy "public read active prototypes" on prototypes
 ```
 Price is always `settings.prices.CUSTOM` (BR09). A prototype referenced by an order is never deleted, only deactivated.
 
-As built (migration 0007): `order_items.prototype_id` is `on delete restrict`, and `create_order` links a PROTOTYPE line to the prototype's current `design_id` (failing if it is inactive). `save_prototype(p_id, p_fields, p_files)` creates a **new** `designs` row whenever print files change, so earlier orders keep the files they were sold with. Admin files upload through one-time signed upload URLs (`lib/prototypes/files.ts`) because they exceed the server action body limit; the server checks the bytes before saving. Settings key `contact` (`{phone, facebook, email}`) holds the organizer contact shown on phones (FR03, FR21).
+As built (migration 0007): `order_items.prototype_id` is `on delete restrict`, and `create_order` links a PROTOTYPE line to the prototype's current `design_id` (failing if it is inactive). Migration 0009 replaces the 0001 `order_items_check` (design only on CUSTOM) with `order_items_design_check` (CUSTOM and PROTOTYPE have a design, PLAIN never) and `order_items_prototype_check` (only PROTOTYPE lines have `prototype_id`). `save_prototype(p_id, p_fields, p_files)` creates a **new** `designs` row whenever print files change, so earlier orders keep the files they were sold with. Admin files upload through one-time signed upload URLs (`lib/prototypes/files.ts`) because they exceed the server action body limit; the server checks the bytes before saving. Settings key `contact` (`{phone, facebook, email}`) holds the organizer contact shown on phones (FR03, FR21).
 
 ## Seed settings
 ```json

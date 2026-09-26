@@ -10,10 +10,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { prepareScanUpload, submitWorkshopOrder } from "@/lib/admin/workshop-actions";
+import { checkWorkshopPromo, prepareScanUpload, submitWorkshopOrder } from "@/lib/admin/workshop-actions";
 import { createBrowserSupabase } from "@/lib/supabase/client";
-import { formatVND } from "@/lib/format";
-import { PREPAY_PERCENTS, prepayAmount, subtotalOf } from "@/lib/orders/pricing";
+import { colorLabel, formatVND } from "@/lib/format";
+import { computeDiscount, promoSummary, type PromoRule } from "@/lib/orders/discounts";
+import { PREPAY_PERCENTS, prepayAmount } from "@/lib/orders/pricing";
 import { newId } from "@/lib/design/types";
 
 // FR16: staff enter a Workshop order. Each scan uploads straight to private storage through a
@@ -23,7 +24,7 @@ import { newId } from "@/lib/design/types";
 
 type Line = {
   id: string;
-  type: "PLAIN" | "CUSTOM" | "PROTOTYPE";
+  type: "PLAIN" | "CUSTOM" | "PROTOTYPE" | "BLINDBOX";
   color: string;
   size: string;
   quantity: number;
@@ -54,9 +55,29 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
   const [fulfillment, setFulfillment] = useState<"PICKUP" | "DELIVERY">("PICKUP");
   const [percent, setPercent] = useState<number>(100);
   const [method, setMethod] = useState<"CASH" | "TRANSFER">("CASH");
+  const [codeInput, setCodeInput] = useState("");
+  const [promo, setPromo] = useState<PromoRule | null>(null);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const boxOnSale = !!catalog.blindbox?.active;
 
   const update = (id: string, patch: Partial<Line>) => setLines((ls) => ls.map((l) => (l.id === id ? { ...l, ...patch } : l)));
-  const subtotal = subtotalOf(lines, catalog.prices);
+  const discount = computeDiscount(lines, catalog.prices, catalog.combos, promo);
+  const subtotal = discount.total;
+
+  async function applyCode() {
+    setCodeError(null);
+    const result = await checkWorkshopPromo(codeInput);
+    if (result.ok) setPromo(result.data);
+    else {
+      setPromo(null);
+      setCodeError(result.error);
+    }
+  }
+
+  function removeCode() {
+    setPromo(null);
+    setCodeInput("");
+  }
   const prepay = Math.min(subtotal, prepayAmount(subtotal, percent));
 
   function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -106,6 +127,7 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
           note: get("note"),
           prepay_percent: percent,
           method,
+          promoCode: promo?.code,
           items,
         });
         if (!result.ok) throw new Error(result.error);
@@ -142,8 +164,8 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
               <label className="flex flex-col gap-1 text-xs text-muted-foreground">
                 Loại
                 <select className={selectClass} value={l.type} onChange={(e) => update(l.id, { type: e.target.value as Line["type"] })}>
-                  {(["CUSTOM", "PROTOTYPE", "PLAIN"] as const)
-                    .filter((t) => t !== "PROTOTYPE" || prototypes.length > 0)
+                  {(["CUSTOM", "PROTOTYPE", "PLAIN", "BLINDBOX"] as const)
+                    .filter((t) => (t !== "PROTOTYPE" || prototypes.length > 0) && (t !== "BLINDBOX" || boxOnSale))
                     .map((t) => (
                       <option key={t} value={t}>
                         {TYPE_LABEL[t]} ({formatVND(linePrice(t, catalog))})
@@ -158,11 +180,13 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
                     <option value="">Chọn áo mẫu…</option>
                     {prototypes.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.name} ({catalog.colors.find((c) => c.key === p.color)?.label ?? p.color})
+                        {p.name} ({colorLabel(catalog.colors, p.color)})
                       </option>
                     ))}
                   </select>
                 </label>
+              ) : l.type === "BLINDBOX" ? (
+                <span className="self-center text-xs text-muted-foreground">Còn {catalog.blindbox?.remaining ?? 0} hộp</span>
               ) : (
                 <label className="flex flex-col gap-1 text-xs text-muted-foreground">
                   Màu
@@ -175,14 +199,16 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
                   </select>
                 </label>
               )}
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                Size
-                <select className={selectClass} value={l.size} onChange={(e) => update(l.id, { size: e.target.value })}>
-                  {catalog.sizes.map((s) => (
-                    <option key={s}>{s}</option>
-                  ))}
-                </select>
-              </label>
+              {l.type !== "BLINDBOX" && (
+                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  Size
+                  <select className={selectClass} value={l.size} onChange={(e) => update(l.id, { size: e.target.value })}>
+                    {catalog.sizes.map((s) => (
+                      <option key={s}>{s}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <label className="flex flex-col gap-1 text-xs text-muted-foreground">
                 SL
                 <Input
@@ -225,7 +251,7 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
             </div>
           ))}
           <Button type="button" variant="outline" size="sm" className="self-start" onClick={() => setLines((ls) => [...ls, newLine()])} disabled={lines.length >= 20}>
-            <Plus /> Thêm áo
+            <Plus /> Thêm dòng
           </Button>
         </section>
 
@@ -281,7 +307,41 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
             </label>
           ))}
         </div>
+        <div className="flex flex-col gap-2 border-t pt-3 text-sm">
+          <span className="font-medium">Mã giảm giá</span>
+          {promo ? (
+            <div className="flex items-center justify-between gap-2">
+              <span>
+                <span className="font-semibold">{promo.code}</span>
+                <span className="block text-xs text-muted-foreground">{promoSummary(promo)}</span>
+              </span>
+              <Button type="button" variant="ghost" size="sm" onClick={removeCode} disabled={pending}>
+                Bỏ mã
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Input value={codeInput} onChange={(e) => setCodeInput(e.target.value.toUpperCase())} maxLength={30} className="h-9" aria-label="Mã giảm giá" />
+              <Button type="button" size="sm" variant="outline" onClick={() => void applyCode()} disabled={pending || !codeInput.trim()}>
+                Áp dụng
+              </Button>
+            </div>
+          )}
+          {(codeError ?? discount.promoProblem) && <p className="text-xs text-destructive">{codeError ?? discount.promoProblem}</p>}
+        </div>
         <div className="flex flex-col gap-1 border-t pt-3 text-sm">
+          {discount.discount > 0 && (
+            <>
+              <p className="flex justify-between">
+                <span className="text-muted-foreground">Tiền hàng</span>
+                <span className="tabular-nums">{formatVND(discount.itemsTotal)}</span>
+              </p>
+              <p className="flex justify-between gap-2 text-emerald-700 dark:text-emerald-400">
+                <span>{discount.note}</span>
+                <span className="tabular-nums">−{formatVND(discount.discount)}</span>
+              </p>
+            </>
+          )}
           <p className="flex justify-between">
             <span className="text-muted-foreground">Tổng đơn</span>
             <span className="font-semibold tabular-nums">{formatVND(subtotal)}</span>

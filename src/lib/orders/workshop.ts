@@ -1,8 +1,10 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
+import { checkBlindboxQuantity } from "@/lib/blindbox";
+import { discountRpcError, resolveDiscount } from "@/lib/discounts/queries";
 import { phoneSchema } from "@/lib/orders/checkout-schema";
-import { PREPAY_PERCENTS, prepayAmount, subtotalOf, unitPrice } from "@/lib/orders/pricing";
+import { PREPAY_PERCENTS, prepayAmount, unitPrice } from "@/lib/orders/pricing";
 import { orderablePrototypes } from "@/lib/prototypes/queries";
 import { getSettings } from "@/lib/settings";
 import { readHead } from "@/lib/storage-head";
@@ -71,12 +73,14 @@ export const workshopOrderSchema = z
     note: text(500, "Ghi chú"),
     prepay_percent: z.number().refine((v) => (PREPAY_PERCENTS as readonly number[]).includes(v), "Mức trả trước không hợp lệ"),
     method: z.enum(["CASH", "TRANSFER"]),
+    /** FR31: optional promo code; combos apply by themselves. */
+    promoCode: z.string().trim().max(30).optional(),
     items: z
       .array(
         z.object({
-          type: z.enum(["PLAIN", "CUSTOM", "PROTOTYPE"]),
-          color: z.string().min(1).max(50),
-          size: z.string().min(1).max(20),
+          type: z.enum(["PLAIN", "CUSTOM", "PROTOTYPE", "BLINDBOX"]),
+          color: z.string().max(50),
+          size: z.string().max(20),
           quantity: z.number().int().min(1, "Số lượng tối thiểu là 1").max(50, "Số lượng tối đa 50"),
           area: z.string().max(50).optional(),
           scanPath: z.string().regex(SCAN_PATH_RE).optional(),
@@ -127,6 +131,11 @@ export async function createWorkshopOrder(input: WorkshopOrderInput, staffId: st
   const colors = new Set(settings.colors.map((c) => c.key));
   const areas = new Set(settings.print_areas.map((a) => a.key));
   for (const item of v.items) {
+    if (item.type === "BLINDBOX") {
+      item.color = "";
+      item.size = "";
+      continue;
+    }
     if (item.type === "PROTOTYPE") item.color = protos.colors.get(item.prototypeId!)!;
     if (!colors.has(item.color) || !settings.sizes.includes(item.size)) return { ok: false, error: "Màu hoặc size không hợp lệ" };
     if (item.type === "CUSTOM" && !areas.has(item.area!)) return { ok: false, error: "Vùng in không hợp lệ" };
@@ -139,13 +148,19 @@ export async function createWorkshopOrder(input: WorkshopOrderInput, staffId: st
     if (problem) return { ok: false, error: problem };
   }
 
+  const boxProblem = await checkBlindboxQuantity(v.items.reduce((n, i) => n + (i.type === "BLINDBOX" ? i.quantity : 0), 0));
+  if (boxProblem) return { ok: false, error: boxProblem };
+
+  const discount = await resolveDiscount(v.items, settings, v.promoCode);
+  if (!discount.ok) return discount;
+
   const db = createServiceClient();
   if (scanPaths.length) {
     const { count } = await db.from("design_files").select("id", { count: "exact", head: true }).in("file_path", scanPaths);
     if (count) return { ok: false, error: "Ảnh scan đã được dùng cho đơn khác. Vui lòng tải lại." };
   }
 
-  const subtotal = subtotalOf(v.items, settings.prices);
+  const { itemsTotal, discount: discountAmount, total: subtotal, note: discountNote, promo } = discount.data;
   const prepay = Math.min(subtotal, prepayAmount(subtotal, v.prepay_percent));
   const cash = v.method === "CASH";
   const fullyPaid = cash && prepay >= subtotal;
@@ -163,6 +178,10 @@ export async function createWorkshopOrder(input: WorkshopOrderInput, staffId: st
       preferred_time: v.preferred_time || null,
       pickup_location: isDelivery ? null : v.pickup_location,
       note: v.note || null,
+      items_total: itemsTotal,
+      discount_amount: discountAmount,
+      discount_note: discountNote,
+      promo_code_id: promo?.id ?? null,
       subtotal,
       prepay_percent: v.prepay_percent,
       prepay_amount: prepay,
@@ -196,6 +215,8 @@ export async function createWorkshopOrder(input: WorkshopOrderInput, staffId: st
     })),
   });
   if (error || !data) {
+    const known = discountRpcError(error?.message);
+    if (known) return { ok: false, error: known };
     console.error("[workshop] create_order failed", error?.message);
     return { ok: false, error: "Không tạo được đơn Workshop. Vui lòng thử lại." };
   }

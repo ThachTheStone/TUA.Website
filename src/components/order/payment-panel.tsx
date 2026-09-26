@@ -1,38 +1,15 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element -- external VietQR image */
-import { Check, Copy, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { CopyRow } from "@/components/order/copy-row";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatVND } from "@/lib/format";
 import { markTransferred } from "@/lib/orders/actions";
 import type { PaymentInfo } from "@/lib/orders/queries";
-
-function CopyRow({ label, value, display }: { label: string; value: string; display?: string }) {
-  const [copied, setCopied] = useState(false);
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error("Không sao chép được, vui lòng chép tay");
-    }
-  }
-  return (
-    <div className="flex items-center justify-between gap-3 border-b py-2 last:border-0">
-      <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="truncate font-semibold tabular-nums">{display ?? value}</p>
-      </div>
-      <Button type="button" variant="outline" size="sm" className="h-10 shrink-0" onClick={copy} aria-label={`Sao chép ${label}`}>
-        {copied ? <Check /> : <Copy />} {copied ? "Đã chép" : "Sao chép"}
-      </Button>
-    </div>
-  );
-}
 
 function useCountdown(deadline: string | null) {
   // Starts after hydration so server and client render the same markup.

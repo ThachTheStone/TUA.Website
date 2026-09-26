@@ -1,8 +1,10 @@
 import "server-only";
+import { checkBlindboxQuantity } from "@/lib/blindbox";
 import { foreignAssets } from "@/lib/design/assets.server";
+import { discountRpcError, resolveDiscount } from "@/lib/discounts/queries";
 import { collectUploadedDesign, type UploadedDesign } from "@/lib/orders/design-upload";
 import { createOrderSchema, formatPickupTime, type CreateOrderInput } from "@/lib/orders/checkout-schema";
-import { prepayAmount, subtotalOf, unitPrice } from "@/lib/orders/pricing";
+import { prepayAmount, unitPrice } from "@/lib/orders/pricing";
 import { orderablePrototypes } from "@/lib/prototypes/queries";
 import { getSettings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -31,7 +33,7 @@ export async function createWebOrder(
 ): Promise<ActionResult<CreatedOrder>> {
   const parsed = createOrderSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
-  const { form, items } = parsed.data;
+  const { form, items, promoCode } = parsed.data;
 
   const settings = await getSettings();
   if (!isBankConfigured(settings.bank_sales)) {
@@ -48,6 +50,11 @@ export async function createWebOrder(
   const colorKeys = new Set(settings.colors.map((c) => c.key));
   const designs = new Map<string, UploadedDesign>();
   for (const item of items) {
+    if (item.type === "BLINDBOX") {
+      item.color = "";
+      item.size = "";
+      continue;
+    }
     if (item.type === "PROTOTYPE") {
       if (!item.prototypeId) return { ok: false, error: "Thiếu áo mẫu trong giỏ hàng" };
       item.color = protos.colors.get(item.prototypeId)!;
@@ -69,6 +76,12 @@ export async function createWebOrder(
     }
   }
 
+  const boxProblem = await checkBlindboxQuantity(items.reduce((n, i) => n + (i.type === "BLINDBOX" ? i.quantity : 0), 0));
+  if (boxProblem) return { ok: false, error: boxProblem };
+
+  const discount = await resolveDiscount(items, settings, promoCode);
+  if (!discount.ok) return discount;
+
   const db = createServiceClient();
   // An upload folder belongs to exactly one order.
   const paths = [...designs.values()].flatMap((d) => d.files.map((f) => f.file_path));
@@ -81,7 +94,7 @@ export async function createWebOrder(
     if (count) return { ok: false, error: "Thiết kế này đã được dùng cho một đơn khác. Vui lòng đặt lại." };
   }
 
-  const subtotal = subtotalOf(items, settings.prices);
+  const { itemsTotal, discount: discountAmount, total: subtotal, note: discountNote, promo } = discount.data;
   const prepay = prepayAmount(subtotal, form.prepay_percent);
   const expiresAt = new Date(Date.now() + settings.order_expire_hours * 3600_000).toISOString();
   const isDelivery = form.fulfillment === "DELIVERY";
@@ -97,6 +110,10 @@ export async function createWebOrder(
       preferred_time: isDelivery ? form.preferred_time || null : formatPickupTime(form.pickup_date, form.pickup_time),
       pickup_location: isDelivery ? null : form.pickup_location,
       note: form.note || null,
+      items_total: itemsTotal,
+      discount_amount: discountAmount,
+      discount_note: discountNote,
+      promo_code_id: promo?.id ?? null,
       subtotal,
       prepay_percent: form.prepay_percent,
       prepay_amount: prepay,
@@ -116,6 +133,8 @@ export async function createWebOrder(
     })),
   });
   if (error || !data) {
+    const known = discountRpcError(error?.message);
+    if (known) return { ok: false, error: known };
     console.error("[orders] create_order failed", error?.message);
     return { ok: false, error: "Không tạo được đơn hàng. Vui lòng thử lại." };
   }

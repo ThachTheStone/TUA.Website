@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { z } from "zod";
 import { getCustomer } from "@/lib/customers/session";
+import { findUsablePromo } from "@/lib/discounts/queries";
+import type { PromoRule } from "@/lib/orders/discounts";
 import { orderCodeSchema, phoneSchema, type CreateOrderInput } from "@/lib/orders/checkout-schema";
 import { createWebOrder } from "@/lib/orders/create";
 import { saveDesignFile } from "@/lib/orders/design-upload";
@@ -12,6 +14,7 @@ import { findOrderIdByToken, isOverdue, lookupOrder, type OrderView } from "@/li
 import { resubmitDesign } from "@/lib/orders/resubmit";
 import { transitionOrder } from "@/lib/orders/transition";
 import { getSettings } from "@/lib/settings";
+import { syncSheetsLater } from "@/lib/sheets";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/types/action";
 
@@ -70,11 +73,26 @@ export async function createOrder(input: CreateOrderInput): Promise<ActionResult
 
       await notifyOrder(order.id, { kind: "CREATED" });
     });
+    syncSheetsLater();
 
     return { ok: true, data: { code: order.code, token: order.accessToken } };
   } catch (err) {
     console.error("[orders] createOrder failed", err);
     return { ok: false, error: "Không tạo được đơn hàng. Vui lòng thử lại." };
+  }
+}
+
+/** FR31: checkout preview of a promo code. createOrder checks it again. */
+export async function checkPromoCode(code: string): Promise<ActionResult<PromoRule>> {
+  if (!(await getCustomer())) return { ok: false, error: LOGIN_REQUIRED };
+  try {
+    const found = await findUsablePromo(String(code ?? ""));
+    if (!found.ok) return found;
+    const { id, code: key, kind, value, max_discount, min_subtotal } = found.promo;
+    return { ok: true, data: { id, code: key, kind, value, max_discount, min_subtotal } };
+  } catch (err) {
+    console.error("[orders] checkPromoCode failed", err);
+    return { ok: false, error: "Không kiểm tra được mã giảm giá. Vui lòng thử lại." };
   }
 }
 

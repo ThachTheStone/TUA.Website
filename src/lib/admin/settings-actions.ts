@@ -22,6 +22,7 @@ const SECTION_LABEL: Record<keyof Settings, string> = {
   donation_min: "Quyên góp tối thiểu",
   donation_goal: "Mục tiêu quyên góp",
   contact: "Liên hệ Ban tổ chức",
+  blindbox: "Blindbox",
 };
 
 function duplicate(values: string[]): string | undefined {
@@ -63,7 +64,10 @@ export async function saveSettings(_prev: ActionResult | null, formData: FormDat
   const problem = checkRows(parsed.data);
   if (problem) return fail(problem);
 
-  const rows = Object.entries(parsed.data).map(([key, value]) => ({ key, value }));
+  // The blindbox has its own page (stock changes often); never overwrite it from here.
+  const rows = Object.entries(parsed.data)
+    .filter(([key]) => key !== "blindbox")
+    .map(([key, value]) => ({ key, value }));
   const { error } = await createServiceClient().from("settings").upsert(rows);
   if (error) return fail("Không lưu được cài đặt. Vui lòng thử lại");
 

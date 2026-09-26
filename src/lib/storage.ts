@@ -14,7 +14,7 @@ const EXT_BY_TYPE: Record<string, string> = {
   "image/svg+xml": "svg",
 };
 
-export type ContentFolder = "story" | "artworks" | "promotions" | "sponsors";
+export type ContentFolder = "story" | "artworks" | "promotions" | "sponsors" | "blindbox";
 
 /** Reads an optional file field. Browsers send an empty File when nothing was picked. */
 export function pickFile(formData: FormData, name: string): File | null {

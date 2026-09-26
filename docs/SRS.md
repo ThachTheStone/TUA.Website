@@ -14,21 +14,23 @@
 Tài liệu xác định đầy đủ yêu cầu chức năng, phi chức năng, quy tắc nghiệp vụ, mô hình dữ liệu và tích hợp cho website TỰA. Website gây quỹ từ thiện thông qua bán áo thun (áo custom, áo mẫu và áo trơn) và nhận quyên góp; toàn bộ lợi nhuận hỗ trợ trẻ em có hoàn cảnh đặc biệt. Tài liệu đồng thời là nguồn tham chiếu cho việc lập trình với AI (Claude Code).
 
 ### 1.2. Phạm vi
-- **Trang khách hàng (Public site):** xem giới thiệu, ý nghĩa dự án, Top 5 tranh của các bé, sự kiện và khuyến mãi; mua áo mẫu; thiết kế áo trên canvas; tài khoản Người mua; giỏ hàng; đặt hàng và thanh toán cọc qua VietQR; quyên góp; tra cứu đơn; xem Bảng vinh danh nhà hảo tâm và nhà tài trợ.
-- **Trang quản trị (Admin Portal):** quản lý mẫu áo, quản lý mẫu email, quản lý đơn hàng, xác nhận thanh toán, cập nhật trạng thái, tạo đơn Workshop thủ công, quản lý quyên góp, quản lý nội dung, quản lý nhà tài trợ, quản lý tài khoản.
+- **Trang khách hàng (Public site):** xem giới thiệu, ý nghĩa dự án, Top 5 tranh của các bé, sự kiện và khuyến mãi; mua áo mẫu; thiết kế áo trên canvas; mua Blindbox Hot Wheels; mã giảm giá và combo; tài khoản Người mua; giỏ hàng; đặt hàng và thanh toán cọc qua VietQR; quyên góp; tra cứu đơn; xem Bảng vinh danh nhà hảo tâm và nhà tài trợ.
+- **Trang quản trị (Admin Portal):** quản lý mẫu áo, blindbox, mã giảm giá và combo, quản lý mẫu email, quản lý đơn hàng, xác nhận thanh toán, cập nhật trạng thái, tạo đơn Workshop thủ công, quản lý quyên góp, quản lý nội dung, quản lý nhà tài trợ, quản lý tài khoản.
 - **Tích hợp:** VietQR (sinh mã QR), Google Sheets (bản sao dữ liệu để theo dõi minh bạch), Email (thông báo).
 
 ### 1.3. Ngoài phạm vi (phiên bản này)
 - Xác nhận thanh toán tự động qua webhook ngân hàng (SePay/Casso) — dự kiến mở rộng sau.
 - Tích hợp API đơn vị vận chuyển. Ban tổ chức tự đặt dịch vụ giao hàng bên ngoài.
-- Mã giảm giá tự động áp dụng vào giỏ hàng (khuyến mãi hiện chỉ là nội dung hiển thị).
 - Tự động phát hiện nội dung phản cảm hoặc vi phạm bản quyền trong ảnh khách tải lên (việc duyệt do Staff/Admin làm thủ công, FR29).
 
 ### 1.4. Thuật ngữ
 | Thuật ngữ | Ý nghĩa |
 |---|---|
-| Áo trơn | Áo không in, giá 99.000đ |
-| Áo custom | Áo in bản vẽ khách tự vẽ trên canvas, giá 129.000đ |
+| Áo trơn | Áo không in, giá 79.000đ |
+| Áo custom | Áo in bản vẽ khách tự vẽ trên canvas, giá 159.000đ |
+| Blindbox Hot Wheels | Hộp xe Hot Wheels bí ẩn, giá 69.000đ, bán theo số hộp còn trong kho (FR32) |
+| Mã giảm giá | Mã khách nhập khi đặt hàng để được giảm theo % hoặc số tiền (FR31) |
+| Combo | Nhóm sản phẩm bán giá trọn gói, tự áp dụng khi giỏ hàng có đủ sản phẩm (FR31) |
 | Áo mẫu (Prototype) | Áo in thiết kế có sẵn do Ban tổ chức đăng; mỗi mẫu có một màu áo cố định; giá bằng áo custom |
 | Vùng in (Print Area) | Khu vực trên áo cho phép vẽ. Có 3 vùng |
 | Cọc | Số tiền khách chuyển trước, tối thiểu 50% tổng đơn |
@@ -82,7 +84,7 @@ Trang chủ gồm các phần theo thứ tự:
 - Toàn bộ nội dung lấy từ cơ sở dữ liệu và được chỉnh sửa trong Admin (FR17, FR28). Phần nào chưa có dữ liệu thì ẩn đi.
 
 **FR02 – Chọn sản phẩm**
-- Khách chọn một trong ba loại: Áo custom (129.000đ, tự thiết kế), Áo mẫu (giá bằng áo custom, FR27) hoặc Áo trơn (99.000đ).
+- Khách chọn một trong ba loại áo: Áo custom (159.000đ, tự thiết kế), Áo mẫu (giá bằng áo custom, FR27) hoặc Áo trơn (79.000đ). Ngoài áo, khách mua được Blindbox Hot Wheels (69.000đ, FR32).
 - Áo custom và áo trơn: chọn màu áo và size từ danh sách do Admin cấu hình. Áo mẫu: màu cố định theo mẫu, khách chỉ chọn size.
 - Giá lấy từ bảng cài đặt, không hardcode.
 
@@ -108,6 +110,8 @@ Trang chủ gồm các phần theo thứ tự:
 - Một đơn chứa nhiều áo. Mỗi dòng gồm: loại áo, màu, size, số lượng, bản thiết kế (nếu là áo custom) và thành tiền.
 - Mỗi áo custom là một dòng riêng gắn với một bản thiết kế. Có thể đặt nhiều cái cùng một thiết kế bằng cách tăng số lượng.
 - Áo mẫu: cùng mẫu và cùng size được gộp thành một dòng. Nếu mẫu bị tắt bán, dòng đó được đánh dấu và phải xóa trước khi đặt hàng.
+- Blindbox: mọi hộp gộp thành một dòng. Nếu blindbox ngừng bán hoặc số lượng vượt số hộp còn lại, dòng đó được đánh dấu và phải sửa trước khi đặt hàng.
+- Combo đang áp dụng được trừ tự động và hiển thị trong phần tạm tính (FR31).
 - Sửa số lượng, xóa dòng, mở lại canvas để sửa thiết kế.
 - Giỏ hàng lưu tạm trên trình duyệt (localStorage) để không mất khi tải lại trang.
 - Khi đã đăng nhập, giỏ hàng được lưu theo tài khoản (xem FR26).
@@ -119,7 +123,8 @@ Trang chủ gồm các phần theo thứ tự:
 - Khách chọn hình thức nhận hàng:
   - **Giao hàng:** địa chỉ nhận, thời gian mong muốn nhận hàng (văn bản), ghi chú.
   - **Nhận tại campus:** thời gian hẹn nhận (chọn ngày trên lịch và chọn giờ; phải sau thời điểm đặt hàng), địa điểm hẹn (văn bản tự do, ví dụ "sảnh tòa Alpha").
-- Khách chọn mức thanh toán trước: 50% / 75% / 100%.
+- Khách có thể nhập một mã giảm giá (FR31). Số tiền giảm hiển thị ngay; server kiểm tra lại khi tạo đơn.
+- Khách chọn mức thanh toán trước: 50% / 75% / 100% (tính trên tổng đơn sau giảm giá).
 - Khách tick đồng ý chính sách xử lý dữ liệu cá nhân.
 - Hệ thống tạo Order Code, tính tổng tiền và số tiền cần chuyển (làm tròn lên hàng nghìn), rồi sinh mã VietQR kèm số tiền và nội dung `TUA0001`.
 - Trang thanh toán hiển thị: QR, số tài khoản, tên chủ tài khoản, số tiền, nội dung chuyển khoản (có nút sao chép), thời hạn thanh toán, và nút "Tôi đã chuyển khoản".
@@ -146,6 +151,12 @@ Trang chủ gồm các phần theo thứ tự:
 - Trang chi tiết mẫu (`/mau-ao/[slug]`): ảnh mặt trước/mặt sau (có thể nhiều ảnh), tên, mô tả, màu áo, giá, chọn size và số lượng, nút "Thêm vào giỏ".
 - Khách không sửa được thiết kế của áo mẫu. Muốn thay đổi thì dùng "Tự thiết kế áo".
 - Giá áo mẫu bằng giá áo custom trong cài đặt (BR09) và được chốt vào đơn khi đặt.
+
+**FR32 – Blindbox Hot Wheels**
+- Trang `/blindbox`: ảnh, tên, mô tả, giá, số hộp còn lại, chọn số lượng, nút "Thêm vào giỏ", và các combo có blindbox.
+- Blindbox không có màu hay size. Không đặt được quá số hộp còn lại; khi hết hàng hoặc tắt bán thì không thêm được vào giỏ.
+- Số hộp còn lại = tổng số hộp Staff/Admin nhập − số hộp trong các đơn chưa Hủy/Hết hạn. Đơn bị hủy hoặc hết hạn tự trả hộp lại kho.
+- Staff/Admin sửa tên, mô tả, ảnh, tổng số hộp và bật/tắt bán ở trang Admin "Blindbox". Giá nằm trong Cài đặt (Admin).
 
 ### 4.2. Phía Ban tổ chức
 
@@ -230,6 +241,16 @@ Trang chủ gồm các phần theo thứ tự:
 - Phần cố định do hệ thống tự thêm, Admin không sửa được: đầu/cuối email (tên dự án, liên hệ), và các khối thông tin bắt buộc: mã QR + thông tin chuyển khoản trong email Đặt hàng thành công, bảng sản phẩm và số tiền trong các email đơn hàng.
 - **Xem trước** email với dữ liệu mẫu; **Gửi thử** tới email của Admin đang đăng nhập; **Khôi phục mặc định** về nội dung ban đầu.
 - Chỉ Admin truy cập trang này. Email xác thực tài khoản khi đăng ký (FR26) do dịch vụ xác thực gửi và được sửa trong bảng điều khiển Supabase, không nằm trong trang này.
+
+**FR31 – Mã giảm giá và combo (Admin)**
+- **Mã giảm giá:** Admin tạo, sửa, bật/tắt, xóa mã. Mỗi mã có: mã (chữ không dấu, số, `-`, `_`), kiểu giảm (theo % hoặc số tiền cố định), mức giảm, giảm tối đa (chỉ cho kiểu %), đơn tối thiểu (tính trên tiền hàng trước giảm), tổng số lượt dùng (để trống = không giới hạn), thời gian áp dụng từ/đến.
+- Lượt dùng tính theo số đơn chưa Hủy/Hết hạn có dùng mã; đơn bị hủy hoặc hết hạn được trả lượt. Mã đã có trong đơn không xóa được, chỉ tắt.
+- **Combo:** Admin tạo, sửa, bật/tắt, xóa combo gồm tên, mô tả, các sản phẩm và số lượng (Áo custom, Áo mẫu, Áo trơn, Blindbox), giá combo, thời gian áp dụng, thứ tự. Combo chỉ được áp dụng khi giá combo thấp hơn tổng giá lẻ.
+- Combo tự áp dụng: combo giảm nhiều nhất được lấy trước, nhiều lần nếu giỏ đủ sản phẩm, rồi tới combo tiếp theo.
+- Mỗi đơn dùng tối đa một mã. Mã và combo **không cộng dồn**: hệ thống áp dụng ưu đãi có lợi hơn cho khách và báo cho khách biết.
+- Đơn lưu tiền hàng, số tiền giảm, ưu đãi đã áp dụng và mã (nếu có). Sửa hoặc xóa mã/combo không làm thay đổi đơn đã đặt.
+- Đơn Workshop cũng áp dụng combo và nhận mã giảm giá.
+- Tổng đơn sau giảm tối thiểu 1.000đ.
 
 ### 4.3. Tích hợp
 
@@ -351,7 +372,8 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 - **BR06:** Hoàn tiền được Ban tổ chức quyết định theo từng trường hợp và ghi nhận bằng `refund_status`.
 - **BR07:** Đơn ở trạng thái Chờ thanh toán quá thời hạn cấu hình (mặc định 24 giờ) tự động chuyển sang Hết hạn.
 - **BR08:** Số tiền quyên góp tối thiểu là 300.000đ.
-- **BR09:** Giá áo trơn 99.000đ, áo custom 129.000đ, cấu hình được trong Admin. Áo mẫu dùng giá áo custom. Giá được "chốt" vào đơn tại thời điểm đặt.
+- **BR09:** Giá áo trơn 79.000đ, áo custom 159.000đ, Blindbox Hot Wheels 69.000đ, cấu hình được trong Admin. Áo mẫu dùng giá áo custom. Giá và số tiền giảm được "chốt" vào đơn tại thời điểm đặt.
+- **BR13:** Mỗi đơn nhận một ưu đãi: hoặc một mã giảm giá, hoặc các combo, tùy cái nào có lợi hơn cho khách (FR31).
 - **BR10:** Phí vận chuyển (nếu giao hàng) do khách trả trực tiếp cho đơn vị vận chuyển, không tính vào tổng đơn trên website.
 
 ---
@@ -364,9 +386,9 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 | `customers` | id (= auth user), full_name, phone, created_at |
 | `carts` | customer_id, items (JSON), drafts (JSON), updated_at |
 | `email_templates` | key (ORDER_CREATED, ...), subject, body, is_enabled, updated_by, updated_at |
-| `settings` | key, value (JSON): giá, màu, size, vùng in, tài khoản ngân hàng, thời hạn hủy, mục tiêu quỹ, liên hệ Ban tổ chức |
-| `orders` | id, code, source (WEB/WORKSHOP), customer_name, phone, email, fulfillment (DELIVERY/PICKUP), address, preferred_time, pickup_location, note, subtotal, prepay_percent, prepay_amount, paid_amount, status, payment_status (UNPAID/DEPOSIT_PAID/FULLY_PAID), refund_status, cancel_reason, expires_at, created_by, customer_id, created_at |
-| `order_items` | id, order_id, type (PLAIN/CUSTOM/PROTOTYPE), color, size, quantity, unit_price, design_id, prototype_id, approval_status, reject_reason, reviewed_by, reviewed_at |
+| `settings` | key, value (JSON): giá (áo trơn, áo custom, blindbox), màu, size, blindbox (tên, mô tả, ảnh, tổng số hộp, bật/tắt), vùng in, tài khoản ngân hàng, thời hạn hủy, mục tiêu quỹ, liên hệ Ban tổ chức |
+| `orders` | id, code, source (WEB/WORKSHOP), customer_name, phone, email, fulfillment (DELIVERY/PICKUP), address, preferred_time, pickup_location, note, items_total, discount_amount, discount_note, promo_code_id, subtotal (sau giảm), prepay_percent, prepay_amount, paid_amount, status, payment_status (UNPAID/DEPOSIT_PAID/FULLY_PAID), refund_status, cancel_reason, expires_at, created_by, customer_id, created_at |
+| `order_items` | id, order_id, type (PLAIN/CUSTOM/PROTOTYPE/BLINDBOX), color, size, quantity, unit_price, design_id, prototype_id, approval_status, reject_reason, reviewed_by, reviewed_at |
 | `design_reviews` | id, order_item_id, from_status, to_status, reason, changed_by (null = khách gửi lại), design_id, changed_at |
 | `design_assets` | id, customer_id, file_path, width_px, height_px, bytes, created_at (ảnh khách tải lên, bucket riêng tư) |
 | `prototypes` | id, slug, name, description, color, image_urls, design_id (file in), sort_order, is_active, created_at |
@@ -378,15 +400,17 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 | `sponsors` | id, name, logo_url, website_url, tier, sort_order, is_active |
 | `content_blocks` | key (hero, about, mission, story, event, ...), title, body, image_url |
 | `artworks` | id, image_url, child_name, description, sort_order |
-| `promotions` | id, title, description, image_url, price_text, starts_at, ends_at, is_active |
+| `promotions` | id, title, description, image_url, price_text, starts_at, ends_at, is_active (chỉ hiển thị) |
+| `promo_codes` | id, code, description, kind (PERCENT/AMOUNT), value, max_discount, min_subtotal, max_uses, starts_at, ends_at, is_active |
+| `combos` | id, name, description, price, items (JSON: loại + số lượng), starts_at, ends_at, is_active, sort_order |
 
 ---
 
 ## 9. Danh sách màn hình
 
-**Public:** Trang chủ · Áo mẫu · Chi tiết áo mẫu · Đăng nhập · Đăng ký · Tài khoản (lịch sử đơn) · Thiết kế áo (canvas) · Chọn áo trơn · Giỏ hàng · Thanh toán (thông tin) · Thanh toán (QR) · Tra cứu đơn · Quyên góp · Quyên góp (QR) · Bảng vinh danh · Nhà tài trợ · Chính sách dữ liệu và điều khoản.
+**Public:** Trang chủ · Áo mẫu · Chi tiết áo mẫu · Blindbox · Đăng nhập · Đăng ký · Tài khoản (lịch sử đơn) · Thiết kế áo (canvas) · Chọn áo trơn · Giỏ hàng · Thanh toán (thông tin) · Thanh toán (QR) · Tra cứu đơn · Quyên góp · Quyên góp (QR) · Bảng vinh danh · Nhà tài trợ · Chính sách dữ liệu và điều khoản.
 
-**Admin:** Đăng nhập · Dashboard · Mẫu áo · Danh sách đơn · Chi tiết đơn · Tạo đơn Workshop · Quyên góp · Nội dung (câu chuyện, Top 5, sự kiện, khuyến mãi) · Nhà tài trợ · Mẫu email · Tài khoản · Cài đặt.
+**Admin:** Đăng nhập · Dashboard · Mẫu áo · Blindbox · Giảm giá (mã giảm giá, combo) · Danh sách đơn · Chi tiết đơn · Tạo đơn Workshop · Quyên góp · Nội dung (câu chuyện, Top 5, sự kiện, khuyến mãi) · Nhà tài trợ · Mẫu email · Tài khoản · Cài đặt.
 
 ---
 
@@ -397,9 +421,9 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 | 1 | Kích thước và vị trí 3 vùng in | Ngực trái 10×10cm, mặt trước 25×30cm, mặt sau 30×40cm (chỉnh trong Cài đặt) |
 | 2 | Quyền lợi khi quyên góp trên 300.000đ (câu trả lời bị cắt) | Chưa xác định |
 | 3 | Bộ nhận diện (màu, font, logo) | Nhóm thiết kế sẽ cung cấp; tạm dùng bảng màu trung tính |
-| 4 | Danh sách màu áo và size | Trắng, Đen, Be; S, M, L, XL, XXL |
+| 4 | Danh sách màu áo và size | Chỉ màu Đen (đã bỏ Trắng và Be; đơn cũ vẫn giữ màu đã đặt); S, M, L, XL, XXL |
 | 5 | Ngân hàng và số tài khoản | Cấu hình trong Cài đặt |
-| 6 | Khuyến mãi có giảm giá vào giỏ hàng không | Chỉ hiển thị nội dung, không tự động giảm giá |
+| 6 | Khuyến mãi có giảm giá vào giỏ hàng không | Khuyến mãi (FR17) vẫn chỉ là nội dung hiển thị; giảm giá thật dùng mã giảm giá và combo (FR31) |
 | 7 | Áo mẫu có giới hạn số lượng (tồn kho) không | Không giới hạn; Admin tắt bán khi cần |
 | 8 | Áo mẫu có giá riêng không | Không; luôn bằng giá áo custom trong Cài đặt |
 | 9 | Nội dung "Về chúng tôi" và "Ý nghĩa dự án" | Nhóm dự án cung cấp; Admin nhập trong Nội dung |
@@ -412,6 +436,9 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 | 16 | Thiết kế bị từ chối có được đổi màu/size | Không; chỉ đổi thiết kế. Muốn đổi áo thì hủy và đặt đơn mới |
 | 17 | Ai được sửa mẫu email | Chỉ Admin (giống Cài đặt, Nội dung) |
 | 18 | Mẫu email có lưu lịch sử phiên bản không | Không; chỉ lưu người và thời điểm sửa cuối, có nút Khôi phục mặc định |
+| 19 | Mã giảm giá và combo có cộng dồn không | Không; áp dụng ưu đãi có lợi hơn cho khách |
+| 20 | Giới hạn lượt dùng mã theo từng khách | Không; chỉ giới hạn tổng số lượt |
+| 21 | Áo mẫu và áo custom có tính chung một loại trong combo không | Không; là hai loại riêng khi Admin tạo combo |
 
 ---
 
@@ -430,6 +457,7 @@ Mục tiêu ra mắt theo kế hoạch ban đầu: 08/10.
 | 5b | Mẫu email: trang Admin, biến, xem trước, gửi thử; chuyển mọi email sang dùng mẫu | FR24, FR30 | Đã code, chờ kiểm thử với cơ sở dữ liệu |
 | 6 | Chèn ảnh/sticker vào canvas; khách sửa và gửi lại thiết kế bị từ chối | FR03, FR05, FR26, FR29, BR01 | Đã code, chờ kiểm thử với cơ sở dữ liệu |
 | 7 | Áo mẫu (Staff/Admin quản lý, trang Áo mẫu, giỏ hàng, đặt hàng) và giới hạn điện thoại cho canvas | FR27, FR28, FR02, FR06, FR03, NFR02 | Đã code, chờ kiểm thử với cơ sở dữ liệu |
-| 8 | Quyên góp, Bảng vinh danh, Google Sheets, tự hủy đơn, dọn ảnh sau 30 ngày | FR08, FR09, FR18, FR23, FR25, NFR06 | Chưa làm |
+| 8 | Quyên góp, Bảng vinh danh, Google Sheets, tự hủy đơn, dọn ảnh sau 30 ngày | FR08, FR09, FR18, FR23, FR25, NFR06 | Đã code, chờ kiểm thử với cơ sở dữ liệu |
+| 8b | Blindbox Hot Wheels, mã giảm giá, combo; giá mới; chỉ bán màu Đen | FR31, FR32, BR09, BR13 | Đã code, chờ kiểm thử với cơ sở dữ liệu (migration 0010) |
 | 9 | Trang chủ mới: Hero, Áo mẫu, Về chúng tôi, Ý nghĩa, Vinh danh | FR01, FR17 | Chưa làm |
 | 10 | Hoàn thiện, kiểm thử trên tablet, deploy, ra mắt | NFR | Chưa làm |

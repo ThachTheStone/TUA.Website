@@ -1,5 +1,6 @@
 import "server-only";
 import { APPROVAL_ALLOWED, APPROVAL_LABEL, CLOSED_STATUSES } from "@/lib/orders/state-machine";
+import { syncSheetsLater } from "@/lib/sheets";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/types/action";
 import type { ApprovalStatus, OrderStatus } from "@/types/db";
@@ -48,5 +49,6 @@ export async function reviewDesign(
   }
   if (!changed) return { ok: false, error: "Thiết kế vừa được cập nhật bởi người khác. Vui lòng tải lại trang." };
 
+  syncSheetsLater();
   return { ok: true, data: { orderId: item.order_id, from, to } };
 }

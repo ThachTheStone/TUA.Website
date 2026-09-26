@@ -152,10 +152,11 @@ export function SettingsForm({ initial, action }: { initial: Settings; action: F
         ))}
       </nav>
 
-      <Section id="gia-ao" title="Giá áo" hint="Giá được chốt vào đơn tại thời điểm đặt (BR09). Đổi giá không ảnh hưởng đơn cũ.">
+      <Section id="gia-ao" title="Giá sản phẩm" hint="Giá được chốt vào đơn tại thời điểm đặt (BR09). Đổi giá không ảnh hưởng đơn cũ.">
         <div className="grid gap-4 sm:grid-cols-2">
           <MoneyInput id="price-plain" label="Áo trơn" value={s.prices.PLAIN} onChange={(v) => set("prices", { ...s.prices, PLAIN: v })} />
-          <MoneyInput id="price-custom" label="Áo custom" value={s.prices.CUSTOM} onChange={(v) => set("prices", { ...s.prices, CUSTOM: v })} />
+          <MoneyInput id="price-custom" label="Áo custom / áo mẫu" value={s.prices.CUSTOM} onChange={(v) => set("prices", { ...s.prices, CUSTOM: v })} />
+          <MoneyInput id="price-blindbox" label="Blindbox Hot Wheels" value={s.prices.BLINDBOX} onChange={(v) => set("prices", { ...s.prices, BLINDBOX: v })} />
         </div>
       </Section>
 

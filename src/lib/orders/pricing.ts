@@ -10,12 +10,14 @@ export type PrepayPercent = (typeof PREPAY_PERCENTS)[number];
 export const MIN_PREPAY_PERCENT = 50;
 
 export type PricedLine = { type: ItemType; quantity: number };
-/** `settings.prices`: only plain and custom have their own price. */
-export type Prices = { PLAIN: number; CUSTOM: number };
+/** `settings.prices`: plain, custom and blindbox have their own price. */
+export type Prices = { PLAIN: number; CUSTOM: number; BLINDBOX: number };
 
 /** A prototype ("Áo mẫu") always costs the same as a custom shirt (BR09). */
 export function unitPrice(type: ItemType, prices: Prices): number {
-  return type === "PLAIN" ? prices.PLAIN : prices.CUSTOM;
+  if (type === "PLAIN") return prices.PLAIN;
+  if (type === "BLINDBOX") return prices.BLINDBOX;
+  return prices.CUSTOM;
 }
 
 export function subtotalOf(lines: PricedLine[], prices: Prices): number {

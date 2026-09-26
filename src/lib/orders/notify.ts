@@ -1,7 +1,7 @@
 import "server-only";
 import { sendTemplate, siteUrl } from "@/lib/email";
 import type { EmailKey, EmailVars } from "@/lib/email/templates";
-import { formatDate, formatVND } from "@/lib/format";
+import { colorLabel, formatDate, formatVND } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
 import { isBankConfigured, vietQrUrl } from "@/lib/vietqr";
@@ -34,7 +34,7 @@ type OrderRow = Pick<
 async function itemLabel(itemId: string, colors: { key: string; label: string }[]): Promise<string> {
   const { data } = await createServiceClient().from("order_items").select("color, size").eq("id", itemId).maybeSingle();
   if (!data) return "Áo custom";
-  return `Áo custom · ${colors.find((c) => c.key === data.color)?.label ?? data.color} · ${data.size}`;
+  return `Áo custom · ${colorLabel(colors, data.color)} · ${data.size}`;
 }
 
 export async function notifyOrder(orderId: string, event: OrderEvent): Promise<void> {

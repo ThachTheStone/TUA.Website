@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { getDonorWall, groupSponsorsByTier, listSponsors } from "@/lib/content";
 import { formatDate, formatVND } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
@@ -18,9 +20,14 @@ export default async function DonorWallPage() {
   return (
     <>
       <Section title="Bảng vinh danh nhà hảo tâm">
-        <p className="text-muted-foreground">
-          Cảm ơn những tấm lòng đã cùng TỰA mang yêu thương đến các bé.
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-muted-foreground">
+            Cảm ơn những tấm lòng đã cùng TỰA mang yêu thương đến các bé.
+          </p>
+          <Button asChild>
+            <Link href="/quyen-gop">Quyên góp</Link>
+          </Button>
+        </div>
         <DonationProgress total={wall.total} goal={settings.donation_goal} />
 
         {wall.donations.length === 0 ? (

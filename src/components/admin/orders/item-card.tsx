@@ -45,12 +45,13 @@ export function ItemCard({ item, code, locked }: { item: AdminOrderItem; code: s
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <p className="font-semibold">
-              Áo {item.index}: {TYPE_LABEL[item.type]}
+              #{item.index}: {TYPE_LABEL[item.type]}
               {item.prototype && ` "${item.prototype.name}"`}
               {item.designSource === "SCAN" && <span className="font-normal text-muted-foreground"> (scan Workshop)</span>}
             </p>
             <p className="text-sm text-muted-foreground">
-              {item.colorLabel} · Size {item.size} · {item.quantity} × {formatVND(item.unitPrice)}
+              {item.type !== "BLINDBOX" && `${item.colorLabel} · Size ${item.size} · `}
+              {item.quantity} × {formatVND(item.unitPrice)}
             </p>
           </div>
           {status && <ApprovalBadge status={status} />}
