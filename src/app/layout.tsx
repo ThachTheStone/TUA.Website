@@ -28,7 +28,7 @@ export default function RootLayout({
     // before React loads. suppressHydrationWarning ignores only those two elements' attributes;
     // mismatches deeper in the tree are still reported.
     <html lang="vi" suppressHydrationWarning>
-      <body className={`${beVietnamPro.variable} antialiased`} suppressHydrationWarning>
+      <body className={`${beVietnamPro.variable} font-sans antialiased`} suppressHydrationWarning>
         {children}
         <Toaster richColors position="top-center" />
       </body>
