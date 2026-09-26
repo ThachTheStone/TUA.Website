@@ -31,6 +31,7 @@ import {
   type TextFont,
 } from "@/lib/design/types";
 import { formatVND } from "@/lib/format";
+import { addToCartProblem, shirtsLeft, type ShirtStock } from "@/lib/inventory";
 import { cn } from "@/lib/utils";
 
 export type DesignerProps = {
@@ -47,6 +48,8 @@ export type DesignerProps = {
   signedIn: boolean;
   /** FR29: editing a rejected shirt of a placed order instead of a cart item. */
   resubmit?: ResubmitOptions;
+  /** Blank shirts left per colour × size; sold-out sizes can't be picked. */
+  stock?: ShirtStock;
 };
 
 export type ResubmitOptions = {
@@ -115,6 +118,7 @@ export function Designer(props: DesignerProps) {
   const resubmit = props.resubmit;
 
   const saveCustom = useCart((s) => s.saveCustom);
+  const cart = useCart((s) => s.items);
   const setWip = useCart((s) => s.setWip);
 
   const area = printAreas.find((a) => a.key === areaKey) ?? printAreas[0];
@@ -227,6 +231,11 @@ export function Designer(props: DesignerProps) {
 
   function addToCart() {
     if (!agreed || !hasContent) return;
+    if (props.stock) {
+      const quantity = cart.find((i) => i.id === editingItemId)?.quantity ?? 1;
+      const problem = addToCartProblem(cart, props.stock, { color: shirtColor, size, quantity, replaceId: editingItemId ?? undefined });
+      if (problem) return toast.error(problem);
+    }
     saveCustom({ itemId: editingItemId, color: shirtColor, size, areas });
     toast.success(editingItemId ? "Đã cập nhật áo trong giỏ hàng" : "Đã thêm áo vào giỏ hàng", {
       action: { label: "Xem giỏ hàng", onClick: () => window.location.assign("/gio-hang") },
@@ -409,7 +418,15 @@ export function Designer(props: DesignerProps) {
             <span className="block text-xs text-muted-foreground">Chỉ sửa được thiết kế; màu và size giữ nguyên.</span>
           </p>
         ) : (
-          <ShirtOptions colors={colors} sizes={sizes} color={shirtColor} size={size} onColor={setShirtColor} onSize={setSize} />
+          <ShirtOptions
+            colors={colors}
+            sizes={sizes}
+            color={shirtColor}
+            size={size}
+            onColor={setShirtColor}
+            onSize={setSize}
+            left={props.stock ? (s) => shirtsLeft(props.stock!, shirtColor, s) : undefined}
+          />
         )}
 
         <section className="flex flex-col gap-3 border-t pt-4">

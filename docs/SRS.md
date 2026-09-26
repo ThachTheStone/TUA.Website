@@ -424,7 +424,7 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 | 4 | Danh sách màu áo và size | Chỉ màu Đen (đã bỏ Trắng và Be; đơn cũ vẫn giữ màu đã đặt); S, M, L, XL, XXL |
 | 5 | Ngân hàng và số tài khoản | Cấu hình trong Cài đặt |
 | 6 | Khuyến mãi có giảm giá vào giỏ hàng không | Khuyến mãi (FR17) vẫn chỉ là nội dung hiển thị; giảm giá thật dùng mã giảm giá và combo (FR31) |
-| 7 | Áo mẫu có giới hạn số lượng (tồn kho) không | Không giới hạn; Admin tắt bán khi cần |
+| 7 | Áo mẫu có giới hạn số lượng (tồn kho) không | Có (cập nhật 27/09): kho áo trơn theo màu × size (trang Kho áo, Staff/Admin) và giới hạn tùy chọn cho từng mẫu áo. Áo trong đơn chưa Hủy/Hết hạn tính là đã lấy (trừ ngay khi đặt); đơn Hủy/Hết hạn tự trả lại kho; hết hàng thì không đặt được. Để trống = không giới hạn. Migration 0012 |
 | 8 | Áo mẫu có giá riêng không | Không; luôn bằng giá áo custom trong Cài đặt |
 | 9 | Nội dung "Về chúng tôi" và "Ý nghĩa dự án" | Nhóm dự án cung cấp; Admin nhập trong Nội dung |
 | 10 | Top 5 tranh, Workshop, khuyến mãi trên trang chủ mới | Giữ lại, đặt sau phần Ý nghĩa dự án |

@@ -4,16 +4,17 @@
 import { Minus, Package, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { ShirtPreview } from "@/components/canvas/shirt-preview";
-import { TYPE_LABEL, findPrototype, linePrice, unavailableItems, variantText, type Catalog } from "@/components/cart/catalog";
+import { TYPE_LABEL, cartProblems, findPrototype, lineColor, linePrice, variantText, type Catalog, type LineProblem } from "@/components/cart/catalog";
 import { Button } from "@/components/ui/button";
 import { MAX_QUANTITY, useCart, type CartItem } from "@/lib/cart/store";
 import { useHydrated } from "@/lib/cart/use-hydrated";
+import { maxOrderable } from "@/lib/inventory";
 import { shirtSvgUrl } from "@/lib/design/mockup";
 import { colorLabel, formatVND } from "@/lib/format";
 import { computeDiscount } from "@/lib/orders/discounts";
 import { useIsPhone } from "@/lib/use-is-phone";
 
-function CartLine({ item, catalog, unavailable }: { item: CartItem; catalog: Catalog; unavailable: boolean }) {
+function CartLine({ item, catalog, problem }: { item: CartItem; catalog: Catalog; problem: LineProblem | undefined }) {
   const draft = useCart((s) => (item.designDraftId ? s.drafts[item.designDraftId] : undefined));
   const setQuantity = useCart((s) => s.setQuantity);
   const removeItem = useCart((s) => s.removeItem);
@@ -25,7 +26,9 @@ function CartLine({ item, catalog, unavailable }: { item: CartItem; catalog: Cat
   const price = linePrice(item.type, catalog);
   const isBox = item.type === "BLINDBOX";
   const box = isBox ? catalog.blindbox : null;
-  const maxQty = box ? Math.max(1, Math.min(MAX_QUANTITY, box.remaining)) : MAX_QUANTITY;
+  // Caps the + button for one line; lines sharing a colour × size are checked together in cartProblems.
+  const left = box ? box.remaining : maxOrderable(catalog.shirtStock, lineColor(item, catalog), item.size, proto?.left ?? null);
+  const maxQty = left === null ? MAX_QUANTITY : Math.max(1, Math.min(MAX_QUANTITY, left));
 
   function remove() {
     if (item.type === "CUSTOM" && !window.confirm("Xóa áo này cùng bản thiết kế khỏi giỏ hàng?")) return;
@@ -78,17 +81,7 @@ function CartLine({ item, catalog, unavailable }: { item: CartItem; catalog: Cat
                 ? `${formatVND(price)}/hộp`
                 : `${variantText(item, color?.label ?? colorLabel(catalog.colors, item.color))} · ${formatVND(price)}/áo`}
             </p>
-            {unavailable && (
-              <p className="mt-1 text-sm text-destructive">
-                {isBox
-                  ? box && box.active && box.remaining > 0
-                    ? `Chỉ còn ${box.remaining} hộp. Vui lòng giảm số lượng.`
-                    : "Blindbox đã hết hàng hoặc ngừng bán. Vui lòng xóa khỏi giỏ hàng."
-                  : item.type === "PROTOTYPE"
-                    ? "Mẫu áo này đã ngừng bán. Vui lòng xóa khỏi giỏ hàng để đặt hàng."
-                    : "Màu hoặc size này không còn bán. Vui lòng xóa hoặc thiết kế lại."}
-              </p>
-            )}
+            {problem && <p className="mt-1 text-sm text-destructive">{problemText(problem, item, catalog)}</p>}
             {item.type === "CUSTOM" && !draft && (
               <p className="mt-1 text-sm text-destructive">Không tìm thấy bản thiết kế. Vui lòng xóa dòng này.</p>
             )}
@@ -119,6 +112,28 @@ function CartLine({ item, catalog, unavailable }: { item: CartItem; catalog: Cat
       </div>
     </li>
   );
+}
+
+function problemText(problem: LineProblem, item: CartItem, catalog: Catalog): string {
+  const box = catalog.blindbox;
+  switch (problem.kind) {
+    case "box":
+      return box && box.active && box.remaining > 0
+        ? `Chỉ còn ${box.remaining} hộp. Vui lòng giảm số lượng.`
+        : "Blindbox đã hết hàng hoặc ngừng bán. Vui lòng xóa khỏi giỏ hàng.";
+    case "shirt":
+      return problem.left > 0
+        ? `Size ${item.size} màu này chỉ còn ${problem.left} áo (tính cả các dòng cùng màu, size). Vui lòng giảm số lượng.`
+        : `Size ${item.size} màu này đã hết hàng. Vui lòng xóa hoặc chọn size khác.`;
+    case "proto":
+      return problem.left > 0
+        ? `Mẫu áo này chỉ còn ${problem.left} áo. Vui lòng giảm số lượng.`
+        : "Mẫu áo này đã hết hàng. Vui lòng xóa khỏi giỏ hàng.";
+    case "gone":
+      return item.type === "PROTOTYPE"
+        ? "Mẫu áo này đã ngừng bán. Vui lòng xóa khỏi giỏ hàng để đặt hàng."
+        : "Màu hoặc size này không còn bán. Vui lòng xóa hoặc thiết kế lại.";
+  }
 }
 
 /** FR06: cart lines with quantity, remove and re-edit. */
@@ -152,9 +167,9 @@ export function CartView({ catalog, signedIn }: { catalog: Catalog; signedIn: bo
     );
   }
 
-  const unavailable = unavailableItems(items, catalog);
+  const problems = cartProblems(items, catalog);
   const missingDesign = items.some((i) => i.type === "CUSTOM" && !i.designDraftId);
-  const blocked = unavailable.size > 0 || missingDesign;
+  const blocked = problems.size > 0 || missingDesign;
   // FR31: combos apply by themselves; a promo code is entered at checkout.
   const discount = computeDiscount(items, catalog.prices, catalog.combos, null);
 
@@ -162,7 +177,7 @@ export function CartView({ catalog, signedIn }: { catalog: Catalog; signedIn: bo
     <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
       <ul>
         {items.map((item) => (
-          <CartLine key={item.id} item={item} catalog={catalog} unavailable={unavailable.has(item.id)} />
+          <CartLine key={item.id} item={item} catalog={catalog} problem={problems.get(item.id)} />
         ))}
       </ul>
       <aside className="flex h-fit flex-col gap-4 rounded-xl border p-5 lg:sticky lg:top-20">

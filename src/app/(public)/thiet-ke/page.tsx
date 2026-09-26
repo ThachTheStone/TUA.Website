@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DesignerLoader } from "@/components/canvas/designer-loader";
 import { getCustomer } from "@/lib/customers/session";
+import { getShirtStock } from "@/lib/inventory.server";
 import { getSettings } from "@/lib/settings";
 
 export const metadata: Metadata = { title: "Thiết kế áo" };
@@ -8,7 +9,7 @@ export const metadata: Metadata = { title: "Thiết kế áo" };
 export const dynamic = "force-dynamic";
 
 export default async function DesignPage({ searchParams }: { searchParams: Promise<{ sua?: string }> }) {
-  const [settings, { sua }, session] = await Promise.all([getSettings(), searchParams, getCustomer()]);
+  const [settings, { sua }, session, stock] = await Promise.all([getSettings(), searchParams, getCustomer(), getShirtStock()]);
 
   return (
     <DesignerLoader
@@ -20,6 +21,7 @@ export default async function DesignPage({ searchParams }: { searchParams: Promi
       editItemId={typeof sua === "string" ? sua : null}
       signedIn={!!session}
       contact={settings.contact}
+      stock={stock}
     />
   );
 }

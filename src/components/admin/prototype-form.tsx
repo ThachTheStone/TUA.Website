@@ -33,6 +33,9 @@ export type ProtoFormData = {
   description: string | null;
   color: string;
   sort_order: number;
+  stock_limit: number | null;
+  /** Pieces in orders that are not cancelled or expired. */
+  sold: number;
   is_active: boolean;
   image_urls: string[];
   files: { area: string; widthPx: number | null; heightPx: number | null; url: string | null }[];
@@ -78,6 +81,8 @@ export function PrototypeForm({
     description: prototype?.description ?? "",
     color: prototype?.color ?? colors[0]?.key ?? "",
     sortOrder: prototype?.sort_order ?? 0,
+    /** "" = no cap. */
+    stockLimit: prototype?.stock_limit == null ? "" : String(prototype.stock_limit),
     isActive: prototype?.is_active ?? true,
     images: (prototype?.image_urls ?? []).map((url): ImageItem => ({ key: url, url })),
     prints: Object.fromEntries(
@@ -175,6 +180,7 @@ export function PrototypeForm({
           description: f.description,
           color: f.color,
           sort_order: f.sortOrder,
+          stock_limit: f.stockLimit === "" ? null : Number(f.stockLimit),
           is_active: f.isActive,
           images,
           prints,
@@ -231,7 +237,7 @@ export function PrototypeForm({
           <Textarea id={id("description")} rows={3} maxLength={2000} value={f.description} onChange={(e) => set({ description: e.target.value })} />
         </Field>
 
-        <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
+        <div className="grid gap-4 sm:grid-cols-[1fr_12rem_8rem]">
           <Field label="Màu áo" htmlFor={id("color")} hint="Mỗi mẫu có một màu áo cố định; khách chỉ chọn size">
             <select id={id("color")} className={selectClass} value={f.color} onChange={(e) => set({ color: e.target.value })}>
               {colors.map((c) => (
@@ -240,6 +246,22 @@ export function PrototypeForm({
                 </option>
               ))}
             </select>
+          </Field>
+          <Field
+            label="Giới hạn số lượng"
+            htmlFor={id("stock")}
+            hint={`Để trống = không giới hạn${prototype ? ` · Đã đặt ${prototype.sold}` : ""}`}
+          >
+            <Input
+              id={id("stock")}
+              type="number"
+              min={0}
+              max={100000}
+              inputMode="numeric"
+              placeholder="Không giới hạn"
+              value={f.stockLimit}
+              onChange={(e) => set({ stockLimit: e.target.value })}
+            />
           </Field>
           <Field label="Thứ tự" htmlFor={id("sort")}>
             <Input

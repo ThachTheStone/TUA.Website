@@ -1,12 +1,13 @@
 import "server-only";
 import type { ProtoSummary } from "@/components/cart/catalog";
+import { prototypeSold } from "@/lib/inventory.server";
 import { getSettings, type Settings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Prototype } from "@/types/db";
 
 // FR27/FR28 reads. Public pages only ever see active prototypes.
 
-export const PROTOTYPE_FIELDS = "id, slug, name, description, color, image_urls, design_id, sort_order, is_active, created_at, updated_at";
+export const PROTOTYPE_FIELDS = "id, slug, name, description, color, image_urls, design_id, sort_order, stock_limit, is_active, created_at, updated_at";
 
 export async function listPrototypes({ activeOnly = false } = {}): Promise<Prototype[]> {
   let query = createServiceClient().from("prototypes").select(PROTOTYPE_FIELDS);
@@ -35,13 +36,15 @@ export async function getActivePrototype(slug: string): Promise<Prototype | null
 
 /** What the cart and workshop form need to know about every prototype (inactive ones included). */
 export async function listProtoSummaries(): Promise<ProtoSummary[]> {
-  return (await listPrototypes()).map((p) => ({
+  const [prototypes, sold] = await Promise.all([listPrototypes(), prototypeSold()]);
+  return prototypes.map((p) => ({
     id: p.id,
     slug: p.slug,
     name: p.name,
     color: p.color,
     image: p.image_urls[0] ?? null,
     active: p.is_active,
+    left: p.stock_limit === null ? null : Math.max(0, p.stock_limit - (sold.get(p.id) ?? 0)),
   }));
 }
 
@@ -67,6 +70,8 @@ export async function prototypeFiles(prototypes: Pick<Prototype, "id" | "design_
   return out;
 }
 
+export type OrderablePrototype = { id: string; name: string; stock_limit: number | null };
+
 /**
  * Checkout / workshop: the prototypes an order refers to, which must all exist, be active and
  * have a colour that is still sold. Returns id → colour, or a Vietnamese error.
@@ -74,11 +79,15 @@ export async function prototypeFiles(prototypes: Pick<Prototype, "id" | "design_
 export async function orderablePrototypes(
   ids: string[],
   settings: Pick<Settings, "colors">,
-): Promise<{ ok: true; colors: Map<string, string> } | { ok: false; error: string }> {
+): Promise<{ ok: true; colors: Map<string, string>; rows: OrderablePrototype[] } | { ok: false; error: string }> {
   const colors = new Map<string, string>();
   const unique = [...new Set(ids)];
-  if (!unique.length) return { ok: true, colors };
-  const { data, error } = await createServiceClient().from("prototypes").select("id, name, color, is_active").in("id", unique);
+  if (!unique.length) return { ok: true, colors, rows: [] };
+  const { data, error } = await createServiceClient()
+    .from("prototypes")
+    .select("id, name, color, is_active, stock_limit")
+    .in("id", unique)
+    .returns<(OrderablePrototype & { color: string; is_active: boolean })[]>();
   if (error) throw new Error(`Không đọc được áo mẫu: ${error.message}`);
   for (const id of unique) {
     const proto = (data ?? []).find((p) => p.id === id);
@@ -90,5 +99,5 @@ export async function orderablePrototypes(
     }
     colors.set(id, proto.color);
   }
-  return { ok: true, colors };
+  return { ok: true, colors, rows: data ?? [] };
 }

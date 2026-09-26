@@ -4,10 +4,11 @@
 import { Minus, Plus, ShoppingCart } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { SizeOptions, type ColorOption } from "@/components/public/shirt-options";
+import { SizeOptions, pickSize, type ColorOption } from "@/components/public/shirt-options";
 import { Button } from "@/components/ui/button";
 import { MAX_QUANTITY, useCart } from "@/lib/cart/store";
 import { formatVND } from "@/lib/format";
+import { addToCartProblem, maxOrderable, type ShirtStock } from "@/lib/inventory";
 import { cn } from "@/lib/utils";
 
 /** FR27: front/back (and other) photos of a prototype, with thumbnails. */
@@ -37,15 +38,40 @@ export function PrototypeGallery({ images, name }: { images: string[]; name: str
   );
 }
 
-type Props = { prototypeId: string; name: string; color: ColorOption; sizes: string[]; price: number };
+type Props = {
+  prototypeId: string;
+  name: string;
+  color: ColorOption;
+  sizes: string[];
+  price: number;
+  stock: ShirtStock;
+  /** Pieces left under the prototype's cap; null = no cap. */
+  prototypeLeft: number | null;
+};
 
 /** FR27: the colour is fixed by the prototype; the buyer picks size and quantity only. */
-export function PrototypeBuyForm({ prototypeId, name, color, sizes, price }: Props) {
-  const [size, setSize] = useState(sizes[Math.floor(sizes.length / 2)]);
+export function PrototypeBuyForm({ prototypeId, name, color, sizes, price, stock, prototypeLeft }: Props) {
+  const leftIn = (s: string) => maxOrderable(stock, color.key, s, prototypeLeft);
+  const [size, setSize] = useState(() => pickSize(sizes, sizes[Math.floor(sizes.length / 2)], leftIn));
   const [quantity, setQuantity] = useState(1);
   const addPrototype = useCart((s) => s.addPrototype);
+  const cart = useCart((s) => s.items);
+  const left = leftIn(size);
+  const maxQty = Math.max(1, Math.min(MAX_QUANTITY, left ?? MAX_QUANTITY));
+  const soldOut = left !== null && left <= 0;
+
+  if (prototypeLeft !== null && prototypeLeft <= 0) {
+    return (
+      <div className="flex flex-col gap-2">
+        <p className="text-2xl font-bold">{formatVND(price)}</p>
+        <p className="text-lg font-semibold text-destructive">Mẫu áo này đã hết hàng</p>
+      </div>
+    );
+  }
 
   function add() {
+    const problem = addToCartProblem(cart, stock, { color: color.key, size, quantity, prototypeId, prototypeLeft });
+    if (problem) return toast.error(problem);
     addPrototype({ prototypeId, color: color.key, size, quantity });
     toast.success(`Đã thêm ${quantity} áo "${name}" vào giỏ hàng`, {
       action: { label: "Xem giỏ hàng", onClick: () => window.location.assign("/gio-hang") },
@@ -60,7 +86,15 @@ export function PrototypeBuyForm({ prototypeId, name, color, sizes, price }: Pro
         <span className="inline-block size-5 rounded-full border" style={{ background: color.hex }} />
         {color.label}
       </p>
-      <SizeOptions sizes={sizes} size={size} onSize={setSize} />
+      <SizeOptions
+        sizes={sizes}
+        size={size}
+        onSize={(s) => {
+          setSize(s);
+          setQuantity(1);
+        }}
+        left={leftIn}
+      />
       <div className="flex flex-col gap-2">
         <span className="text-sm font-semibold">Số lượng</span>
         <div className="flex items-center gap-2">
@@ -68,7 +102,7 @@ export function PrototypeBuyForm({ prototypeId, name, color, sizes, price }: Pro
             <Minus />
           </Button>
           <span className="w-10 text-center text-lg tabular-nums">{quantity}</span>
-          <Button type="button" variant="outline" size="icon" className="size-11" onClick={() => setQuantity((q) => Math.min(MAX_QUANTITY, q + 1))} aria-label="Tăng">
+          <Button type="button" variant="outline" size="icon" className="size-11" onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))} disabled={quantity >= maxQty} aria-label="Tăng">
             <Plus />
           </Button>
         </div>
@@ -76,8 +110,8 @@ export function PrototypeBuyForm({ prototypeId, name, color, sizes, price }: Pro
       <p className="text-sm text-muted-foreground">
         Tạm tính: <strong className="text-foreground">{formatVND(price * quantity)}</strong>
       </p>
-      <Button type="button" size="lg" className="h-12" onClick={add}>
-        <ShoppingCart /> Thêm vào giỏ
+      <Button type="button" size="lg" className="h-12" onClick={add} disabled={soldOut}>
+        <ShoppingCart /> {soldOut ? "Hết hàng" : "Thêm vào giỏ"}
       </Button>
     </div>
   );

@@ -19,6 +19,7 @@ import {
   Settings,
   Shirt,
   Users,
+  Warehouse,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -38,6 +39,7 @@ const NAV: NavItem[] = [
   { href: "/admin/noi-dung", label: "Nội dung", icon: FileText, adminOnly: true },
   { href: "/admin/mau-ao", label: "Áo mẫu", icon: Shirt },
   { href: "/admin/blindbox", label: "Blindbox", icon: Package },
+  { href: "/admin/kho", label: "Kho áo", icon: Warehouse },
   { href: "/admin/giam-gia", label: "Giảm giá", icon: TicketPercent, adminOnly: true },
   { href: "/admin/nha-tai-tro", label: "Nhà tài trợ", icon: Handshake, adminOnly: true },
   { href: "/admin/mau-email", label: "Mẫu email", icon: Mail, adminOnly: true },

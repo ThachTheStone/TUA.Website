@@ -59,6 +59,12 @@ const saveSchema = z.object({
     .transform((v) => v || null),
   color: z.string().min(1, "Vui lòng chọn màu áo").max(50),
   sort_order: z.number().int().min(0).max(9999),
+  stock_limit: z
+    .number({ error: "Giới hạn số lượng phải là số" })
+    .int("Giới hạn số lượng phải là số nguyên")
+    .min(0, "Giới hạn số lượng không được âm")
+    .max(100000, "Giới hạn số lượng quá lớn")
+    .nullable(),
   is_active: z.boolean(),
   /** In display order: a URL already saved on this prototype, or the path of a fresh upload. */
   images: z
@@ -160,6 +166,13 @@ export async function savePrototype(input: SavePrototypeInput): Promise<ActionRe
     if (error.code === "23505") return fail(`Đường dẫn "${v.slug}" đã được dùng cho mẫu khác`);
     console.error("[prototypes] save failed", error.message);
     return fail("Không lưu được mẫu áo. Vui lòng thử lại");
+  }
+
+  // Inventory: the cap isn't a save_prototype field, so it is set right after.
+  const { error: limitError } = await db.from("prototypes").update({ stock_limit: v.stock_limit }).eq("id", v.id);
+  if (limitError) {
+    console.error("[prototypes] stock limit save failed", limitError.message);
+    return fail("Đã lưu mẫu áo nhưng chưa lưu được giới hạn số lượng. Vui lòng lưu lại");
   }
 
   // Display images the admin removed. Old print files stay: earlier orders still print from them.

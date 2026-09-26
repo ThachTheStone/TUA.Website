@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PrototypeBuyForm, PrototypeGallery } from "@/components/public/prototype-buy";
+import { getShirtStock, prototypeSold } from "@/lib/inventory.server";
 import { getActivePrototype } from "@/lib/prototypes/queries";
 import { getSettings } from "@/lib/settings";
 
@@ -17,9 +18,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 /** FR27: one prototype. The design can't be edited; price = custom price (BR09). */
 export default async function PrototypePage({ params }: Params) {
   const { slug } = await params;
-  const [settings, prototype] = await Promise.all([getSettings(), getActivePrototype(slug)]);
+  const [settings, prototype, stock, sold] = await Promise.all([getSettings(), getActivePrototype(slug), getShirtStock(), prototypeSold()]);
   const color = prototype && settings.colors.find((c) => c.key === prototype.color);
   if (!prototype || !color) notFound();
+  const prototypeLeft = prototype.stock_limit === null ? null : Math.max(0, prototype.stock_limit - (sold.get(prototype.id) ?? 0));
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10">
@@ -39,6 +41,8 @@ export default async function PrototypePage({ params }: Params) {
             color={color}
             sizes={settings.sizes}
             price={settings.prices.CUSTOM}
+            stock={stock}
+            prototypeLeft={prototypeLeft}
           />
           <p className="text-sm text-muted-foreground">
             Thiết kế của áo mẫu không chỉnh sửa được. Muốn thay đổi?{" "}

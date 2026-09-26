@@ -2,6 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { checkBlindboxQuantity } from "@/lib/blindbox";
+import { checkStock, stockRpcError } from "@/lib/inventory.server";
 import { discountRpcError, resolveDiscount } from "@/lib/discounts/queries";
 import { phoneSchema } from "@/lib/orders/checkout-schema";
 import { PREPAY_PERCENTS, prepayAmount, unitPrice } from "@/lib/orders/pricing";
@@ -150,6 +151,8 @@ export async function createWorkshopOrder(input: WorkshopOrderInput, staffId: st
 
   const boxProblem = await checkBlindboxQuantity(v.items.reduce((n, i) => n + (i.type === "BLINDBOX" ? i.quantity : 0), 0));
   if (boxProblem) return { ok: false, error: boxProblem };
+  const stockProblem = await checkStock(v.items, settings, protos.rows);
+  if (stockProblem) return { ok: false, error: stockProblem };
 
   const discount = await resolveDiscount(v.items, settings, v.promoCode);
   if (!discount.ok) return discount;
@@ -215,7 +218,7 @@ export async function createWorkshopOrder(input: WorkshopOrderInput, staffId: st
     })),
   });
   if (error || !data) {
-    const known = discountRpcError(error?.message);
+    const known = discountRpcError(error?.message) ?? (await stockRpcError(error?.message, settings));
     if (known) return { ok: false, error: known };
     console.error("[workshop] create_order failed", error?.message);
     return { ok: false, error: "Không tạo được đơn Workshop. Vui lòng thử lại." };

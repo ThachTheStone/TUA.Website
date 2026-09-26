@@ -1,5 +1,6 @@
 import "server-only";
 import { checkBlindboxQuantity } from "@/lib/blindbox";
+import { checkStock, stockRpcError } from "@/lib/inventory.server";
 import { foreignAssets } from "@/lib/design/assets.server";
 import { discountRpcError, resolveDiscount } from "@/lib/discounts/queries";
 import { collectUploadedDesign, type UploadedDesign } from "@/lib/orders/design-upload";
@@ -78,6 +79,8 @@ export async function createWebOrder(
 
   const boxProblem = await checkBlindboxQuantity(items.reduce((n, i) => n + (i.type === "BLINDBOX" ? i.quantity : 0), 0));
   if (boxProblem) return { ok: false, error: boxProblem };
+  const stockProblem = await checkStock(items, settings, protos.rows);
+  if (stockProblem) return { ok: false, error: stockProblem };
 
   const discount = await resolveDiscount(items, settings, promoCode);
   if (!discount.ok) return discount;
@@ -133,7 +136,7 @@ export async function createWebOrder(
     })),
   });
   if (error || !data) {
-    const known = discountRpcError(error?.message);
+    const known = discountRpcError(error?.message) ?? (await stockRpcError(error?.message, settings));
     if (known) return { ok: false, error: known };
     console.error("[orders] create_order failed", error?.message);
     return { ok: false, error: "Không tạo được đơn hàng. Vui lòng thử lại." };

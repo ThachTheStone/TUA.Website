@@ -114,6 +114,8 @@ export interface Prototype {
   image_urls: string[];
   design_id: string;
   sort_order: number;
+  /** Most pieces that can be sold (orders not cancelled/expired); null = no cap. */
+  stock_limit: number | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;

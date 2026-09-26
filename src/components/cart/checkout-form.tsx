@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { TYPE_LABEL, findPrototype, linePrice, unavailableItems, type Catalog } from "@/components/cart/catalog";
+import { TYPE_LABEL, findPrototype, linePrice, cartProblems, type Catalog } from "@/components/cart/catalog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,7 +85,7 @@ export function CheckoutForm({ catalog, contact }: { catalog: Catalog; contact: 
       </div>
     );
   }
-  if (unavailableItems(items, catalog).size && !progress) {
+  if (cartProblems(items, catalog).size && !progress) {
     return (
       <div className="flex flex-col items-center gap-4 py-16 text-center">
         <p className="text-lg">Một số áo trong giỏ không còn bán (mẫu đã tắt, hoặc màu/size đã thay đổi).</p>

@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PlainShirtForm } from "@/components/public/plain-shirt-form";
 import { formatVND } from "@/lib/format";
+import { getShirtStock } from "@/lib/inventory.server";
 import { getSettings } from "@/lib/settings";
 
 export const metadata: Metadata = { title: "Áo trơn" };
 export const dynamic = "force-dynamic";
 
 export default async function PlainShirtPage() {
-  const settings = await getSettings();
+  const [settings, stock] = await Promise.all([getSettings(), getShirtStock()]);
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10">
@@ -21,7 +22,7 @@ export default async function PlainShirtPage() {
           </Link>
         </p>
       </div>
-      <PlainShirtForm colors={settings.colors} sizes={settings.sizes} price={settings.prices.PLAIN} />
+      <PlainShirtForm colors={settings.colors} sizes={settings.sizes} price={settings.prices.PLAIN} stock={stock} />
     </div>
   );
 }

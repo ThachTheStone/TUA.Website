@@ -6,6 +6,7 @@ import { PrototypeForm, type ProtoFormData } from "@/components/admin/prototype-
 import { Badge } from "@/components/ui/badge";
 import { deletePrototype, setPrototypeActive } from "@/lib/admin/prototype-actions";
 import { colorLabel, formatVND } from "@/lib/format";
+import { prototypeSold } from "@/lib/inventory.server";
 import { DESIGNS_BUCKET } from "@/lib/orders/design-upload";
 import { listPrototypes, prototypeFiles } from "@/lib/prototypes/queries";
 import { resolutionWarning } from "@/lib/prototypes/resolution";
@@ -28,7 +29,7 @@ async function orderCounts(): Promise<Map<string, number>> {
 /** FR28: prototype management (Staff and Admin). */
 export default async function PrototypesPage() {
   await requireRole();
-  const [settings, prototypes, counts] = await Promise.all([getSettings(), listPrototypes(), orderCounts()]);
+  const [settings, prototypes, counts, sold] = await Promise.all([getSettings(), listPrototypes(), orderCounts(), prototypeSold()]);
   const files = await prototypeFiles(prototypes);
 
   // Signed download links for the private print files (1 hour).
@@ -63,6 +64,8 @@ export default async function PrototypesPage() {
             const protoFiles = files.get(p.id) ?? [];
             const warnings = protoFiles.flatMap((f) => resolutionWarning(f, settings) ?? []);
             const orders = counts.get(p.id) ?? 0;
+            const pieces = sold.get(p.id) ?? 0;
+            const left = p.stock_limit === null ? null : Math.max(0, p.stock_limit - pieces);
             const colorMissing = !settings.colors.some((c) => c.key === p.color);
             const data: ProtoFormData = {
               id: p.id,
@@ -71,6 +74,8 @@ export default async function PrototypesPage() {
               description: p.description,
               color: colorMissing ? (settings.colors[0]?.key ?? p.color) : p.color,
               sort_order: p.sort_order,
+              stock_limit: p.stock_limit,
+              sold: pieces,
               is_active: p.is_active,
               image_urls: p.image_urls,
               files: protoFiles.map((f) => ({ area: f.area, widthPx: f.widthPx, heightPx: f.heightPx, url: urlOf(f.filePath) })),
@@ -88,6 +93,7 @@ export default async function PrototypesPage() {
                       <div className="text-xs text-muted-foreground">
                         {labelOf(p.color)} · {protoFiles.length} vùng in · Thứ tự {p.sort_order}
                         {orders > 0 && ` · ${orders} dòng đơn hàng`}
+                        {left !== null && ` · Còn ${left}/${p.stock_limit} áo`}
                       </div>
                       {(warnings.length > 0 || colorMissing) && (
                         <div className="text-xs text-amber-700 dark:text-amber-400">
