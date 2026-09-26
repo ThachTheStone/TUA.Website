@@ -1,6 +1,7 @@
 import "server-only";
 import type { ProtoSummary } from "@/components/cart/catalog";
-import { prototypeSold } from "@/lib/inventory.server";
+import { shirtsLeft } from "@/lib/inventory";
+import { getShirtStock, prototypeSold } from "@/lib/inventory.server";
 import { getSettings, type Settings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Prototype } from "@/types/db";
@@ -17,10 +18,24 @@ export async function listPrototypes({ activeOnly = false } = {}): Promise<Proto
   return data ?? [];
 }
 
+/** A prototype card on the public pages; `soldOut` when its cap is used up or every size of its colour ran out. */
+export type PrototypeOnSale = Prototype & { soldOut: boolean };
+
 /** Active prototypes buyers can order: a prototype whose colour was removed from settings is left out. */
-export async function listPrototypesOnSale(): Promise<Prototype[]> {
-  const [settings, prototypes] = await Promise.all([getSettings(), listPrototypes({ activeOnly: true })]);
-  return prototypes.filter((p) => settings.colors.some((c) => c.key === p.color));
+export async function listPrototypesOnSale(): Promise<PrototypeOnSale[]> {
+  const [settings, prototypes, stock, sold] = await Promise.all([
+    getSettings(),
+    listPrototypes({ activeOnly: true }),
+    getShirtStock(),
+    prototypeSold(),
+  ]);
+  return prototypes
+    .filter((p) => settings.colors.some((c) => c.key === p.color))
+    .map((p) => {
+      const capUsed = p.stock_limit !== null && (sold.get(p.id) ?? 0) >= p.stock_limit;
+      const noSizeLeft = settings.sizes.every((size) => (shirtsLeft(stock, p.color, size) ?? 1) <= 0);
+      return { ...p, soldOut: capUsed || noSizeLeft };
+    });
 }
 
 export async function getActivePrototype(slug: string): Promise<Prototype | null> {

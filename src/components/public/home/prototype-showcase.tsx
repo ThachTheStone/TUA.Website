@@ -2,13 +2,13 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PrototypeGrid } from "@/components/public/prototype-grid";
 import { Section } from "@/components/public/sections";
-import type { Prototype } from "@/types/db";
+import type { PrototypeOnSale } from "@/lib/prototypes/queries";
 
 /** How many prototypes the home page shows before "Xem tất cả". */
 export const HOME_PROTOTYPE_LIMIT = 8;
 
 /** FR01 §2: prototypes on sale, plus the ways into custom and plain shirts. Hidden when none are on sale. */
-export function PrototypeShowcase({ prototypes, price }: { prototypes: Prototype[]; price: number }) {
+export function PrototypeShowcase({ prototypes, price }: { prototypes: PrototypeOnSale[]; price: number }) {
   if (prototypes.length === 0) return null;
   return (
     <Section id="ao-mau" title="Áo mẫu">
