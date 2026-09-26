@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AccountLink } from "@/components/account/account-link";
 import { CartLink } from "@/components/public/cart-link";
+import { MobileMenu } from "@/components/public/mobile-menu";
 import type { CustomerSession } from "@/lib/customers/session";
 
 const NAV = [
@@ -17,10 +18,11 @@ export function SiteHeader({ session }: { session: CustomerSession | null }) {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
-        <Link href="/" className="font-bold tracking-tight">
+        <Link href="/" className="shrink-0 font-bold tracking-tight">
           TỰA <span className="hidden font-normal text-muted-foreground sm:inline">– Nét Vẽ Yêu Thương</span>
         </Link>
-        <nav className="flex items-center gap-1 overflow-x-auto text-sm">
+        {/* Full nav only where it fits on one line; below lg it moves into MobileMenu. */}
+        <nav className="hidden items-center gap-1 text-sm lg:flex">
           {NAV.map(({ href, label }) => (
             <Link key={href} href={href} className="shrink-0 rounded-md px-3 py-2 hover:bg-muted">
               {label}
@@ -29,6 +31,12 @@ export function SiteHeader({ session }: { session: CustomerSession | null }) {
           <CartLink />
           <AccountLink session={session} />
         </nav>
+        <div className="flex items-center gap-1 lg:hidden">
+          <CartLink />
+          <MobileMenu nav={NAV}>
+            <AccountLink session={session} />
+          </MobileMenu>
+        </div>
       </div>
     </header>
   );
