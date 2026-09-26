@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Field } from "@/components/admin/form-kit";
-import { TYPE_LABEL, linePrice, type Catalog } from "@/components/cart/catalog";
+import { TYPE_LABEL, cartProblems, findPrototype, linePrice, type Catalog, type LineProblem } from "@/components/cart/catalog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { checkWorkshopPromo, prepareScanUpload, submitWorkshopOrder } from "@/lib/admin/workshop-actions";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 import { colorLabel, formatVND } from "@/lib/format";
+import { maxOrderable } from "@/lib/inventory";
 import { computeDiscount, promoSummary, type PromoRule } from "@/lib/orders/discounts";
 import { PREPAY_PERCENTS, prepayAmount } from "@/lib/orders/pricing";
 import { newId } from "@/lib/design/types";
@@ -34,6 +35,26 @@ type Line = {
 };
 
 const selectClass = "h-9 rounded-md border border-input bg-transparent px-2 text-sm shadow-xs";
+
+/** "(còn 3)" / "(hết)" after an option; nothing when not tracked. */
+const leftLabel = (left: number | null) => (left === null ? "" : left > 0 ? ` (còn ${left})` : " (hết)");
+
+function problemText(problem: LineProblem, line: Line, catalog: Catalog): string {
+  switch (problem.kind) {
+    case "shirt":
+      return problem.left > 0
+        ? `Size ${line.size} chỉ còn ${problem.left} áo (tính cả các dòng cùng màu, size)`
+        : `Size ${line.size} đã hết hàng`;
+    case "proto":
+      return problem.left > 0 ? `Mẫu này chỉ còn ${problem.left} áo (tính cả các dòng cùng mẫu)` : "Mẫu này đã hết hàng";
+    case "box": {
+      const left = catalog.blindbox?.remaining ?? 0;
+      return left > 0 ? `Blindbox chỉ còn ${left} hộp` : "Blindbox đã hết hàng";
+    }
+    case "gone":
+      return "Màu hoặc size này không còn bán";
+  }
+}
 
 export function WorkshopForm({ catalog }: { catalog: Catalog }) {
   const router = useRouter();
@@ -80,6 +101,14 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
   }
   const prepay = Math.min(subtotal, prepayAmount(subtotal, percent));
 
+  // Stock left, checked like the cart (lines of the same colour × size add up). The server re-checks.
+  const problems = cartProblems(
+    lines
+      .filter((l) => l.type !== "PROTOTYPE" || l.prototypeId)
+      .map((l) => ({ id: l.id, type: l.type, color: l.color, size: l.size, quantity: l.quantity, prototypeId: l.prototypeId || undefined })),
+    catalog,
+  );
+
   function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
@@ -87,6 +116,7 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
     setError(null);
     if (lines.some((l) => l.type === "CUSTOM" && !l.scan)) return setError("Mỗi áo custom cần ảnh scan bản vẽ");
     if (lines.some((l) => l.type === "PROTOTYPE" && !l.prototypeId)) return setError("Vui lòng chọn áo mẫu");
+    if (problems.size) return setError("Một số áo không còn đủ hàng. Vui lòng sửa các dòng được đánh dấu.");
 
     startTransition(async () => {
       try {
@@ -158,98 +188,110 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
 
         <section className="flex flex-col gap-3 rounded-xl border bg-card p-4">
           <h2 className="font-semibold">Áo</h2>
-          {lines.map((l, n) => (
-            <div key={l.id} className="flex flex-wrap items-end gap-3 border-b pb-3 last:border-0">
-              <span className="self-center text-sm font-medium">#{n + 1}</span>
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                Loại
-                <select className={selectClass} value={l.type} onChange={(e) => update(l.id, { type: e.target.value as Line["type"] })}>
-                  {(["CUSTOM", "PROTOTYPE", "PLAIN", "BLINDBOX"] as const)
-                    .filter((t) => (t !== "PROTOTYPE" || prototypes.length > 0) && (t !== "BLINDBOX" || boxOnSale))
-                    .map((t) => (
-                      <option key={t} value={t}>
-                        {TYPE_LABEL[t]} ({formatVND(linePrice(t, catalog))})
-                      </option>
-                    ))}
-                </select>
-              </label>
-              {l.type === "PROTOTYPE" ? (
+          {lines.map((l, n) => {
+            const proto = l.type === "PROTOTYPE" ? findPrototype(catalog, l.prototypeId || undefined) : undefined;
+            const shirtColor = proto?.color ?? l.color;
+            const problem = problems.get(l.id);
+            return (
+              <div key={l.id} className="flex flex-wrap items-end gap-3 border-b pb-3 last:border-0">
+                <span className="self-center text-sm font-medium">#{n + 1}</span>
                 <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                  Mẫu
-                  <select className={selectClass} value={l.prototypeId} onChange={(e) => update(l.id, { prototypeId: e.target.value })}>
-                    <option value="">Chọn áo mẫu…</option>
-                    {prototypes.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({colorLabel(catalog.colors, p.color)})
-                      </option>
-                    ))}
+                  Loại
+                  <select className={selectClass} value={l.type} onChange={(e) => update(l.id, { type: e.target.value as Line["type"] })}>
+                    {(["CUSTOM", "PROTOTYPE", "PLAIN", "BLINDBOX"] as const)
+                      .filter((t) => (t !== "PROTOTYPE" || prototypes.length > 0) && (t !== "BLINDBOX" || boxOnSale))
+                      .map((t) => (
+                        <option key={t} value={t}>
+                          {TYPE_LABEL[t]} ({formatVND(linePrice(t, catalog))})
+                        </option>
+                      ))}
                   </select>
                 </label>
-              ) : l.type === "BLINDBOX" ? (
-                <span className="self-center text-xs text-muted-foreground">Còn {catalog.blindbox?.remaining ?? 0} hộp</span>
-              ) : (
-                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                  Màu
-                  <select className={selectClass} value={l.color} onChange={(e) => update(l.id, { color: e.target.value })}>
-                    {catalog.colors.map((c) => (
-                      <option key={c.key} value={c.key}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              {l.type !== "BLINDBOX" && (
-                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                  Size
-                  <select className={selectClass} value={l.size} onChange={(e) => update(l.id, { size: e.target.value })}>
-                    {catalog.sizes.map((s) => (
-                      <option key={s}>{s}</option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                SL
-                <Input
-                  type="number"
-                  min={1}
-                  max={50}
-                  value={l.quantity}
-                  onChange={(e) => update(l.id, { quantity: Math.min(50, Math.max(1, Number(e.target.value) || 1)) })}
-                  className="h-9 w-20"
-                />
-              </label>
-              {l.type === "CUSTOM" && (
-                <>
+                {l.type === "PROTOTYPE" ? (
                   <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                    Vùng in
-                    <select className={selectClass} value={l.area} onChange={(e) => update(l.id, { area: e.target.value })}>
-                      {catalog.printAreas.map((a) => (
-                        <option key={a.key} value={a.key}>
-                          {a.label}
+                    Mẫu
+                    <select className={selectClass} value={l.prototypeId} onChange={(e) => update(l.id, { prototypeId: e.target.value })}>
+                      <option value="">Chọn áo mẫu…</option>
+                      {prototypes.map((p) => (
+                        <option key={p.id} value={p.id} disabled={p.left !== null && p.left <= 0}>
+                          {p.name} ({colorLabel(catalog.colors, p.color)}){leftLabel(p.left)}
                         </option>
                       ))}
                     </select>
                   </label>
+                ) : l.type === "BLINDBOX" ? (
+                  <span className="self-center text-xs text-muted-foreground">Còn {catalog.blindbox?.remaining ?? 0} hộp</span>
+                ) : (
                   <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                    Ảnh scan (JPG/PNG, tối đa 10MB)
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png"
-                      onChange={(e) => update(l.id, { scan: e.target.files?.[0] ?? null })}
-                      className="text-sm file:mr-2 file:rounded-md file:border file:bg-muted file:px-2 file:py-1 file:text-sm"
-                    />
+                    Màu
+                    <select className={selectClass} value={l.color} onChange={(e) => update(l.id, { color: e.target.value })}>
+                      {catalog.colors.map((c) => (
+                        <option key={c.key} value={c.key}>
+                          {c.label}
+                        </option>
+                      ))}
+                    </select>
                   </label>
-                </>
-              )}
-              {lines.length > 1 && (
-                <Button type="button" variant="ghost" size="icon" aria-label="Xóa dòng" onClick={() => setLines((ls) => ls.filter((x) => x.id !== l.id))}>
-                  <Trash2 />
-                </Button>
-              )}
-            </div>
-          ))}
+                )}
+                {l.type !== "BLINDBOX" && (
+                  <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                    Size
+                    <select className={selectClass} value={l.size} onChange={(e) => update(l.id, { size: e.target.value })}>
+                      {catalog.sizes.map((s) => {
+                        const left = maxOrderable(catalog.shirtStock, shirtColor, s, proto?.left ?? null);
+                        return (
+                          <option key={s} value={s} disabled={left !== null && left <= 0 && s !== l.size}>
+                            {s}
+                            {leftLabel(left)}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </label>
+                )}
+                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  SL
+                  <Input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={l.quantity}
+                    onChange={(e) => update(l.id, { quantity: Math.min(50, Math.max(1, Number(e.target.value) || 1)) })}
+                    className="h-9 w-20"
+                  />
+                </label>
+                {l.type === "CUSTOM" && (
+                  <>
+                    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                      Vùng in
+                      <select className={selectClass} value={l.area} onChange={(e) => update(l.id, { area: e.target.value })}>
+                        {catalog.printAreas.map((a) => (
+                          <option key={a.key} value={a.key}>
+                            {a.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                      Ảnh scan (JPG/PNG, tối đa 10MB)
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png"
+                        onChange={(e) => update(l.id, { scan: e.target.files?.[0] ?? null })}
+                        className="text-sm file:mr-2 file:rounded-md file:border file:bg-muted file:px-2 file:py-1 file:text-sm"
+                      />
+                    </label>
+                  </>
+                )}
+                {lines.length > 1 && (
+                  <Button type="button" variant="ghost" size="icon" aria-label="Xóa dòng" onClick={() => setLines((ls) => ls.filter((x) => x.id !== l.id))}>
+                    <Trash2 />
+                  </Button>
+                )}
+                {problem && <p className="w-full text-sm text-destructive">{problemText(problem, l, catalog)}</p>}
+              </div>
+            );
+          })}
           <Button type="button" variant="outline" size="sm" className="self-start" onClick={() => setLines((ls) => [...ls, newLine()])} disabled={lines.length >= 20}>
             <Plus /> Thêm dòng
           </Button>
@@ -356,7 +398,7 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending || problems.size > 0}>
           {pending ? (progress ?? "Đang xử lý…") : "Tạo đơn Workshop"}
         </Button>
       </aside>
