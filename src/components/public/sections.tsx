@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { formatDate, formatVND } from "@/lib/format";
-import type { Artwork, ContentBlock, Promotion, Sponsor } from "@/types/db";
+import type { Artwork, ContentBlock, Promotion, PublicDonation, Sponsor } from "@/types/db";
 
 // Presentational blocks for the public home and donor-wall pages (FR01, FR09, FR10).
 
@@ -133,6 +133,24 @@ export function DonationProgress({ total, goal }: { total: number; goal: number 
         </div>
       )}
     </div>
+  );
+}
+
+/** Confirmed donations as cards: name (or "Nhà hảo tâm ẩn danh"), amount, message, date (FR09). */
+export function DonationList({ donations }: { donations: PublicDonation[] }) {
+  return (
+    <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {donations.map((d) => (
+        <li key={d.id} className="flex flex-col gap-2 rounded-xl border bg-card p-4">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="font-semibold">{d.display_name}</span>
+            <span className="shrink-0 font-medium text-primary">{formatVND(d.amount)}</span>
+          </div>
+          {d.message && <p className="whitespace-pre-line text-sm text-muted-foreground">“{d.message}”</p>}
+          <span className="mt-auto text-xs text-muted-foreground">{formatDate(d.created_at, { time: false })}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 

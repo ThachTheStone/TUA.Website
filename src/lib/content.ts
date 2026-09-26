@@ -5,10 +5,20 @@ import type { Artwork, ContentBlock, Promotion, PublicDonation, Sponsor } from "
 // Reads for the public site (FR01, FR09, FR10) and the content admin (FR17, FR19).
 // Public pages render dynamically, so admin edits show up without a redeploy.
 
-/** Editable text blocks on the home page. Keys match the `content_blocks` seed rows. */
+/**
+ * Editable text blocks on the home page, in page order. Keys match the `content_blocks`
+ * seed rows. The old `story` block was folded into `mission` (migration 0011).
+ */
 export const CONTENT_BLOCKS = [
-  { key: "story", label: "Câu chuyện dự án" },
-  { key: "event", label: "Campus Workshop / sự kiện" },
+  { key: "hero", label: "Hero (đầu trang chủ)", bodyLabel: "Câu giới thiệu ngắn", imageLabel: "Ảnh nền" },
+  { key: "about", label: "Về chúng tôi", bodyLabel: "Nội dung", imageLabel: "Ảnh nhóm" },
+  {
+    key: "mission",
+    label: "Ý nghĩa dự án",
+    bodyLabel: "Câu chuyện, lợi nhuận dùng vào đâu, ai được hỗ trợ",
+    imageLabel: "Ảnh minh họa",
+  },
+  { key: "event", label: "Campus Workshop / sự kiện", bodyLabel: "Nội dung", imageLabel: "Ảnh minh họa" },
 ] as const;
 
 export type ContentBlockKey = (typeof CONTENT_BLOCKS)[number]["key"];
@@ -76,15 +86,16 @@ export function groupSponsorsByTier(sponsors: Sponsor[]): { tier: string | null;
   return [...groups].map(([tier, list]) => ({ tier, sponsors: list }));
 }
 
-/** Donor wall (FR09): confirmed, not-hidden donations plus the confirmed total. */
-export async function getDonorWall(): Promise<{ donations: PublicDonation[]; total: number }> {
+/** Number of latest donations shown in the home page "Vinh danh" section (FR01). */
+export const HOME_DONATION_LIMIT = 10;
+
+/** Donor wall (FR09): confirmed, not-hidden donations (newest first) plus the confirmed total. */
+export async function getDonorWall(limit?: number): Promise<{ donations: PublicDonation[]; total: number }> {
   const supabase = createServiceClient();
+  let wallQuery = supabase.from("public_donations").select("*").order("created_at", { ascending: false });
+  if (limit) wallQuery = wallQuery.limit(limit);
   const [wall, confirmed] = await Promise.all([
-    supabase
-      .from("public_donations")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .returns<PublicDonation[]>(),
+    wallQuery.returns<PublicDonation[]>(),
     // Hidden donations are only hidden from the wall; their money still counts.
     supabase.from("donations").select("amount").eq("status", "CONFIRMED").returns<{ amount: number }[]>(),
   ]);

@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getDonorWall, groupSponsorsByTier, listSponsors } from "@/lib/content";
-import { formatDate, formatVND } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
-import { DonationProgress, Section, SponsorTiers } from "@/components/public/sections";
+import { DonationList, DonationProgress, Section, SponsorTiers } from "@/components/public/sections";
 
 export const metadata: Metadata = { title: "Bảng vinh danh" };
 export const dynamic = "force-dynamic";
@@ -35,18 +34,7 @@ export default async function DonorWallPage() {
             Chưa có khoản quyên góp nào được xác nhận.
           </p>
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {wall.donations.map((d) => (
-              <li key={d.id} className="flex flex-col gap-2 rounded-xl border bg-card p-4">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="font-semibold">{d.display_name}</span>
-                  <span className="shrink-0 font-medium text-primary">{formatVND(d.amount)}</span>
-                </div>
-                {d.message && <p className="whitespace-pre-line text-sm text-muted-foreground">“{d.message}”</p>}
-                <span className="mt-auto text-xs text-muted-foreground">{formatDate(d.created_at, { time: false })}</span>
-              </li>
-            ))}
-          </ul>
+          <DonationList donations={wall.donations} />
         )}
       </Section>
 

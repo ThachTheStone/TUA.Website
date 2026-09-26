@@ -13,7 +13,10 @@ export default async function ContentBlocksPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {CONTENT_BLOCKS.map(({ key, label }) => {
+      <p className="text-sm text-muted-foreground">
+        Mục nào để trống cả nội dung và ảnh sẽ được ẩn khỏi trang chủ (riêng Hero luôn hiển thị).
+      </p>
+      {CONTENT_BLOCKS.map(({ key, label, bodyLabel, imageLabel }) => {
         const block = blocks[key];
         return (
           <section key={key} className="flex flex-col gap-4 rounded-xl border bg-card p-6">
@@ -29,6 +32,8 @@ export default async function ContentBlocksPage() {
               title={block?.title ?? null}
               body={block?.body ?? null}
               imageUrl={block?.image_url ?? null}
+              bodyLabel={bodyLabel}
+              imageLabel={imageLabel}
             />
           </section>
         );

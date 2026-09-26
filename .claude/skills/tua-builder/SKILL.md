@@ -116,7 +116,7 @@ URLs are Vietnamese slugs without diacritics.
 - `promo_codes` + `combos` tables, admin `/admin/giam-gia` (Admin only). `lib/orders/discounts.ts` `computeDiscount()` is shared by cart preview and server; code and combos never stack, the bigger discount wins. `orders.items_total`, `discount_amount`, `discount_note`, `promo_code_id`; `subtotal` stays the amount owed. Promo usage limit re-checked in `create_order`.
 **Done when:** a combo and a code are applied correctly (better one wins), a used-up code is refused, the last blindbox can't be oversold, and a cancelled order returns its boxes and code use.
 
-### Phase 9 — New home page (FR01, FR17)
+### Phase 9 — New home page (FR01, FR17) ✅ code done (migration 0011; old `story` block folded into `mission`)
 - Content blocks `hero`, `about`, `mission` (seed + admin editing in Nội dung; hero has title, body, image).
 - Sections in order: Hero (CTAs: Xem áo mẫu, Tự thiết kế áo, Quyên góp) → Áo mẫu grid (+ entries to custom and plain) → Về chúng tôi → Ý nghĩa dự án → Top 5 / Workshop / promotions → Vinh danh (total, progress, latest ~10 confirmed donations via `public_donations`, link to /vinh-danh, sponsor logos by tier).
 - Hide any section with no data. Keep each section a small server component in `components/public/home/`.

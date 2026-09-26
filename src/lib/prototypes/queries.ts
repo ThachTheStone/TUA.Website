@@ -1,6 +1,6 @@
 import "server-only";
 import type { ProtoSummary } from "@/components/cart/catalog";
-import type { Settings } from "@/lib/settings";
+import { getSettings, type Settings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Prototype } from "@/types/db";
 
@@ -14,6 +14,12 @@ export async function listPrototypes({ activeOnly = false } = {}): Promise<Proto
   const { data, error } = await query.order("sort_order").order("created_at").returns<Prototype[]>();
   if (error) throw new Error(`Không đọc được áo mẫu: ${error.message}`);
   return data ?? [];
+}
+
+/** Active prototypes buyers can order: a prototype whose colour was removed from settings is left out. */
+export async function listPrototypesOnSale(): Promise<Prototype[]> {
+  const [settings, prototypes] = await Promise.all([getSettings(), listPrototypes({ activeOnly: true })]);
+  return prototypes.filter((p) => settings.colors.some((c) => c.key === p.color));
 }
 
 export async function getActivePrototype(slug: string): Promise<Prototype | null> {

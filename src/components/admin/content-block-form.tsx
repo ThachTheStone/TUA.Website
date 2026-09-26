@@ -10,10 +10,12 @@ type Props = {
   title: string | null;
   body: string | null;
   imageUrl: string | null;
+  bodyLabel: string;
+  imageLabel: string;
 };
 
-/** FR17: edit one home-page text block (story or event). */
-export function ContentBlockForm({ blockKey, action, title, body, imageUrl }: Props) {
+/** FR17: edit one home-page text block (hero, about, mission, event). */
+export function ContentBlockForm({ blockKey, action, title, body, imageUrl, bodyLabel, imageLabel }: Props) {
   const { state, onSubmit, pending, formRef, key } = useAdminForm(action, "Đã lưu nội dung");
   const id = (name: string) => `${blockKey}-${name}`;
 
@@ -23,10 +25,10 @@ export function ContentBlockForm({ blockKey, action, title, body, imageUrl }: Pr
       <Field label="Tiêu đề" htmlFor={id("title")}>
         <Input id={id("title")} name="title" defaultValue={title ?? ""} maxLength={200} />
       </Field>
-      <Field label="Nội dung" htmlFor={id("body")} hint="Xuống dòng sẽ được giữ nguyên trên trang chủ">
+      <Field label={bodyLabel} htmlFor={id("body")} hint="Xuống dòng sẽ được giữ nguyên trên trang chủ">
         <Textarea id={id("body")} name="body" defaultValue={body ?? ""} rows={8} maxLength={10000} />
       </Field>
-      <ImageInput id={id("image")} label="Ảnh minh họa" current={imageUrl} removable />
+      <ImageInput id={id("image")} label={imageLabel} current={imageUrl} removable />
       <SubmitButton pending={pending}>Lưu</SubmitButton>
     </form>
   );
