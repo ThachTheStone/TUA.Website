@@ -48,6 +48,9 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-8 text-sm text-muted-foreground">
         <p className="font-medium text-foreground">TỰA – Nét Vẽ Yêu Thương</p>
         <p>Toàn bộ lợi nhuận được dùng để hỗ trợ trẻ em có hoàn cảnh đặc biệt.</p>
+        <Link href="/chinh-sach" className="mt-2 w-fit underline underline-offset-4 hover:text-foreground">
+          Chính sách dữ liệu và điều khoản
+        </Link>
       </div>
     </footer>
   );

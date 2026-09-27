@@ -9,7 +9,11 @@ const beVietnamPro = Be_Vietnam_Pro({
   weight: ["400", "500", "600", "700"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  openGraph: { siteName: "TỰA – Nét Vẽ Yêu Thương", locale: "vi_VN", type: "website" },
   title: {
     default: "TỰA – Nét Vẽ Yêu Thương",
     template: "%s | TỰA – Nét Vẽ Yêu Thương",

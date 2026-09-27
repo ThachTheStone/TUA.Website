@@ -52,6 +52,13 @@ export type DesignerProps = {
   stock?: ShirtStock;
 };
 
+/** A brush colour that shows on the shirt: white on dark shirts, near-black on light ones. */
+function contrastBrush(shirtHex: string): string {
+  const n = parseInt(shirtHex.replace("#", "").padEnd(6, "0").slice(0, 6), 16);
+  const luminance = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  return luminance < 0.5 ? "#ffffff" : "#111111";
+}
+
 export type ResubmitOptions = {
   areas: DesignAreas;
   color: string;
@@ -101,7 +108,9 @@ export function Designer(props: DesignerProps) {
   const [areaKey, setAreaKey] = useState(printAreas[0].key);
   const [activeLayers, setActiveLayers] = useState<Record<string, string>>({});
   const [tool, setTool] = useState<Tool>("brush");
-  const [brushColor, setBrushColor] = useState("#111111");
+  const hexOf = (key: string) => colors.find((c) => c.key === key)?.hex ?? "#ffffff";
+  // Starts visible on the shirt (a black brush on a black shirt draws nothing you can see).
+  const [brushColor, setBrushColor] = useState(() => contrastBrush(hexOf(init.color)));
   const [brushSize, setBrushSize] = useState(8);
   const [filled, setFilled] = useState(false);
   const [font, setFont] = useState<TextFont>("sans");
@@ -125,7 +134,13 @@ export function Designer(props: DesignerProps) {
   const design: AreaDesign = areas[area.key];
   const activeLayerId =
     design.layers.find((l) => l.id === activeLayers[area.key])?.id ?? design.layers[design.layers.length - 1].id;
-  const shirtHex = colors.find((c) => c.key === shirtColor)?.hex ?? "#ffffff";
+  const shirtHex = hexOf(shirtColor);
+
+  /** Changing the shirt also flips the brush, unless the buyer already picked a brush colour. */
+  function changeShirtColor(key: string) {
+    if (brushColor === contrastBrush(shirtHex)) setBrushColor(contrastBrush(hexOf(key)));
+    setShirtColor(key);
+  }
   const hasContent = useMemo(() => designHasContent(areas), [areas]);
 
   // Keep unsaved work across reloads (debounced; fill images can be large). Not for resubmits.
@@ -423,7 +438,7 @@ export function Designer(props: DesignerProps) {
             sizes={sizes}
             color={shirtColor}
             size={size}
-            onColor={setShirtColor}
+            onColor={changeShirtColor}
             onSize={setSize}
             left={props.stock ? (s) => shirtsLeft(props.stock!, shirtColor, s) : undefined}
           />
