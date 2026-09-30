@@ -4,7 +4,7 @@ import { FacebookIcon, TikTokIcon } from "@/components/brand/social-icons";
 import type { Contact } from "@/lib/settings";
 
 const LINKS = [
-  { href: "/#ve-chung-toi", label: "Về dự án" },
+  { href: "/#cau-chuyen", label: "Về dự án" },
   { href: "/quyen-gop", label: "Quyên góp" },
   { href: "/quyen-gop#vinh-danh", label: "Vinh danh" },
   { href: "/tra-cuu", label: "Tra cứu đơn hàng" },

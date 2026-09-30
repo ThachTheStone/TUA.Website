@@ -77,7 +77,7 @@ Số lượng tài khoản Staff không giới hạn. Admin có thể thêm ho�
 Trang chủ (màn hình S01) gồm các phần theo thứ tự:
 1. **Hero:** tiêu đề chiến dịch (phần trước dấu "–" màu đỏ, phần sau màu tối, ví dụ "TỰA" / "Nét Vẽ Yêu Thương"), câu giới thiệu ngắn, hai nút bo tròn cạnh nhau "Tự thiết kế áo" (nền đỏ) và "Quyên góp" (nền be nhạt, viền đỏ, giống nút Đăng nhập), kèm liên kết tới Cửa hàng. Bên phải là hình khối đỏ (ảnh minh họa nếu có sẽ nằm trong hình khối) và 3 thẻ nổi: "100% – Lợi nhuận cho trẻ em", "Tự tay vẽ – Áo của riêng bạn", "Mục tiêu gây quỹ" (lấy từ cài đặt, ẩn nếu bằng 0).
 2. **Về chúng tôi:** giới thiệu nhóm thực hiện dự án (văn bản và ảnh), ngay dưới Hero.
-3. **Ý nghĩa dự án:** câu chuyện "Nét Vẽ Yêu Thương", lợi nhuận được dùng như thế nào, đối tượng được hỗ trợ.
+3. **Ý nghĩa dự án ("Câu chuyện của chúng mình"):** câu chuyện "Nét Vẽ Yêu Thương", lợi nhuận được dùng như thế nào, đối tượng được hỗ trợ. Trình bày kiểu editorial: tiêu đề serif lớn màu đỏ (Playfair Display), lưới 2 cột lệch (nhãn nhỏ bên trái, đoạn văn bên phải); đoạn đầu in lớn, dòng bắt đầu bằng "- " thành gạch đầu dòng, đoạn cuối in nghiêng nổi bật. Link "Về dự án" ở footer trỏ tới mục này (`/#cau-chuyen`).
 4. **Top 5 tranh của các bé, Campus Workshop và khuyến mãi đang hoạt động** (giữ như trước).
 5. **Vinh danh:** tổng tiền đã quyên góp và thanh tiến độ so với mục tiêu; khoảng 10 khoản quyên góp đã xác nhận mới nhất, mỗi khoản hiển thị tên (hoặc "Nhà hảo tâm ẩn danh"), số tiền, lời nhắn, ngày; nút "Xem tất cả" tới Bảng vinh danh (FR09).
 6. **Nhà tài trợ:** logo nhà tài trợ theo hạng (FR10), đặt ngay trên footer.

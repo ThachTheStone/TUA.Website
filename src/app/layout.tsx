@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Lexend, Tektur } from "next/font/google";
+import { Lexend, Playfair_Display, Tektur } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -13,6 +13,14 @@ const tektur = Tektur({
   variable: "--font-tektur",
   subsets: ["latin", "vietnamese"],
   weight: ["800"],
+});
+
+// Editorial serif for story headings on the home page.
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin", "vietnamese"],
+  weight: ["700"],
+  style: ["normal", "italic"],
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
@@ -38,7 +46,7 @@ export default function RootLayout({
     // before React loads. suppressHydrationWarning ignores only those two elements' attributes;
     // mismatches deeper in the tree are still reported.
     <html lang="vi" suppressHydrationWarning>
-      <body className={`${lexend.variable} ${tektur.variable} font-sans antialiased`} suppressHydrationWarning>
+      <body className={`${lexend.variable} ${tektur.variable} ${playfair.variable} font-sans antialiased`} suppressHydrationWarning>
         {children}
         <Toaster richColors position="top-center" />
       </body>

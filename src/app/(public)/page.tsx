@@ -11,6 +11,7 @@ import { listCombos } from "@/lib/discounts/queries";
 import { getSettings } from "@/lib/settings";
 import { ContentBlockView } from "@/components/public/sections";
 import { HomeHero } from "@/components/public/home/hero";
+import { StorySection } from "@/components/public/home/story";
 import { Highlights } from "@/components/public/home/highlights";
 import { HonorRoll, SponsorSection } from "@/components/public/home/honor-roll";
 
@@ -36,7 +37,7 @@ export default async function HomePage() {
     <>
       <HomeHero block={blocks.hero} goal={settings.donation_goal} />
       <ContentBlockView id="ve-chung-toi" block={blocks.about} fallbackTitle="Về chúng tôi" />
-      <ContentBlockView id="y-nghia" block={blocks.mission} fallbackTitle="Ý nghĩa dự án" muted />
+      <StorySection block={blocks.mission} />
       <Highlights
         artworks={artworks}
         event={blocks.event}

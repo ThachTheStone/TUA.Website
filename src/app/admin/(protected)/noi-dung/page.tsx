@@ -16,7 +16,8 @@ export default async function ContentBlocksPage() {
       <p className="text-sm text-muted-foreground">
         Mục nào để trống cả nội dung và ảnh sẽ được ẩn khỏi trang chủ (riêng Hero luôn hiển thị).
       </p>
-      {CONTENT_BLOCKS.map(({ key, label, bodyLabel, imageLabel }) => {
+      {CONTENT_BLOCKS.map((def) => {
+        const { key, label, bodyLabel, imageLabel } = def;
         const block = blocks[key];
         return (
           <section key={key} className="flex flex-col gap-4 rounded-xl border bg-card p-6">
@@ -33,6 +34,7 @@ export default async function ContentBlocksPage() {
               body={block?.body ?? null}
               imageUrl={block?.image_url ?? null}
               bodyLabel={bodyLabel}
+              bodyHint={"bodyHint" in def ? def.bodyHint : undefined}
               imageLabel={imageLabel}
             />
           </section>

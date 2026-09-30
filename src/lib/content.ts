@@ -14,8 +14,9 @@ export const CONTENT_BLOCKS = [
   { key: "about", label: "Về chúng tôi", bodyLabel: "Nội dung", imageLabel: "Ảnh nhóm" },
   {
     key: "mission",
-    label: "Ý nghĩa dự án",
+    label: "Câu chuyện của chúng mình (Ý nghĩa dự án)",
     bodyLabel: "Câu chuyện, lợi nhuận dùng vào đâu, ai được hỗ trợ",
+    bodyHint: "Mỗi dòng là một đoạn. Dòng bắt đầu bằng “- ” thành gạch đầu dòng. Đoạn đầu in lớn, đoạn cuối in nghiêng nổi bật.",
     imageLabel: "Ảnh minh họa",
   },
   { key: "event", label: "Campus Workshop / sự kiện", bodyLabel: "Nội dung", imageLabel: "Ảnh minh họa" },
