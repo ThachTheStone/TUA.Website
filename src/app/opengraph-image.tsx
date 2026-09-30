@@ -38,16 +38,16 @@ export default async function OpengraphImage() {
           justifyContent: "center",
           gap: 32,
           padding: 96,
-          background: "#111111",
-          color: "#ffffff",
+          background: "#801c1c",
+          color: "#fffdeb",
           fontFamily: "Be Vietnam Pro",
         }}
       >
         <div style={{ fontSize: 88, fontWeight: 700, letterSpacing: -2 }}>{TITLE}</div>
-        <div style={{ fontSize: 38, fontWeight: 400, color: "#d4d4d4", lineHeight: 1.4, maxWidth: 960 }}>{TAGLINE}</div>
+        <div style={{ fontSize: 38, fontWeight: 400, color: "#e8dbb3", lineHeight: 1.4, maxWidth: 960 }}>{TAGLINE}</div>
         <div style={{ display: "flex", gap: 16, fontSize: 30, fontWeight: 700 }}>
-          <div style={{ background: "#ffffff", color: "#111111", padding: "12px 28px", borderRadius: 12 }}>Mua áo</div>
-          <div style={{ border: "2px solid #ffffff", padding: "10px 26px", borderRadius: 12 }}>Quyên góp</div>
+          <div style={{ background: "#fffdeb", color: "#801c1c", padding: "12px 28px", borderRadius: 12 }}>Mua áo</div>
+          <div style={{ border: "2px solid #fffdeb", padding: "10px 26px", borderRadius: 12 }}>Quyên góp</div>
         </div>
       </div>
     ),

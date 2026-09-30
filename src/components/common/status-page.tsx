@@ -15,7 +15,7 @@ export function StatusPage({
 }) {
   return (
     <div className="mx-auto flex max-w-lg flex-col items-center gap-4 px-4 py-20 text-center">
-      {code && <p className="text-5xl font-bold tracking-tight text-muted-foreground">{code}</p>}
+      {code && <p className="text-6xl font-bold tracking-tight text-primary">{code}</p>}
       <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
       <p className="text-muted-foreground">{message}</p>
       <div className="flex flex-wrap justify-center gap-3">{children}</div>
@@ -26,11 +26,11 @@ export function StatusPage({
 export function HomeLinks() {
   return (
     <>
-      <Button asChild>
+      <Button asChild size="cta">
         <Link href="/">Về trang chủ</Link>
       </Button>
-      <Button asChild variant="outline">
-        <Link href="/mau-ao">Xem áo mẫu</Link>
+      <Button asChild size="cta" variant="brand-outline">
+        <Link href="/cua-hang">Đến cửa hàng</Link>
       </Button>
     </>
   );

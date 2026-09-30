@@ -3,7 +3,7 @@ import { z } from "zod";
 import { DONATION_CODE_RE } from "@/lib/donations/schema";
 import { getSettings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
-import { isBankConfigured, transferContent, vietQrUrl } from "@/lib/vietqr";
+import { donationContent, isBankConfigured, vietQrUrl } from "@/lib/vietqr";
 import type { Donation, DonationStatus } from "@/types/db";
 
 export const DONATION_STATUS_LABEL: Record<DonationStatus, string> = {
@@ -28,6 +28,8 @@ export type DonationView = {
   amount: number;
   displayName: string;
   isPublic: boolean;
+  /** "Không hiển thị": off the donor wall. */
+  isHidden: boolean;
   status: DonationStatus;
   statusLabel: string;
   createdAt: string;
@@ -41,24 +43,25 @@ export async function getDonationByToken(code: string, token: string): Promise<D
   const [{ data }, settings] = await Promise.all([
     createServiceClient()
       .from("donations")
-      .select("code, amount, display_name, is_public, status, created_at")
+      .select("code, amount, display_name, is_public, is_hidden, status, created_at")
       .eq("code", code)
       .eq("access_token", token)
-      .maybeSingle<Pick<Donation, "code" | "amount" | "display_name" | "is_public" | "status" | "created_at">>(),
+      .maybeSingle<Pick<Donation, "code" | "amount" | "display_name" | "is_public" | "is_hidden" | "status" | "created_at">>(),
     getSettings(),
   ]);
   if (!data) return null;
 
   const bank = settings.bank_fund;
+  const content = donationContent(data.code);
   const transfer =
     data.status === "PENDING" && isBankConfigured(bank)
       ? {
-          qrUrl: vietQrUrl(bank, data.amount, data.code),
+          qrUrl: vietQrUrl(bank, data.amount, content),
           bankId: bank.bankId,
           accountNo: bank.accountNo,
           accountName: bank.accountName,
           amount: data.amount,
-          content: transferContent(data.code),
+          content,
         }
       : null;
 
@@ -67,6 +70,7 @@ export async function getDonationByToken(code: string, token: string): Promise<D
     amount: data.amount,
     displayName: data.display_name,
     isPublic: data.is_public,
+    isHidden: data.is_hidden,
     status: data.status,
     statusLabel: DONATION_STATUS_LABEL[data.status],
     createdAt: data.created_at,

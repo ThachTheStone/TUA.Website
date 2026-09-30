@@ -8,23 +8,23 @@ import {
   listSponsors,
 } from "@/lib/content";
 import { listCombos } from "@/lib/discounts/queries";
-import { listPrototypesOnSale } from "@/lib/prototypes/queries";
 import { getSettings } from "@/lib/settings";
 import { ContentBlockView } from "@/components/public/sections";
 import { HomeHero } from "@/components/public/home/hero";
-import { PrototypeShowcase } from "@/components/public/home/prototype-showcase";
 import { Highlights } from "@/components/public/home/highlights";
-import { HonorRoll } from "@/components/public/home/honor-roll";
+import { HonorRoll, SponsorSection } from "@/components/public/home/honor-roll";
 
 // FR01: everything on this page comes from the database, so render per request.
 export const dynamic = "force-dynamic";
 
-/** FR01 section order: Hero → Áo mẫu → Về chúng tôi → Ý nghĩa dự án → Top 5 / Workshop / khuyến mãi → Vinh danh. */
+/**
+ * FR01 section order (S01): Hero → Về chúng tôi → Ý nghĩa dự án → Top 5 / Workshop / khuyến mãi
+ * → Vinh danh → Nhà tài trợ (just above the footer). Áo mẫu are sold offline, so not shown here.
+ */
 export default async function HomePage() {
-  const [settings, blocks, prototypes, artworks, promotions, combos, wall, sponsors] = await Promise.all([
+  const [settings, blocks, artworks, promotions, combos, wall, sponsors] = await Promise.all([
     getSettings(),
     getContentBlocks(),
-    listPrototypesOnSale(),
     listArtworks(HOME_ARTWORK_LIMIT),
     listPromotions({ visibleOnly: true }),
     listCombos({ liveOnly: true }),
@@ -34,10 +34,9 @@ export default async function HomePage() {
 
   return (
     <>
-      <HomeHero block={blocks.hero} settings={settings} />
-      <PrototypeShowcase prototypes={prototypes} price={settings.prices.CUSTOM} />
-      <ContentBlockView id="ve-chung-toi" block={blocks.about} fallbackTitle="Về chúng tôi" muted />
-      <ContentBlockView id="y-nghia" block={blocks.mission} fallbackTitle="Ý nghĩa dự án" />
+      <HomeHero block={blocks.hero} goal={settings.donation_goal} />
+      <ContentBlockView id="ve-chung-toi" block={blocks.about} fallbackTitle="Về chúng tôi" />
+      <ContentBlockView id="y-nghia" block={blocks.mission} fallbackTitle="Ý nghĩa dự án" muted />
       <Highlights
         artworks={artworks}
         event={blocks.event}
@@ -45,12 +44,8 @@ export default async function HomePage() {
         combos={combos}
         prices={settings.prices}
       />
-      <HonorRoll
-        total={wall.total}
-        goal={settings.donation_goal}
-        donations={wall.donations}
-        sponsors={sponsors}
-      />
+      <HonorRoll total={wall.total} goal={settings.donation_goal} donations={wall.donations} />
+      <SponsorSection sponsors={sponsors} />
     </>
   );
 }

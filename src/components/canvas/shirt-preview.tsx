@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element -- data URLs generated in the browser */
 import { useEffect, useState } from "react";
 import { renderAreaPreviews } from "@/lib/design/export";
-import { MOCKUP_HEIGHT, MOCKUP_WIDTH, areaOnMockup, shirtSvgUrl } from "@/lib/design/mockup";
+import { MOCKUP_HEIGHT, MOCKUP_WIDTH, areaOnMockup, shirtImageUrl } from "@/lib/design/mockup";
 import type { CanvasPrintArea, DesignAreas } from "@/lib/design/types";
 
 type Props = {
@@ -38,7 +38,7 @@ export function ShirtPreview({ areas, printAreas, colorHex, debounceMs = 400 }: 
       {(["front", "back"] as const).map((side) => (
         <figure key={side} className="flex flex-col items-center gap-1">
           <div className="relative w-full" style={{ aspectRatio: `${MOCKUP_WIDTH} / ${MOCKUP_HEIGHT}` }}>
-            <img src={shirtSvgUrl(side, colorHex)} alt="" className="absolute inset-0 size-full" />
+            <img src={shirtImageUrl(side, colorHex)} alt="" className="absolute inset-0 size-full" />
             {printAreas
               .filter((a) => a.side === side && images[a.key])
               .map((a) => {

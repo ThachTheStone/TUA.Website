@@ -16,7 +16,7 @@ const idSchema = z.uuid();
 function refresh() {
   revalidatePath("/admin/quyen-gop");
   revalidatePath("/admin");
-  revalidatePath("/vinh-danh");
+  revalidatePath("/quyen-gop");
   revalidatePath("/");
 }
 

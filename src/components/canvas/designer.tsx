@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Eraser, Loader2, PanelRight, Redo2, Send, ShoppingCart, Undo2, X } from "lucide-react";
+import { Eraser, Loader2, PanelRight, Printer, Redo2, Send, ShoppingCart, Undo2, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -9,7 +9,8 @@ import { LayersPanel } from "@/components/canvas/layers-panel";
 import { ShirtPreview } from "@/components/canvas/shirt-preview";
 import { Toolbar } from "@/components/canvas/toolbar";
 import { useDesignHistory } from "@/components/canvas/use-design-history";
-import { ShirtOptions, type ColorOption } from "@/components/public/shirt-options";
+import { ComboList } from "@/components/public/combo-list";
+import { ShirtOptions, pickSize, type ColorOption } from "@/components/public/shirt-options";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart/store";
 import { uploadDesignAsset } from "@/lib/design/asset-actions";
@@ -32,12 +33,16 @@ import {
 } from "@/lib/design/types";
 import { formatVND } from "@/lib/format";
 import { addToCartProblem, shirtsLeft, type ShirtStock } from "@/lib/inventory";
+import type { Prices } from "@/lib/orders/pricing";
 import { cn } from "@/lib/utils";
+import type { Combo } from "@/types/db";
 
 export type DesignerProps = {
   printAreas: CanvasPrintArea[];
   colors: ColorOption[];
   sizes: string[];
+  /** Sizes not on sale online (settings.sizes_disabled). */
+  disabledSizes?: string[];
   price: number;
   dpi: number;
   /** Cart item being edited (`/thiet-ke?sua=<id>`), if any. */
@@ -50,6 +55,9 @@ export type DesignerProps = {
   resubmit?: ResubmitOptions;
   /** Blank shirts left per colour × size; sold-out sizes can't be picked. */
   stock?: ShirtStock;
+  /** FR31 (S05): combos with a custom shirt, listed under "Thêm vào giỏ". */
+  combos?: Combo[];
+  prices?: Prices;
 };
 
 /** A brush colour that shows on the shirt: white on dark shirts, near-black on light ones. */
@@ -88,12 +96,16 @@ function initialState(props: DesignerProps) {
   const fromWip = wip && wip.editingItemId === editingItemId ? wip : null;
   const areas = fromWip?.areas ?? (item?.designDraftId ? drafts[item.designDraftId] : undefined);
   const validColor = (c?: string) => (c && props.colors.some((x) => x.key === c) ? c : undefined);
-  const validSize = (s?: string) => (s && props.sizes.includes(s) ? s : undefined);
+  const disabled = props.disabledSizes ?? [];
+  const validSize = (s?: string) => (s && props.sizes.includes(s) && !disabled.includes(s) ? s : undefined);
   return {
     editingItemId,
     areas: fillAreas(props.printAreas, areas),
     color: validColor(fromWip?.color) ?? validColor(item?.color) ?? props.colors[0].key,
-    size: validSize(fromWip?.size) ?? validSize(item?.size) ?? props.sizes[Math.floor(props.sizes.length / 2)],
+    size:
+      validSize(fromWip?.size) ??
+      validSize(item?.size) ??
+      pickSize(props.sizes, props.sizes[Math.floor(props.sizes.length / 2)], undefined, disabled),
   };
 }
 
@@ -124,6 +136,8 @@ export function Designer(props: DesignerProps) {
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  /** FR05 content pledge, asked in a popup when adding to the cart (or resubmitting). */
+  const confirmRef = useRef<HTMLDialogElement>(null);
   const resubmit = props.resubmit;
 
   const saveCustom = useCart((s) => s.saveCustom);
@@ -259,6 +273,19 @@ export function Designer(props: DesignerProps) {
     props.onSaved();
   }
 
+  function openConfirm() {
+    if (!hasContent) return;
+    setAgreed(false);
+    confirmRef.current?.showModal();
+  }
+
+  function confirmAndSave() {
+    if (!agreed) return;
+    confirmRef.current?.close();
+    if (resubmit) submitResubmit();
+    else addToCart();
+  }
+
   async function downloadPrintFiles() {
     setExporting(true);
     try {
@@ -279,7 +306,8 @@ export function Designer(props: DesignerProps) {
   }
 
   return (
-    <div className="relative flex h-[calc(100dvh-3.5rem)] overflow-hidden overscroll-none">
+    <>
+    <div data-canvas className="relative flex h-[calc(100dvh-var(--header-h)-var(--crumbs-h))] overflow-hidden overscroll-none">
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2">
           <div className="flex gap-1" role="tablist" aria-label="Vùng in">
@@ -436,6 +464,7 @@ export function Designer(props: DesignerProps) {
           <ShirtOptions
             colors={colors}
             sizes={sizes}
+            disabledSizes={props.disabledSizes}
             color={shirtColor}
             size={size}
             onColor={changeShirtColor}
@@ -451,35 +480,65 @@ export function Designer(props: DesignerProps) {
               <span className="text-lg font-bold">{formatVND(price)}</span>
             </p>
           )}
-          <label className="flex items-start gap-3 text-sm">
-            <input
-              type="checkbox"
-              checked={agreed}
-              onChange={(e) => setAgreed(e.target.checked)}
-              className="mt-0.5 size-5 shrink-0 accent-primary"
-            />
-            <span>
-              Tôi cam kết nội dung do tôi tự vẽ hoặc tôi có quyền sử dụng (kể cả ảnh tải lên), không bạo lực, không phản
-              cảm, không vi phạm bản quyền. Tôi hiểu thiết kế sẽ được Ban tổ chức duyệt và có thể bị từ chối.
-            </span>
-          </label>
-          {!hasContent && <p className="text-sm text-muted-foreground">Hãy vẽ ở ít nhất 1 vùng in.</p>}
+          {!hasContent && <p className="text-sm font-medium text-destructive">Hãy vẽ ở ít nhất 1 vùng in.</p>}
           {resubmit ? (
-            <Button type="button" size="lg" className="h-12" disabled={!agreed || !hasContent || submitting} onClick={submitResubmit}>
+            <Button type="button" size="lg" className="h-12" disabled={!hasContent || submitting} onClick={openConfirm}>
               {submitting ? <Loader2 className="animate-spin" /> : <Send />} {submitting ? "Đang gửi…" : "Gửi lại thiết kế"}
             </Button>
           ) : (
-            <Button type="button" size="lg" className="h-12" disabled={!agreed || !hasContent} onClick={addToCart}>
+            <Button type="button" size="lg" className="h-12" disabled={!hasContent} onClick={openConfirm}>
               <ShoppingCart /> {editingItemId ? "Cập nhật giỏ hàng" : "Thêm vào giỏ"}
             </Button>
           )}
+          {!resubmit && props.combos && props.prices && props.combos.length > 0 && (
+            <div className="flex flex-col gap-2 pt-2">
+              <h3 className="text-sm font-semibold">Combo ưu đãi</h3>
+              <ComboList combos={props.combos} prices={props.prices} compact />
+              <p className="text-xs text-muted-foreground">Giá combo tự áp dụng trong giỏ hàng.</p>
+            </div>
+          )}
           {process.env.NODE_ENV !== "production" && (
             <Button type="button" variant="outline" size="sm" disabled={!hasContent || exporting} onClick={downloadPrintFiles}>
-              <Download /> Tải file in {dpi} DPI (chỉ bản dev)
+              <Printer /> In file/hình ảnh có sẵn
             </Button>
           )}
         </section>
       </aside>
     </div>
+
+    {/* Outside [data-canvas] so its buttons get the public-site look. */}
+    <dialog
+      ref={confirmRef}
+      aria-labelledby="pledge-title"
+      className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-3xl border bg-card p-0 text-foreground shadow-2xl backdrop:bg-black/50"
+    >
+      <div className="flex flex-col gap-5 p-6">
+        <h2 id="pledge-title" className="text-lg font-bold">
+          Xác nhận nội dung thiết kế
+        </h2>
+        <label className="flex items-start gap-3 text-sm leading-relaxed">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="mt-0.5 size-5 shrink-0 accent-primary"
+          />
+          <span>
+            Tôi cam kết nội dung do tôi tự vẽ hoặc tôi có quyền sử dụng (kể cả ảnh tải lên), không bạo lực, không phản cảm,
+            không vi phạm bản quyền. Tôi hiểu thiết kế sẽ được Ban tổ chức duyệt và có thể bị từ chối.
+          </span>
+        </label>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <Button type="button" variant="brand-outline" size="cta" onClick={() => confirmRef.current?.close()}>
+            Hủy
+          </Button>
+          <Button type="button" size="cta" disabled={!agreed} onClick={confirmAndSave}>
+            {resubmit ? <Send /> : <ShoppingCart />}
+            {resubmit ? "Gửi lại thiết kế" : editingItemId ? "Cập nhật giỏ hàng" : "Thêm vào giỏ"}
+          </Button>
+        </div>
+      </div>
+    </dialog>
+    </>
   );
 }

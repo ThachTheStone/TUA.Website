@@ -4,6 +4,8 @@ import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { isActiveNav } from "@/components/public/nav-link";
+import { SiteSearch } from "@/components/public/site-search";
 
 /** Phone/tablet header menu: a toggle button and a drop-down panel of nav links. */
 export function MobileMenu({
@@ -40,15 +42,17 @@ export function MobileMenu({
         {open ? <X className="size-5" /> : <Menu className="size-5" />}
       </button>
       {open && (
-        <div id="mobile-menu" className="absolute inset-x-0 top-full border-b bg-background shadow-sm">
-          <nav className="mx-auto flex max-w-6xl flex-col px-4 py-2 text-sm">
+        <div id="mobile-menu" className="absolute inset-x-0 top-full max-h-[calc(100dvh-var(--header-h))] overflow-y-auto border-b bg-background shadow-md">
+          {/* A search from /cua-hang keeps the pathname, so close on submit too. */}
+          <nav aria-label="Menu chính" onSubmit={() => setOpen(false)} className="mx-auto flex max-w-6xl flex-col px-4 py-3 text-sm">
+            <SiteSearch className="mb-2" />
             {nav.map(({ href, label }) => (
               <Link
                 key={href}
                 href={href}
                 onClick={() => setOpen(false)}
-                aria-current={pathname === href ? "page" : undefined}
-                className="rounded-md px-3 py-3 hover:bg-muted aria-[current=page]:font-semibold"
+                aria-current={isActiveNav(href, pathname) ? "page" : undefined}
+                className="rounded-md px-3 py-3 hover:bg-muted aria-[current=page]:font-semibold aria-[current=page]:text-primary"
               >
                 {label}
               </Link>

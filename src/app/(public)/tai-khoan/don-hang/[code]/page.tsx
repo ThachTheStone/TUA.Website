@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { OrderDetails } from "@/components/order/order-details";
 import { PaymentStatus } from "@/components/order/payment-status";
+import { PageHeader } from "@/components/public/page-header";
 import { requireCustomer } from "@/lib/customers/session";
 import { getCustomerOrder } from "@/lib/orders/queries";
 
@@ -19,10 +19,8 @@ export default async function AccountOrderPage({ params }: Props) {
   if (!order) notFound();
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-10">
-      <Link href="/tai-khoan" className="text-sm text-muted-foreground underline underline-offset-4">
-        ← Đơn hàng của tôi
-      </Link>
+    <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10">
+      <PageHeader title="Chi tiết đơn hàng" />
       <PaymentStatus order={order} />
       <OrderDetails order={order} editHref={(itemId) => `/tai-khoan/don-hang/${order.code}/sua/${itemId}`} />
     </div>

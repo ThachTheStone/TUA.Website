@@ -55,6 +55,6 @@ export async function saveShirtStock(_prev: ActionResult | null, formData: FormD
   revalidatePath("/admin/kho");
   revalidatePath("/ao-tron");
   revalidatePath("/thiet-ke");
-  revalidatePath("/mau-ao", "layout");
+  revalidatePath("/cua-hang");
   return OK;
 }

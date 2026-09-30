@@ -77,10 +77,9 @@ const saveSchema = z.object({
 
 export type SavePrototypeInput = z.input<typeof saveSchema>;
 
-function refresh(slug?: string) {
+function refresh() {
   revalidatePath("/admin/mau-ao");
-  revalidatePath("/mau-ao");
-  if (slug) revalidatePath(`/mau-ao/${slug}`);
+  revalidatePath("/gio-hang");
   revalidatePath("/");
 }
 
@@ -182,8 +181,7 @@ export async function savePrototype(input: SavePrototypeInput): Promise<ActionRe
   const warnings = [...files.values()].flatMap(
     (f) => resolutionWarning({ area: f.area, widthPx: f.width_px, heightPx: f.height_px }, settings) ?? [],
   );
-  refresh(v.slug);
-  if (current && current.slug !== v.slug) revalidatePath(`/mau-ao/${current.slug}`);
+  refresh();
   return { ok: true, data: { warnings } };
 }
 
@@ -197,7 +195,7 @@ export async function setPrototypeActive(id: string, isActive: boolean): Promise
     .select("slug")
     .maybeSingle();
   if (error || !data) return fail("Không cập nhật được mẫu áo. Vui lòng thử lại");
-  refresh(data.slug);
+  refresh();
   return OK;
 }
 
@@ -213,7 +211,7 @@ export async function deletePrototype(id: string): Promise<ActionResult> {
   if (count) return fail("Mẫu này đã có trong đơn hàng nên không xóa được. Hãy tắt bán thay vì xóa.");
 
   const { data: designRows } = await db.from("design_files").select("design_id").like("file_path", `${folderOf(id)}%`);
-  const { data, error } = await db.from("prototypes").delete().eq("id", id).select("slug").maybeSingle();
+  const { error } = await db.from("prototypes").delete().eq("id", id);
   if (error) {
     // 23503: an order was placed in the meantime (order_items.prototype_id is ON DELETE RESTRICT).
     return fail(error.code === "23503" ? "Mẫu này vừa có đơn hàng nên không xóa được. Hãy tắt bán." : "Không xóa được mẫu áo. Vui lòng thử lại");
@@ -228,6 +226,6 @@ export async function deletePrototype(id: string): Promise<ActionResult> {
   await removeFiles(CONTENT_BUCKET, await listFolder(CONTENT_BUCKET, id));
   await removeFiles(DESIGNS_BUCKET, await listFolder(DESIGNS_BUCKET, id));
 
-  refresh(data?.slug);
+  refresh();
   return OK;
 }

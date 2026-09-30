@@ -14,6 +14,7 @@ const SECTION_LABEL: Record<keyof Settings, string> = {
   prices: "Giá áo",
   colors: "Màu áo",
   sizes: "Size",
+  sizes_disabled: "Size tạm ngưng bán",
   print_areas: "Vùng in",
   export_dpi: "Độ phân giải file in",
   order_expire_hours: "Thời hạn tự hủy đơn",
@@ -39,9 +40,11 @@ function checkRows(s: Settings): string | null {
   if (size) return `Size "${size}" bị trùng`;
   const area = duplicate(s.print_areas.map((a) => a.key));
   if (area) return `Mã vùng in "${area}" bị trùng`;
-  const { email, facebook } = s.contact;
+  const { email, facebook, tiktok, people } = s.contact;
+  if (people.some((p) => !p.name.trim() || !p.phone.trim())) return "Người liên hệ cần có họ tên và số điện thoại";
   if (email && !z.email().safeParse(email).success) return "Email liên hệ không hợp lệ";
   if (facebook && !/^https?:\/\/\S+$/i.test(facebook)) return "Link Facebook phải bắt đầu bằng http:// hoặc https://";
+  if (tiktok && !/^https?:\/\/\S+$/i.test(tiktok)) return "Link TikTok phải bắt đầu bằng http:// hoặc https://";
   return null;
 }
 
@@ -63,6 +66,9 @@ export async function saveSettings(_prev: ActionResult | null, formData: FormDat
   }
   const problem = checkRows(parsed.data);
   if (problem) return fail(problem);
+  // A removed or renamed size can't stay disabled; at least one size must stay on sale.
+  parsed.data.sizes_disabled = parsed.data.sizes_disabled.filter((s) => parsed.data.sizes.includes(s));
+  if (parsed.data.sizes.every((s) => parsed.data.sizes_disabled.includes(s))) return fail("Cần ít nhất 1 size đang bán");
 
   // The blindbox has its own page (stock changes often); never overwrite it from here.
   const rows = Object.entries(parsed.data)

@@ -6,8 +6,8 @@ import { flushCart } from "@/components/cart/cart-sync";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/customers/actions";
 
-/** FR26 sign-out. Saves the cart to the account first; CartSync then empties this browser's cart. */
-export function LogoutButton({ compact = false }: { compact?: boolean }) {
+/** FR26 sign-out (account page only). Saves the cart to the account first; CartSync then empties this browser's cart. */
+export function LogoutButton() {
   const [pending, startTransition] = useTransition();
 
   function logout() {
@@ -18,18 +18,9 @@ export function LogoutButton({ compact = false }: { compact?: boolean }) {
   }
 
   return (
-    <Button
-      type="button"
-      variant={compact ? "ghost" : "outline"}
-      size={compact ? "icon" : "default"}
-      className={compact ? "size-10" : undefined}
-      onClick={logout}
-      disabled={pending}
-      aria-label="Đăng xuất"
-      title="Đăng xuất"
-    >
+    <Button type="button" variant="brand-outline" size="cta" onClick={logout} disabled={pending}>
       <LogOut />
-      {!compact && (pending ? "Đang đăng xuất…" : "Đăng xuất")}
+      {pending ? "Đang đăng xuất…" : "Đăng xuất"}
     </Button>
   );
 }

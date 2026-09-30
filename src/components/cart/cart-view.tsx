@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { MAX_QUANTITY, useCart, type CartItem } from "@/lib/cart/store";
 import { useHydrated } from "@/lib/cart/use-hydrated";
 import { maxOrderable } from "@/lib/inventory";
-import { shirtSvgUrl } from "@/lib/design/mockup";
+import { shirtImageUrl } from "@/lib/design/mockup";
 import { colorLabel, formatVND } from "@/lib/format";
 import { computeDiscount } from "@/lib/orders/discounts";
 import { useIsPhone } from "@/lib/use-is-phone";
@@ -49,7 +49,7 @@ function CartLine({ item, catalog, problem }: { item: CartItem; catalog: Catalog
             <Package className="mx-auto size-20 text-muted-foreground" aria-hidden />
           )
         ) : (
-          <img src={shirtSvgUrl("front", hex)} alt="" className="mx-auto w-28" />
+          <img src={shirtImageUrl("front", hex)} alt="" className="mx-auto w-28" />
         )}
       </div>
       <div className="flex flex-1 flex-col gap-3">
@@ -66,13 +66,7 @@ function CartLine({ item, catalog, problem }: { item: CartItem; catalog: Catalog
               {proto && (
                 <>
                   {": "}
-                  {proto.active ? (
-                    <Link href={`/mau-ao/${proto.slug}`} className="underline-offset-4 hover:underline">
-                      {proto.name}
-                    </Link>
-                  ) : (
-                    proto.name
-                  )}
+                  {proto.name}
                 </>
               )}
             </p>
@@ -148,20 +142,12 @@ export function CartView({ catalog, signedIn }: { catalog: Catalog; signedIn: bo
       <div className="flex flex-col items-center gap-4 py-16 text-center">
         <p className="text-lg">Giỏ hàng đang trống.</p>
         <div className="flex flex-wrap justify-center gap-3">
-          <Button asChild size="lg">
-            <Link href="/mau-ao">Xem áo mẫu</Link>
+          <Button asChild size="cta">
+            <Link href="/cua-hang">Đến cửa hàng</Link>
           </Button>
-          <Button asChild size="lg" variant="outline">
+          <Button asChild size="cta" variant="brand-outline">
             <Link href="/thiet-ke">Tự thiết kế áo</Link>
           </Button>
-          <Button asChild size="lg" variant="outline">
-            <Link href="/ao-tron">Mua áo trơn</Link>
-          </Button>
-          {catalog.blindbox?.active && (
-            <Button asChild size="lg" variant="outline">
-              <Link href="/blindbox">Blindbox Hot Wheels</Link>
-            </Button>
-          )}
         </div>
       </div>
     );
@@ -206,7 +192,7 @@ export function CartView({ catalog, signedIn }: { catalog: Catalog; signedIn: bo
           Phí vận chuyển (nếu giao hàng) bạn trả trực tiếp cho đơn vị vận chuyển.
         </p>
         <Button asChild={!blocked} size="lg" className="h-12" disabled={blocked}>
-          {blocked ? <span>Tiến hành đặt hàng</span> : <Link href="/thanh-toan">Tiến hành đặt hàng</Link>}
+          {blocked ? <span>Đặt hàng</span> : <Link href="/thanh-toan">Đặt hàng</Link>}
         </Button>
         {!signedIn && (
           <p className="text-center text-sm text-muted-foreground">
@@ -218,8 +204,8 @@ export function CartView({ catalog, signedIn }: { catalog: Catalog; signedIn: bo
           </p>
         )}
         <div className="flex justify-center gap-4 text-sm">
-          <Link href="/mau-ao" className="underline underline-offset-4">
-            Xem áo mẫu
+          <Link href="/cua-hang" className="underline underline-offset-4">
+            Mua thêm sản phẩm
           </Link>
           <Link href="/thiet-ke" className="underline underline-offset-4">
             Thiết kế thêm áo

@@ -3,14 +3,9 @@
 import { Mail, MessageCircle, Monitor, Phone } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { telUrl, zaloUrl } from "@/lib/contact";
 import type { Contact } from "@/lib/settings";
 import { useIsPhone } from "@/lib/use-is-phone";
-
-/** Vietnamese mobile number → Zalo chat link (Zalo uses the phone number as the id). */
-function zaloUrl(phone: string): string | null {
-  const digits = phone.replace(/\D/g, "");
-  return digits.length >= 9 ? `https://zalo.me/${digits}` : null;
-}
 
 /**
  * FR03/NFR02: the canvas only runs on computers and tablets. On a phone it shows how to get
@@ -19,7 +14,7 @@ function zaloUrl(phone: string): string | null {
 export function PhoneGate({ contact, back, children }: { contact: Contact; back?: { href: string; label: string }; children: React.ReactNode }) {
   const isPhone = useIsPhone();
   if (isPhone === null) {
-    return <div className="flex h-[calc(100dvh-3.5rem)] items-center justify-center text-muted-foreground">Đang tải…</div>;
+    return <div className="flex h-[calc(100dvh-var(--header-h)-var(--crumbs-h))] items-center justify-center text-muted-foreground">Đang tải…</div>;
   }
   if (!isPhone) return <>{children}</>;
 
@@ -43,7 +38,7 @@ export function PhoneGate({ contact, back, children }: { contact: Contact; back?
           <ul className="flex flex-col gap-2 text-sm">
             {contact.phone && (
               <li className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <a href={`tel:${contact.phone.replace(/[^\d+]/g, "")}`} className="inline-flex items-center gap-2 underline underline-offset-4">
+                <a href={telUrl(contact.phone)} className="inline-flex items-center gap-2 underline underline-offset-4">
                   <Phone className="size-4" /> {contact.phone}
                 </a>
                 {zalo && (
@@ -73,10 +68,10 @@ export function PhoneGate({ contact, back, children }: { contact: Contact; back?
 
       <div className="flex flex-col gap-3">
         <Button asChild size="lg" className="h-12">
-          <Link href="/mau-ao">Xem áo mẫu</Link>
-        </Button>
-        <Button asChild size="lg" variant="outline" className="h-12">
           <Link href="/ao-tron">Mua áo trơn</Link>
+        </Button>
+        <Button asChild size="lg" variant="brand-outline" className="h-12">
+          <Link href="/cua-hang">Xem cửa hàng</Link>
         </Button>
         {back && (
           <Button asChild variant="ghost">

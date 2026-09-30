@@ -16,21 +16,21 @@ export function Highlights({ artworks, event, promotions, combos, prices }: {
   return (
     <>
       {artworks.length > 0 && (
-        <Section id="top-5" title="Top 5 tranh của các bé" muted>
+        <Section id="top-5" title="Top 5 tranh của các bé">
           <ArtworkGrid artworks={artworks} />
         </Section>
       )}
 
-      <ContentBlockView id="su-kien" block={event} fallbackTitle="Campus Workshop" />
+      <ContentBlockView id="su-kien" block={event} fallbackTitle="Campus Workshop" muted />
 
       {promotions.length > 0 && (
-        <Section id="khuyen-mai" title="Khuyến mãi" muted>
+        <Section id="khuyen-mai" title="Khuyến mãi">
           <PromotionList promotions={promotions} />
         </Section>
       )}
 
       {shownCombos.length > 0 && (
-        <Section id="combo" title="Combo ưu đãi">
+        <Section id="combo" title="Combo ưu đãi" muted>
           <ComboList combos={shownCombos} prices={prices} />
         </Section>
       )}

@@ -10,7 +10,7 @@ import type { Artwork, ContentBlock, Promotion, PublicDonation, Sponsor } from "
  * seed rows. The old `story` block was folded into `mission` (migration 0011).
  */
 export const CONTENT_BLOCKS = [
-  { key: "hero", label: "Hero (đầu trang chủ)", bodyLabel: "Câu giới thiệu ngắn", imageLabel: "Ảnh nền" },
+  { key: "hero", label: "Hero (đầu trang chủ)", bodyLabel: "Câu giới thiệu ngắn", imageLabel: "Ảnh minh họa (tỉ lệ 4:3, bên phải)" },
   { key: "about", label: "Về chúng tôi", bodyLabel: "Nội dung", imageLabel: "Ảnh nhóm" },
   {
     key: "mission",

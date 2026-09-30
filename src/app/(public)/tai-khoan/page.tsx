@@ -1,9 +1,11 @@
+import { ChevronRight } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LogoutButton } from "@/components/account/logout-button";
 import { ProfileForm } from "@/components/account/profile-form";
+import { StatusPill } from "@/components/order/status-pill";
+import { PageHeader } from "@/components/public/page-header";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { requireCustomer } from "@/lib/customers/session";
 import { formatDate, formatVND } from "@/lib/format";
@@ -19,11 +21,10 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   const orders = await listCustomerOrders(userId);
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-10 px-4 py-10">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">Xin chào, {customer.full_name}</h1>
+    <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 py-10">
+      <PageHeader title={`Xin chào, ${customer.full_name}`}>
         <LogoutButton />
-      </div>
+      </PageHeader>
       {mk === "moi" && (
         <Alert>
           <AlertDescription>Đã đặt mật khẩu mới. Lần sau hãy đăng nhập bằng mật khẩu này.</AlertDescription>
@@ -33,31 +34,33 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
       <section className="flex flex-col gap-4">
         <h2 className="text-xl font-semibold">Đơn hàng của tôi</h2>
         {orders.length === 0 ? (
-          <div className="flex flex-col items-start gap-3 rounded-xl border p-6">
+          <div className="flex flex-col items-start gap-3 rounded-2xl border bg-card p-6">
             <p className="text-muted-foreground">Bạn chưa có đơn hàng nào.</p>
             <Button asChild>
-              <Link href="/thiet-ke">Tự thiết kế áo</Link>
+              <Link href="/cua-hang">Đến cửa hàng</Link>
             </Button>
           </div>
         ) : (
-          <ul className="flex flex-col divide-y rounded-xl border">
+          <ul className="flex flex-col divide-y overflow-hidden rounded-2xl border bg-card shadow-sm">
             {orders.map((o) => (
               <li key={o.code}>
                 <Link
                   href={`/tai-khoan/don-hang/${o.code}`}
-                  className="flex flex-wrap items-center gap-x-4 gap-y-1 p-4 hover:bg-muted/50"
+                  className="group grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 p-4 hover:bg-primary/5 sm:grid-cols-[8rem_1fr_auto_auto]"
                 >
-                  <span className="font-semibold">{o.code}</span>
-                  <Badge variant={o.status === "CANCELLED" || o.status === "EXPIRED" || o.overdue ? "destructive" : "secondary"}>
-                    {o.statusLabel}
-                  </Badge>
-                  <Badge variant="outline">{o.paymentLabel}</Badge>
-                  {o.rejectedDesigns > 0 && <Badge variant="destructive">{o.rejectedDesigns} thiết kế bị từ chối</Badge>}
-                  <span className="text-sm text-muted-foreground">{formatDate(o.createdAt)}</span>
-                  <span className="ml-auto text-right text-sm tabular-nums">
-                    <span className="font-semibold">{formatVND(o.subtotal)}</span>
-                    <span className="block text-muted-foreground">Đã trả {formatVND(o.paidAmount)}</span>
+                  <span className="flex flex-col">
+                    <span className="font-semibold text-primary">{o.code}</span>
+                    <span className="text-xs text-muted-foreground">{formatDate(o.createdAt)}</span>
                   </span>
+                  {/* S17: exactly one status per order. */}
+                  <span className="order-last col-span-2 sm:order-none sm:col-span-1">
+                    <StatusPill {...o.status} />
+                  </span>
+                  <span className="text-right text-sm tabular-nums">
+                    <span className="font-semibold">{formatVND(o.subtotal)}</span>
+                    <span className="block text-xs text-muted-foreground">Đã trả {formatVND(o.paidAmount)}</span>
+                  </span>
+                  <ChevronRight className="hidden size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 sm:block" aria-hidden />
                 </Link>
               </li>
             ))}

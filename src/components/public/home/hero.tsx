@@ -1,55 +1,91 @@
+import { ListChecks, Star, UserRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { formatVND } from "@/lib/format";
-import type { Settings } from "@/lib/settings";
+import { cn } from "@/lib/utils";
 import type { ContentBlock } from "@/types/db";
 
 const FALLBACK_TITLE = "TỰA – Nét Vẽ Yêu Thương";
 
+/** "TỰA – Nét Vẽ Yêu Thương" → big red "TỰA" over a dark tagline. No dash → one red line. */
+function splitTitle(title: string): [string, string | null] {
+  const m = title.match(/^(.+?)\s+[–—-]\s+(.+)$/);
+  return m ? [m[1], m[2]] : [title, null];
+}
+
 /**
- * FR01 §1: campaign title, short intro, background image and the three main CTAs.
- * Always shown (the CTAs are the way into the site), even when the block is empty.
+ * FR01 §1 (S01): campaign title, short intro, "Tự thiết kế áo" and "Quyên góp" side by side and a
+ * link to Cửa hàng. The hero image (if any) fills the red shape. Always shown, even when the block is empty.
  */
-export function HomeHero({ block, settings }: { block?: ContentBlock; settings: Settings }) {
-  const image = block?.image_url;
+export function HomeHero({ block, goal }: { block?: ContentBlock; goal: number }) {
+  const [brand, tagline] = splitTitle(block?.title || FALLBACK_TITLE);
+
   return (
-    <section className={`relative isolate overflow-hidden border-b ${image ? "text-white" : "bg-muted/40"}`}>
-      {image && (
-        <>
-          <Image src={image} alt="" fill priority sizes="100vw" className="-z-20 object-cover" />
-          <div className="absolute inset-0 -z-10 bg-black/55" aria-hidden />
-        </>
-      )}
-      <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 py-16 text-center sm:py-24 lg:py-32">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">{block?.title || FALLBACK_TITLE}</h1>
-        {block?.body && (
-          <p className={`max-w-2xl whitespace-pre-line text-lg ${image ? "text-white/90" : "text-muted-foreground"}`}>
-            {block.body}
-          </p>
-        )}
-        <p className="text-sm">
-          Áo mẫu và áo custom <strong>{formatVND(settings.prices.CUSTOM)}</strong> · Áo trơn{" "}
-          <strong>{formatVND(settings.prices.PLAIN)}</strong>
-          {settings.blindbox.is_active && (
-            <>
-              {" "}
-              · Blindbox Hot Wheels <strong>{formatVND(settings.prices.BLINDBOX)}</strong>
-            </>
+    <section className="overflow-hidden bg-brand-cream">
+      <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-12 pb-16 sm:pt-16 lg:grid-cols-[1.1fr_1fr] lg:gap-8 lg:py-24">
+        <div className="flex flex-col items-start gap-6">
+          <h1 className="font-display leading-none font-extrabold">
+            <span className="block text-7xl text-primary sm:text-8xl xl:text-9xl">{brand}</span>
+            {tagline && <span className="mt-4 block text-4xl text-foreground sm:text-5xl xl:text-6xl">{tagline}</span>}
+          </h1>
+          {block?.body && <p className="max-w-xl text-lg whitespace-pre-line text-foreground/85 sm:text-xl">{block.body}</p>}
+          <div className="flex flex-wrap gap-3">
+            <Button asChild size="cta" className="h-12 px-7 text-base">
+              <Link href="/thiet-ke">Tự thiết kế áo</Link>
+            </Button>
+            <Button asChild variant="brand-outline" size="cta" className="h-12 px-7 text-base">
+              <Link href="/quyen-gop">Quyên góp</Link>
+            </Button>
+          </div>
+          <Link href="/cua-hang" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
+            Hoặc xem tất cả sản phẩm trong Cửa hàng →
+          </Link>
+        </div>
+
+        <div className="relative mx-auto aspect-[10/7.6] w-full max-w-xl lg:max-w-none">
+          <div className="hero-blob absolute top-0 left-[2%] aspect-[9/8] w-[84%] bg-primary">
+            {block?.image_url && (
+              <Image src={block.image_url} alt="" fill priority sizes="(min-width: 1024px) 40vw, 80vw" className="object-cover" />
+            )}
+          </div>
+          <FloatCard className="top-[14%] -left-[2%]" icon={<Tile icon={ListChecks} />} value="100%" label="Lợi nhuận cho trẻ em" />
+          <FloatCard
+            className="top-[30%] right-0 xl:-right-[8%]"
+            icon={<Star className="size-5 fill-amber-400 text-amber-400 sm:size-7" aria-hidden />}
+            value="Tự tay vẽ"
+            label="Áo của riêng bạn"
+          />
+          {goal > 0 && (
+            <FloatCard className="top-[82%] left-[46%]" icon={<Tile icon={UserRound} />} value={formatVND(goal)} label="Mục tiêu gây quỹ" />
           )}
-        </p>
-        <div className="flex w-full flex-col justify-center gap-3 sm:w-auto sm:flex-row">
-          <Button asChild size="lg">
-            <Link href="/mau-ao">Xem áo mẫu</Link>
-          </Button>
-          <Button asChild size="lg" variant={image ? "secondary" : "outline"}>
-            <Link href="/thiet-ke">Tự thiết kế áo</Link>
-          </Button>
-          <Button asChild size="lg" variant={image ? "secondary" : "outline"}>
-            <Link href="/quyen-gop">Quyên góp</Link>
-          </Button>
         </div>
       </div>
     </section>
+  );
+}
+
+function Tile({ icon: Icon }: { icon: typeof ListChecks }) {
+  return (
+    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground sm:size-14 sm:rounded-2xl">
+      <Icon className="size-5 sm:size-7" aria-hidden />
+    </span>
+  );
+}
+
+function FloatCard({ icon, value, label, className }: { icon: React.ReactNode; value: string; label: string; className: string }) {
+  return (
+    <div
+      className={cn(
+        "absolute flex items-center gap-2.5 rounded-2xl bg-card p-2.5 pr-4 whitespace-nowrap shadow-[0_20px_40px_-16px_rgb(42_25_23/0.3)] sm:gap-4 sm:rounded-3xl sm:p-4 sm:pr-6",
+        className,
+      )}
+    >
+      {icon}
+      <p className="flex flex-col leading-snug">
+        <span className="text-sm font-medium sm:text-lg">{value}</span>
+        <span className="text-xs text-foreground/65 sm:text-sm">{label}</span>
+      </p>
+    </div>
   );
 }

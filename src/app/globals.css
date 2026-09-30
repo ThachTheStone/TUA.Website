@@ -5,11 +5,17 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-brand-red: var(--brand-red);
+  --color-brand-cream: var(--brand-cream);
+  --color-brand-sand: var(--brand-sand);
+  --color-brand-sky: var(--brand-sky);
+  --color-brand-sage: var(--brand-sage);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
+  --font-display: var(--font-tektur);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,39 +54,84 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/*
+ * TỰA moodboard: #801c1c (đỏ), #fffdeb (be nhạt), #e8dbb3 (vàng be), #7aa4c2, #5f7470.
+ * The UI leans on đỏ + be nhạt; the other three are for borders, muted text and charts.
+ */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --brand-red: #801c1c;
+  --brand-cream: #fffdeb;
+  --brand-sand: #e8dbb3;
+  --brand-sky: #7aa4c2;
+  --brand-sage: #5f7470;
+
+  --background: var(--brand-cream);
+  --foreground: #2a1917;
+  --card: #fffef8;
+  --card-foreground: #2a1917;
+  --popover: #fffef8;
+  --popover-foreground: #2a1917;
+  --primary: var(--brand-red);
+  --primary-foreground: var(--brand-cream);
+  --secondary: #f4ebcf;
+  --secondary-foreground: var(--brand-red);
+  --muted: #f5eed8;
+  /* Sage darkened so small text on the muted background stays readable (AA). */
+  --muted-foreground: #4f625e;
+  --accent: #f4ebcf;
+  --accent-foreground: var(--brand-red);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --border: var(--brand-sand);
+  --input: #d8c690;
+  --ring: var(--brand-red);
+  --chart-1: var(--brand-red);
+  --chart-2: var(--brand-sky);
+  --chart-3: var(--brand-sage);
+  --chart-4: var(--brand-sand);
+  --chart-5: #c98a5b;
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #f8f1dc;
+  --sidebar-foreground: #2a1917;
+  --sidebar-primary: var(--brand-red);
+  --sidebar-primary-foreground: var(--brand-cream);
+  --sidebar-accent: #f0e5c4;
+  --sidebar-accent-foreground: var(--brand-red);
+  --sidebar-border: var(--brand-sand);
+  --sidebar-ring: var(--brand-red);
+  /* Sticky site header + breadcrumb bar; the canvas fills the rest of the screen. */
+  --header-h: 4rem;
+  --crumbs-h: 2.75rem;
+}
+
+/* From lg the header has two rows: logo/search/buttons (5rem) and the menu (3rem). */
+@media (width >= 64rem) {
+  :root {
+    --header-h: 8rem;
+  }
+}
+
+/*
+ * Public site look from the Figma header/hero: pill buttons and roomy rounded fields. Scoped to
+ * the public layout so the admin stays compact; the canvas ([data-canvas]) keeps its own controls.
+ */
+@layer utilities {
+  .site-public [data-slot="button"]:not([data-canvas] *) {
+    border-radius: 9999px;
+    font-weight: 400;
+  }
+  .site-public [data-slot="input"]:not([data-canvas] *) {
+    height: 2.75rem;
+    border-radius: 0.75rem;
+  }
+  .site-public [data-slot="textarea"]:not([data-canvas] *) {
+    border-radius: 0.75rem;
+  }
+}
+
+/* Organic red shape behind the home hero (viewBox 720×640); stretches to the element's box. */
+@utility hero-blob {
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 720 640' preserveAspectRatio='none'%3E%3Cpath d='M375 0C420 0 450 58 505 80C565 102 655 88 698 160C738 228 726 335 700 425C672 520 635 588 555 620C490 646 440 644 392 636C335 626 292 584 222 562C152 540 72 532 32 468C4 422 2 340 42 292C82 246 152 234 202 170C242 120 280 68 322 30C340 12 356 0 375 0Z'/%3E%3C/svg%3E")
+    center / 100% 100% no-repeat;
 }
 
 .dark {

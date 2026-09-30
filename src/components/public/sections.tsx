@@ -16,9 +16,14 @@ export function Section({
   muted?: boolean;
 }) {
   return (
-    <section id={id} className={muted ? "bg-muted/40" : undefined}>
+    <section id={id} className={muted ? "scroll-mt-(--header-h) bg-muted/70" : "scroll-mt-(--header-h)"}>
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-12 sm:py-16">
-        {title && <h2 className="text-2xl font-bold sm:text-3xl">{title}</h2>}
+        {title && (
+          <h2 className="flex flex-col gap-2 text-2xl font-bold text-primary sm:text-3xl">
+            {title}
+            <span className="h-1 w-14 rounded-full bg-brand-sand" aria-hidden />
+          </h2>
+        )}
         {children}
       </div>
     </section>
@@ -36,9 +41,9 @@ export function ContentBlockView({ block, fallbackTitle, id, muted }: {
   return (
     <Section id={id} title={block.title || fallbackTitle} muted={muted}>
       <div className={block.image_url ? "grid items-start gap-8 md:grid-cols-2" : undefined}>
-        {block.body && <p className="whitespace-pre-line leading-relaxed text-muted-foreground">{block.body}</p>}
+        {block.body && <p className="whitespace-pre-line text-lg leading-relaxed text-foreground/80">{block.body}</p>}
         {block.image_url && (
-          <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-muted">
+          <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border-4 border-card bg-muted shadow-md">
             <Image
               src={block.image_url}
               alt={block.title || fallbackTitle}
@@ -79,7 +84,7 @@ export function PromotionList({ promotions }: { promotions: Promotion[] }) {
   return (
     <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {promotions.map((p) => (
-        <li key={p.id} className="flex flex-col overflow-hidden rounded-xl border bg-card">
+        <li key={p.id} className="flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm">
           {p.image_url && (
             <div className="relative aspect-video bg-muted">
               <Image
@@ -122,7 +127,7 @@ export function DonationProgress({ total, goal }: { total: number; goal: number 
       </div>
       {goal > 0 && (
         <div
-          className="h-3 overflow-hidden rounded-full bg-muted"
+          className="h-3 overflow-hidden rounded-full bg-brand-sand/60"
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={100}
@@ -141,7 +146,7 @@ export function DonationList({ donations }: { donations: PublicDonation[] }) {
   return (
     <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {donations.map((d) => (
-        <li key={d.id} className="flex flex-col gap-2 rounded-xl border bg-card p-4">
+        <li key={d.id} className="flex flex-col gap-2 rounded-2xl border bg-card p-4 shadow-sm">
           <div className="flex items-baseline justify-between gap-2">
             <span className="font-semibold">{d.display_name}</span>
             <span className="shrink-0 font-medium text-primary">{formatVND(d.amount)}</span>

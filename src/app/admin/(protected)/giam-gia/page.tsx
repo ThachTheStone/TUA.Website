@@ -19,7 +19,7 @@ function period(p: PromoCode): string {
 }
 
 export default async function PromoCodesPage() {
-  await requireRole(["ADMIN"]);
+  await requireRole(["ADMIN", "STAFF"]);
   const [codes, usage] = await Promise.all([listPromoCodes(), promoUsage()]);
 
   return (

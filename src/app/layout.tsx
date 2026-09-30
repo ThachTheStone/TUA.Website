@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
-import { Be_Vietnam_Pro } from "next/font/google";
+import { Lexend, Tektur } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const beVietnamPro = Be_Vietnam_Pro({
+const lexend = Lexend({
   variable: "--font-sans",
   subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700"],
+});
+
+// Closest Google font with Vietnamese to the hero title lettering in the design.
+const tektur = Tektur({
+  variable: "--font-tektur",
+  subsets: ["latin", "vietnamese"],
+  weight: ["800"],
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
@@ -32,7 +38,7 @@ export default function RootLayout({
     // before React loads. suppressHydrationWarning ignores only those two elements' attributes;
     // mismatches deeper in the tree are still reported.
     <html lang="vi" suppressHydrationWarning>
-      <body className={`${beVietnamPro.variable} font-sans antialiased`} suppressHydrationWarning>
+      <body className={`${lexend.variable} ${tektur.variable} font-sans antialiased`} suppressHydrationWarning>
         {children}
         <Toaster richColors position="top-center" />
       </body>

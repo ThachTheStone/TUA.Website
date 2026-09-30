@@ -1,6 +1,6 @@
 import "server-only";
 import { colorLabel } from "@/lib/format";
-import { APPROVAL_LABEL, PAYMENT_LABEL, STATUS_LABEL } from "@/lib/orders/state-machine";
+import { APPROVAL_LABEL, STATUS_LABEL, buyerStatus, type StatusTone } from "@/lib/orders/state-machine";
 import { getSettings, type Settings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
 import { transferContent, vietQrUrl } from "@/lib/vietqr";
@@ -23,9 +23,7 @@ export type OrderView = {
   code: string;
   accessToken: string;
   status: OrderStatus;
-  statusLabel: string;
   paymentStatus: PaymentStatus;
-  paymentLabel: string;
   createdAt: string;
   fulfillment: FulfillmentType;
   /** FR31: before discount, the discount, and what was applied. */
@@ -38,6 +36,8 @@ export type OrderView = {
   remaining: number;
   /** PENDING_PAYMENT whose deadline passed but the expiry job hasn't run yet. */
   overdue: boolean;
+  /** The one status the buyer sees (S17), see buyerStatus(). */
+  buyerStatus: { label: string; tone: StatusTone };
   items: {
     id: string;
     type: ItemType;
@@ -98,14 +98,13 @@ async function buildView(order: OrderRow): Promise<OrderView> {
       .order("changed_at", { ascending: true }),
   ]);
   const overdue = isOverdue(order);
+  const rejectedDesigns = (items.data ?? []).filter((i) => i.approval_status === "REJECTED").length;
 
   return {
     code: order.code,
     accessToken: order.access_token,
     status: order.status,
-    statusLabel: overdue ? "Quá hạn thanh toán" : STATUS_LABEL[order.status],
     paymentStatus: order.payment_status,
-    paymentLabel: order.status === "DELIVERED" && order.payment_status === "DEPOSIT_PAID" ? "Còn nợ" : PAYMENT_LABEL[order.payment_status],
     createdAt: order.created_at,
     fulfillment: order.fulfillment,
     itemsTotal: order.items_total,
@@ -116,6 +115,7 @@ async function buildView(order: OrderRow): Promise<OrderView> {
     paidAmount: order.paid_amount,
     remaining: Math.max(0, order.subtotal - order.paid_amount),
     overdue,
+    buyerStatus: buyerStatus({ status: order.status, payment_status: order.payment_status, overdue, rejectedDesigns }),
     items: (items.data ?? []).map((i) => ({
       id: i.id,
       type: i.type,
@@ -181,10 +181,8 @@ export async function findOrderIdByToken(code: string, token: string) {
 
 export type CustomerOrderSummary = {
   code: string;
-  status: OrderStatus;
-  statusLabel: string;
-  paymentLabel: string;
-  overdue: boolean;
+  /** One status per order (S17), see buyerStatus(). */
+  status: { label: string; tone: StatusTone };
   /** Custom shirts waiting for the buyer after a rejection (FR29). */
   rejectedDesigns: number;
   createdAt: string;
@@ -202,15 +200,16 @@ export async function listCustomerOrders(customerId: string): Promise<CustomerOr
   if (error) throw new Error(`listCustomerOrders: ${error.message}`);
 
   return (data ?? []).map((o) => {
-    const overdue = isOverdue(o);
+    const rejectedDesigns = (o.order_items ?? []).filter((i: { approval_status: string | null }) => i.approval_status === "REJECTED").length;
     return {
       code: o.code,
-      status: o.status,
-      statusLabel: overdue ? "Quá hạn thanh toán" : STATUS_LABEL[o.status as OrderStatus],
-      paymentLabel:
-        o.status === "DELIVERED" && o.payment_status === "DEPOSIT_PAID" ? "Còn nợ" : PAYMENT_LABEL[o.payment_status as PaymentStatus],
-      overdue,
-      rejectedDesigns: (o.order_items ?? []).filter((i: { approval_status: string | null }) => i.approval_status === "REJECTED").length,
+      status: buyerStatus({
+        status: o.status as OrderStatus,
+        payment_status: o.payment_status as PaymentStatus,
+        overdue: isOverdue(o),
+        rejectedDesigns,
+      }),
+      rejectedDesigns,
       createdAt: o.created_at,
       subtotal: o.subtotal,
       paidAmount: o.paid_amount,

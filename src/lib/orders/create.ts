@@ -60,7 +60,8 @@ export async function createWebOrder(
       if (!item.prototypeId) return { ok: false, error: "Thiếu áo mẫu trong giỏ hàng" };
       item.color = protos.colors.get(item.prototypeId)!;
     }
-    if (!colorKeys.has(item.color) || !settings.sizes.includes(item.size)) {
+    // Hard rule 4: a size switched off in settings (e.g. XL) is refused even if the client sends it.
+    if (!colorKeys.has(item.color) || !settings.sizes.includes(item.size) || settings.sizes_disabled.includes(item.size)) {
       return { ok: false, error: "Màu hoặc size trong giỏ hàng không còn được bán. Vui lòng cập nhật giỏ hàng." };
     }
     if (item.type === "CUSTOM") {

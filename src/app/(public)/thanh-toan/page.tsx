@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { CheckoutForm } from "@/components/cart/checkout-form";
+import { PageHeader } from "@/components/public/page-header";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { loadCatalog } from "@/lib/catalog";
 import { requireCustomer } from "@/lib/customers/session";
@@ -15,8 +16,8 @@ export default async function CheckoutPage() {
   const [settings, catalog] = await Promise.all([getSettings(), loadCatalog()]);
   const contact = { customer_name: customer.full_name, phone: customer.phone ?? "", email };
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10">
-      <h1 className="text-3xl font-bold tracking-tight">Đặt hàng</h1>
+    <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10">
+      <PageHeader title="Đặt hàng" />
       {isBankConfigured(settings.bank_sales) ? (
         <CheckoutForm catalog={catalog} contact={contact} />
       ) : (

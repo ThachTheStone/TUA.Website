@@ -4,7 +4,6 @@ import { SubNav } from "@/components/admin/sub-nav";
 const TABS = [
   { href: "/admin/noi-dung", label: "Câu chuyện & sự kiện" },
   { href: "/admin/noi-dung/top-5", label: "Top 5 tranh" },
-  { href: "/admin/noi-dung/khuyen-mai", label: "Khuyến mãi" },
 ];
 
 export default async function ContentLayout({ children }: { children: React.ReactNode }) {

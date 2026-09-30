@@ -1,29 +1,28 @@
 import { CircleUserRound } from "lucide-react";
 import Link from "next/link";
-import { LogoutButton } from "@/components/account/logout-button";
+import { Button } from "@/components/ui/button";
 import type { CustomerSession } from "@/lib/customers/session";
 
-/** Header entry: "Đăng nhập" when signed out, account link + sign-out when signed in (FR26). */
+/**
+ * Header entry (FR26): "Đăng nhập" when signed out; when signed in, an account icon styled like
+ * the cart icon. Sign-out lives on the account page.
+ */
 export function AccountLink({ session }: { session: CustomerSession | null }) {
   if (!session) {
     return (
-      <Link href="/dang-nhap" className="shrink-0 rounded-md px-3 py-2 font-medium hover:bg-muted">
-        Đăng nhập
-      </Link>
+      <Button asChild variant="brand-outline" size="cta">
+        <Link href="/dang-nhap">Đăng nhập</Link>
+      </Button>
     );
   }
-  const firstName = session.customer.full_name.trim().split(/\s+/).pop();
   return (
-    <>
-      <Link
-        href="/tai-khoan"
-        className="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 hover:bg-muted"
-        title="Tài khoản"
-      >
-        <CircleUserRound className="size-5" />
-        <span className="max-w-24 truncate">{firstName}</span>
-      </Link>
-      <LogoutButton compact />
-    </>
+    <Link
+      href="/tai-khoan"
+      className="flex size-11 items-center justify-center rounded-full hover:bg-foreground/[0.06]"
+      aria-label="Tài khoản"
+      title="Tài khoản"
+    >
+      <CircleUserRound className="size-5" />
+    </Link>
   );
 }

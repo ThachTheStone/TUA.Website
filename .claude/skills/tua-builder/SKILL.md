@@ -111,7 +111,7 @@ URLs are Vietnamese slugs without diacritics.
 **Done when:** a confirmed donation appears on the wall and in the sheet, and an old unpaid order becomes EXPIRED within 15 minutes.
 
 ### Phase 8b — Blindbox, promo codes, combos (FR31, FR32, BR09, BR13) ✅ code done (migration 0010)
-- Prices 79.000 / 159.000 / 69.000 (`prices.BLINDBOX`), colours = black only (old keys still labelled via `colorLabel()` in `lib/format.ts`).
+- Prices 89.000 / 159.000 / 59.000 (plain / custom / blindbox) (`prices.BLINDBOX`), colours = black only (old keys still labelled via `colorLabel()` in `lib/format.ts`).
 - Blindbox: `settings.blindbox` {name, description, image_url, stock, is_active}; remaining = stock − boxes in orders not CANCELLED/EXPIRED (`blindbox_sold()`). `create_order` re-checks under an advisory lock. Public `/blindbox`, admin `/admin/blindbox` (Staff + Admin). Line type `BLINDBOX` with empty color/size.
 - `promo_codes` + `combos` tables, admin `/admin/giam-gia` (Admin only). `lib/orders/discounts.ts` `computeDiscount()` is shared by cart preview and server; code and combos never stack, the bigger discount wins. `orders.items_total`, `discount_amount`, `discount_note`, `promo_code_id`; `subtotal` stays the amount owed. Promo usage limit re-checked in `create_order`.
 **Done when:** a combo and a code are applied correctly (better one wins), a used-up code is refused, the last blindbox can't be oversold, and a cancelled order returns its boxes and code use.

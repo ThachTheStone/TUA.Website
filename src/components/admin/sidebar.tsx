@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   LogOut,
   Mail,
+  Megaphone,
   Menu,
   NotebookPen,
   Package,
@@ -30,7 +31,7 @@ import type { UserRole } from "@/types/db";
 
 type NavItem = { href: string; label: string; icon: LucideIcon; adminOnly?: boolean };
 
-// SRS §3: Staff handles orders/donations; Admin also manages content, sponsors, accounts and settings.
+// SRS §3: Staff handles orders, donations, promotions and discounts; Admin also manages content, sponsors, accounts and settings.
 const NAV: NavItem[] = [
   { href: "/admin", label: "Tổng quan", icon: LayoutDashboard },
   { href: "/admin/don-hang", label: "Đơn hàng", icon: ClipboardList },
@@ -40,7 +41,8 @@ const NAV: NavItem[] = [
   { href: "/admin/mau-ao", label: "Áo mẫu", icon: Shirt },
   { href: "/admin/blindbox", label: "Blindbox", icon: Package },
   { href: "/admin/kho", label: "Kho áo", icon: Warehouse },
-  { href: "/admin/giam-gia", label: "Giảm giá", icon: TicketPercent, adminOnly: true },
+  { href: "/admin/khuyen-mai", label: "Khuyến mãi", icon: Megaphone },
+  { href: "/admin/giam-gia", label: "Giảm giá", icon: TicketPercent },
   { href: "/admin/nha-tai-tro", label: "Nhà tài trợ", icon: Handshake, adminOnly: true },
   { href: "/admin/mau-email", label: "Mẫu email", icon: Mail, adminOnly: true },
   { href: "/admin/tai-khoan", label: "Tài khoản", icon: Users, adminOnly: true },

@@ -8,7 +8,7 @@ const TABS = [
 
 /** FR31: discounts that change what buyers pay (Admin only). */
 export default async function DiscountLayout({ children }: { children: React.ReactNode }) {
-  await requireRole(["ADMIN"]);
+  await requireRole(["ADMIN", "STAFF"]);
   return (
     <div className="flex max-w-4xl flex-col gap-6">
       <div className="flex flex-col gap-1">

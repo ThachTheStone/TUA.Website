@@ -23,6 +23,8 @@ export type Catalog = {
   prices: Prices;
   colors: ColorOption[];
   sizes: string[];
+  /** Sizes not sold online right now (settings.sizes_disabled). */
+  disabledSizes: string[];
   printAreas: CanvasPrintArea[];
   dpi: number;
   /** Every prototype, inactive ones included so the cart can flag them (FR06). */
@@ -89,7 +91,7 @@ export function cartProblems(items: CartItem[], catalog: Catalog): Map<string, L
     }
     const proto = i.type === "PROTOTYPE" ? findPrototype(catalog, i.prototypeId) : undefined;
     const color = lineColor(i, catalog);
-    if (!catalog.sizes.includes(i.size) || !catalog.colors.some((c) => c.key === color) || (i.type === "PROTOTYPE" && !proto?.active)) {
+    if (!catalog.sizes.includes(i.size) || catalog.disabledSizes.includes(i.size) || !catalog.colors.some((c) => c.key === color) || (i.type === "PROTOTYPE" && !proto?.active)) {
       out.set(i.id, { kind: "gone" });
       continue;
     }
@@ -117,6 +119,7 @@ export function toCatalog(
     prices: Prices;
     colors: ColorOption[];
     sizes: string[];
+    sizes_disabled?: string[];
     print_areas: CanvasPrintArea[];
     export_dpi: number;
   },
@@ -127,6 +130,7 @@ export function toCatalog(
     prices: settings.prices,
     colors: settings.colors,
     sizes: settings.sizes,
+    disabledSizes: settings.sizes_disabled ?? [],
     printAreas: settings.print_areas,
     dpi: settings.export_dpi,
     prototypes,

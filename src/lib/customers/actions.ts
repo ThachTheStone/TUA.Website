@@ -62,34 +62,48 @@ const signUpSchema = z
 
 export type SignUpResult = ActionResult<{ email: string }>;
 
-/** Email sign-up. The account works only after the link in the confirmation email is clicked. */
+/**
+ * Email sign-up. With "Confirm email" on in Supabase the account works after the emailed link;
+ * with it off, Supabase returns a session and the buyer is signed in straight away.
+ */
 export async function signUp(_prev: SignUpResult | null, formData: FormData): Promise<SignUpResult> {
   const parsed = signUpSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const { email, password, full_name, phone } = parsed.data;
+  const next = safeNext(formData.get("next"));
 
   const supabase = await createSessionClient();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: {
-      emailRedirectTo: callbackUrl(safeNext(formData.get("next"))),
-      data: { full_name, phone },
-    },
+    options: { emailRedirectTo: callbackUrl(next), data: { full_name, phone } },
   });
   if (error) {
     console.error("[customers] signUp", error.code, error.message);
+    if (error.code === "user_already_exists") return { ok: false, error: "Email này đã được đăng ký. Vui lòng đăng nhập." };
     if (error.code === "over_email_send_rate_limit") {
       return { ok: false, error: "Hệ thống đang gửi quá nhiều email. Vui lòng thử lại sau ít phút." };
     }
     if (error.code === "weak_password") return { ok: false, error: "Mật khẩu quá yếu. Vui lòng chọn mật khẩu khác." };
+    if (/confirmation email/i.test(error.message)) {
+      return { ok: false, error: "Hệ thống chưa gửi được email xác nhận. Vui lòng thử lại sau hoặc liên hệ Ban tổ chức." };
+    }
     return { ok: false, error: "Không đăng ký được. Vui lòng thử lại." };
   }
   // Supabase hides existing accounts by returning a user without identities.
   if (data.user && data.user.identities?.length === 0) {
     return { ok: false, error: "Email này đã được đăng ký. Vui lòng đăng nhập." };
   }
-  return { ok: true, data: { email } };
+  if (!data.session || !data.user) return { ok: true, data: { email } };
+
+  try {
+    await ensureCustomer(data.user);
+  } catch (err) {
+    console.error("[customers] signUp ensureCustomer", err);
+    await supabase.auth.signOut();
+    return { ok: false, error: "Đã tạo tài khoản nhưng chưa đăng nhập được. Vui lòng đăng nhập lại." };
+  }
+  redirect(next);
 }
 
 /** Starts Google OAuth; Supabase sends the user back to /auth/callback. */

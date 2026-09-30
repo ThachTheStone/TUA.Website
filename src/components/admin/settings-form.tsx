@@ -216,21 +216,44 @@ export function SettingsForm({ initial, action }: { initial: Settings; action: F
         </div>
       </Section>
 
-      <Section id="size" title="Size">
+      <Section id="size" title="Size" hint="Size tạm ngưng bán vẫn hiện trên trang nhưng khách không chọn được và không đặt được.">
         <div className="flex flex-wrap gap-3">
           {s.sizes.map((size, i) => (
-            <div key={i} className="flex items-center gap-1">
+            <div key={i} className="flex items-center gap-1 rounded-lg border p-1.5">
               <Input
                 aria-label={`Size ${i + 1}`}
                 required
                 className="w-20"
                 value={size}
-                onChange={(e) => set("sizes", s.sizes.map((v, j) => (j === i ? e.target.value.toUpperCase().trim() : v)))}
+                onChange={(e) => {
+                  const next = e.target.value.toUpperCase().trim();
+                  setS((prev) => ({
+                    ...prev,
+                    sizes: prev.sizes.map((v, j) => (j === i ? next : v)),
+                    // Keep the "tạm ngưng" mark on a size that is being renamed.
+                    sizes_disabled: prev.sizes_disabled.map((v) => (v === size ? next : v)),
+                  }));
+                }}
               />
+              <label className="flex items-center gap-1.5 px-1 text-xs whitespace-nowrap">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  checked={s.sizes_disabled.includes(size)}
+                  onChange={(e) =>
+                    set("sizes_disabled", e.target.checked ? [...s.sizes_disabled, size] : s.sizes_disabled.filter((v) => v !== size))
+                  }
+                />
+                Tạm ngưng bán
+              </label>
               <RemoveButton
                 label="Xóa size"
                 disabled={s.sizes.length <= 1}
-                onClick={() => set("sizes", s.sizes.filter((_, j) => j !== i))}
+                onClick={() => setS((prev) => ({
+                  ...prev,
+                  sizes: prev.sizes.filter((_, j) => j !== i),
+                  sizes_disabled: prev.sizes_disabled.filter((v) => v !== size),
+                }))}
               />
             </div>
           ))}
@@ -327,7 +350,7 @@ export function SettingsForm({ initial, action }: { initial: Settings; action: F
         <BankFields prefix="bank-sales" value={s.bank_sales} onChange={(v) => set("bank_sales", v)} />
       </Section>
 
-      <Section id="tk-quy" title="Tài khoản quỹ" hint="Nhận tiền quyên góp, nội dung chuyển khoản dạng UH0001 (BR04).">
+      <Section id="tk-quy" title="Tài khoản quỹ" hint="Nhận tiền quyên góp, nội dung chuyển khoản dạng DONATION UH0001 (BR04). Có thể nhập trùng tài khoản bán hàng vì nội dung đã tách riêng.">
         <BankFields prefix="bank-fund" value={s.bank_fund} onChange={(v) => set("bank_fund", v)} />
       </Section>
 
@@ -338,17 +361,55 @@ export function SettingsForm({ initial, action }: { initial: Settings; action: F
         </div>
       </Section>
 
-      <Section id="lien-he" title="Liên hệ Ban tổ chức" hint="Hiển thị cho khách cần hỗ trợ thiết kế, ví dụ khi mở trang Thiết kế áo trên điện thoại (FR03, FR21).">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Số điện thoại / Zalo" htmlFor="contact-phone">
+      <Section id="lien-he" title="Liên hệ Ban tổ chức" hint="Hiển thị ở trang Liên hệ, biểu tượng mạng xã hội cuối trang, và cho khách cần hỗ trợ thiết kế trên điện thoại (FR03, FR21).">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Số điện thoại / Zalo chính" htmlFor="contact-phone" hint="Dùng khi khách cần hỗ trợ thiết kế trên điện thoại">
             <Input id="contact-phone" type="tel" maxLength={50} value={s.contact.phone} onChange={(e) => set("contact", { ...s.contact, phone: e.target.value })} />
           </Field>
           <Field label="Facebook" htmlFor="contact-facebook" hint="Link trang hoặc nhóm">
             <Input id="contact-facebook" type="url" placeholder="https://" maxLength={300} value={s.contact.facebook} onChange={(e) => set("contact", { ...s.contact, facebook: e.target.value.trim() })} />
           </Field>
+          <Field label="TikTok" htmlFor="contact-tiktok" hint="Link kênh TikTok">
+            <Input id="contact-tiktok" type="url" placeholder="https://" maxLength={300} value={s.contact.tiktok} onChange={(e) => set("contact", { ...s.contact, tiktok: e.target.value.trim() })} />
+          </Field>
           <Field label="Email" htmlFor="contact-email">
             <Input id="contact-email" type="email" maxLength={200} value={s.contact.email} onChange={(e) => set("contact", { ...s.contact, email: e.target.value.trim() })} />
           </Field>
+        </div>
+        <div className="flex flex-col gap-3">
+          <h3 className="text-sm font-semibold">Người liên hệ (Zalo)</h3>
+          {s.contact.people.map((p, i) => {
+            const setPerson = (patch: Partial<typeof p>) =>
+              set("contact", { ...s.contact, people: s.contact.people.map((q, j) => (j === i ? { ...q, ...patch } : q)) });
+            return (
+              <div key={i} className="grid items-end gap-3 rounded-lg border p-3 sm:grid-cols-[1fr_1fr_10rem_auto]">
+                <Field label="Họ tên" htmlFor={`person-${i}-name`}>
+                  <Input id={`person-${i}-name`} required maxLength={100} value={p.name} onChange={(e) => setPerson({ name: e.target.value })} />
+                </Field>
+                <Field label="Phụ trách" htmlFor={`person-${i}-role`}>
+                  <Input id={`person-${i}-role`} maxLength={100} placeholder="Ví dụ: Liên hệ mua hàng" value={p.role} onChange={(e) => setPerson({ role: e.target.value })} />
+                </Field>
+                <Field label="Số điện thoại / Zalo" htmlFor={`person-${i}-phone`}>
+                  <Input id={`person-${i}-phone`} type="tel" required maxLength={50} value={p.phone} onChange={(e) => setPerson({ phone: e.target.value })} />
+                </Field>
+                <RemoveButton
+                  label="Xóa người liên hệ"
+                  disabled={false}
+                  onClick={() => set("contact", { ...s.contact, people: s.contact.people.filter((_, j) => j !== i) })}
+                />
+              </div>
+            );
+          })}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="self-start"
+            disabled={s.contact.people.length >= 10}
+            onClick={() => set("contact", { ...s.contact, people: [...s.contact.people, { name: "", role: "", phone: "" }] })}
+          >
+            <Plus /> Thêm người liên hệ
+          </Button>
         </div>
       </Section>
 

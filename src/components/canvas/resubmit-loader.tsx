@@ -14,7 +14,7 @@ import { resubmitDesignAction } from "@/lib/orders/actions";
 const Designer = dynamic(() => import("@/components/canvas/designer").then((m) => m.Designer), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[calc(100dvh-3.5rem)] items-center justify-center text-muted-foreground">Đang tải bảng vẽ…</div>
+    <div className="flex h-[calc(100dvh-var(--header-h)-var(--crumbs-h))] items-center justify-center text-muted-foreground">Đang tải bảng vẽ…</div>
   ),
 });
 

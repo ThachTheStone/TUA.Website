@@ -1,7 +1,7 @@
 import "server-only";
 import { sendTemplate } from "@/lib/email";
 import { formatVND } from "@/lib/format";
-import { donationFormSchema, normalizeContact, type DonationFormInput } from "@/lib/donations/schema";
+import { ANONYMOUS_DONOR_NAME, donationFormSchema, normalizeContact, type DonationFormInput } from "@/lib/donations/schema";
 import { getSettings } from "@/lib/settings";
 import { syncSheetsLater } from "@/lib/sheets";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -20,11 +20,18 @@ export async function createDonation(input: DonationFormInput): Promise<ActionRe
   }
   const parsed = donationFormSchema(settings.donation_min).safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
-  const { display_name, contact, amount, message, is_public } = parsed.data;
+  const { visibility, display_name, contact, amount, message } = parsed.data;
 
   const { data, error } = await createServiceClient()
     .from("donations")
-    .insert({ display_name, contact, amount, message, is_public })
+    .insert({
+      display_name: display_name ?? ANONYMOUS_DONOR_NAME,
+      contact,
+      amount,
+      message,
+      is_public: visibility === "public",
+      is_hidden: visibility === "hidden",
+    })
     .select("code, access_token")
     .single<Pick<Donation, "code" | "access_token">>();
   if (error || !data) {
@@ -80,7 +87,7 @@ export async function notifyDonationConfirmed(id: string): Promise<void> {
       .select("code, display_name, contact, amount")
       .eq("id", id)
       .maybeSingle<Pick<Donation, "code" | "display_name" | "contact" | "amount">>();
-    const contact = data && normalizeContact(data.contact);
+    const contact = data?.contact ? normalizeContact(data.contact) : null;
     if (!data || contact?.kind !== "email") return;
     const amount = formatVND(data.amount);
     await sendTemplate(

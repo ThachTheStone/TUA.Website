@@ -162,7 +162,7 @@ function readPromotion(formData: FormData) {
 }
 
 export async function createPromotion(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  await requireRole(["ADMIN"]);
+  await requireRole(["ADMIN", "STAFF"]);
   const parsed = readPromotion(formData);
   if (!parsed.success) return fail(parsed.error);
 
@@ -175,7 +175,7 @@ export async function createPromotion(_prev: ActionResult | null, formData: Form
   await cleanupImage(null, image, !error);
   if (error) return fail("Không thêm được khuyến mãi. Vui lòng thử lại");
 
-  refresh("/admin/noi-dung/khuyen-mai");
+  refresh("/admin/khuyen-mai");
   return OK;
 }
 
@@ -184,7 +184,7 @@ export async function updatePromotion(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  await requireRole(["ADMIN"]);
+  await requireRole(["ADMIN", "STAFF"]);
   const parsed = readPromotion(formData);
   if (!parsed.success) return fail(parsed.error);
 
@@ -202,12 +202,12 @@ export async function updatePromotion(
   await cleanupImage(current.image_url, image, !error);
   if (error) return fail("Không lưu được khuyến mãi. Vui lòng thử lại");
 
-  refresh("/admin/noi-dung/khuyen-mai");
+  refresh("/admin/khuyen-mai");
   return OK;
 }
 
 export async function deletePromotion(id: string): Promise<ActionResult> {
-  await requireRole(["ADMIN"]);
+  await requireRole(["ADMIN", "STAFF"]);
   const { data, error } = await createServiceClient()
     .from("promotions")
     .delete()
@@ -217,6 +217,6 @@ export async function deletePromotion(id: string): Promise<ActionResult> {
   if (error) return fail("Không xóa được khuyến mãi. Vui lòng thử lại");
   await removeContentImage(data?.image_url);
 
-  refresh("/admin/noi-dung/khuyen-mai");
+  refresh("/admin/khuyen-mai");
   return OK;
 }

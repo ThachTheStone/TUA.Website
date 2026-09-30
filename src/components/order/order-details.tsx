@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TYPE_LABEL } from "@/components/cart/catalog";
+import { StatusPill } from "@/components/order/status-pill";
 import { formatDate, formatVND } from "@/lib/format";
 import type { OrderView } from "@/lib/orders/queries";
 
@@ -15,10 +16,8 @@ export function OrderDetails({ order, editHref }: { order: OrderView; editHref?:
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-xl font-bold">Đơn {order.code}</h2>
-        <Badge variant={order.status === "CANCELLED" || order.status === "EXPIRED" || order.overdue ? "destructive" : "secondary"}>
-          {order.statusLabel}
-        </Badge>
-        <Badge variant={order.paymentStatus === "UNPAID" ? "outline" : "secondary"}>{order.paymentLabel}</Badge>
+        {/* S17: exactly one status, the current one. */}
+        <StatusPill {...order.buyerStatus} className="text-sm" />
         <span className="text-sm text-muted-foreground">Đặt lúc {formatDate(order.createdAt)}</span>
       </div>
 

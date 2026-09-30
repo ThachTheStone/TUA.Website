@@ -17,6 +17,7 @@ import {
   donationFormSchema,
   type DonationFormInput,
   type DonationFormValues,
+  type DonationVisibility,
 } from "@/lib/donations/schema";
 import { formatVND } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -25,13 +26,19 @@ function FieldError({ message }: { message?: string }) {
   return message ? <p className="text-sm text-destructive">{message}</p> : null;
 }
 
+const VISIBILITY: { value: DonationVisibility; label: string; hint: string }[] = [
+  { value: "public", label: "Hiển thị công khai", hint: "Tên hiển thị, số tiền và lời nhắn" },
+  { value: "anonymous", label: "Ẩn danh", hint: "Hiện là “Nhà hảo tâm ẩn danh”" },
+  { value: "hidden", label: "Không hiển thị", hint: "Không có trên Bảng vinh danh" },
+];
+
 const choice = (active: boolean) =>
   cn(
-    "flex flex-col gap-0.5 rounded-lg border p-3 text-left text-sm",
-    active ? "border-primary bg-primary/5" : "hover:bg-muted/50",
+    "flex flex-col gap-0.5 rounded-2xl border p-3 text-left text-sm transition-colors",
+    active ? "border-primary bg-primary/5 ring-1 ring-primary" : "bg-card hover:bg-muted/50",
   );
 
-/** FR08: donor details and amount; on success, go to the QR page for the fund account. */
+/** FR08: how to show on the donor wall, amount and (public only) donor details; then the QR page. */
 export function DonationForm({ min }: { min: number }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -41,11 +48,12 @@ export function DonationForm({ min }: { min: number }) {
 
   const { register, handleSubmit, watch, setValue, formState } = useForm<DonationFormInput, unknown, DonationFormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { display_name: "", contact: "", amount: presets[0] ?? min, message: "", is_public: true, consent: false },
+    defaultValues: { visibility: "public", display_name: "", contact: "", amount: presets[0] ?? min, message: "", consent: false },
   });
   const errors = formState.errors;
   const amount = Number(watch("amount"));
-  const isPublic = watch("is_public");
+  const visibility = watch("visibility");
+  const isPublic = visibility === "public";
   const message = watch("message") ?? "";
 
   function onSubmit(values: DonationFormValues) {
@@ -64,6 +72,25 @@ export function DonationForm({ min }: { min: number }) {
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-6">
       <fieldset disabled={pending} className="flex flex-col gap-6">
         <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-medium">Bảng vinh danh</h2>
+          <div className="grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Hiển thị trên Bảng vinh danh">
+            {VISIBILITY.map((v) => (
+              <button
+                key={v.value}
+                type="button"
+                role="radio"
+                aria-checked={visibility === v.value}
+                className={choice(visibility === v.value)}
+                onClick={() => setValue("visibility", v.value, { shouldValidate: formState.isSubmitted })}
+              >
+                <span className="font-medium">{v.label}</span>
+                <span className="text-muted-foreground">{v.hint}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="flex flex-col gap-3">
           <Label htmlFor="amount">Số tiền quyên góp</Label>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {presets.map((p) => (
@@ -73,7 +100,7 @@ export function DonationForm({ min }: { min: number }) {
                 onClick={() => setValue("amount", p, { shouldValidate: true })}
                 aria-pressed={amount === p}
                 className={cn(
-                  "h-11 rounded-md border text-sm font-medium tabular-nums",
+                  "h-11 rounded-full border text-sm font-medium tabular-nums",
                   amount === p ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
                 )}
               >
@@ -99,7 +126,14 @@ export function DonationForm({ min }: { min: number }) {
           <FieldError message={errors.amount?.message} />
         </section>
 
-        <section className="flex flex-col gap-4">
+        {/* RHF keeps the typed values; the schema drops them unless the donation is public. */}
+        <fieldset disabled={!isPublic} className="flex flex-col gap-4 disabled:opacity-60">
+          {!isPublic && (
+            <p className="rounded-xl bg-muted p-3 text-sm text-muted-foreground">
+              Bạn đã chọn {visibility === "anonymous" ? "Ẩn danh" : "Không hiển thị"}, nên không cần điền tên, liên hệ và lời nhắn.
+              Bạn sẽ không nhận được thư cảm ơn qua email.
+            </p>
+          )}
           <div className="flex flex-col gap-2">
             <Label htmlFor="display_name">Tên hiển thị</Label>
             <Input id="display_name" autoComplete="name" maxLength={100} {...register("display_name")} />
@@ -119,22 +153,9 @@ export function DonationForm({ min }: { min: number }) {
             <p className="text-right text-xs text-muted-foreground tabular-nums">{message.length}/300</p>
             <FieldError message={errors.message?.message} />
           </div>
-        </section>
+        </fieldset>
 
-        <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-medium">Bảng vinh danh</h2>
-          <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Hiển thị trên Bảng vinh danh">
-            <button type="button" role="radio" aria-checked={isPublic} className={choice(isPublic)} onClick={() => setValue("is_public", true)}>
-              <span className="font-medium">Hiển thị công khai</span>
-              <span className="text-muted-foreground">Tên hiển thị, số tiền và lời nhắn</span>
-            </button>
-            <button type="button" role="radio" aria-checked={!isPublic} className={choice(!isPublic)} onClick={() => setValue("is_public", false)}>
-              <span className="font-medium">Ẩn danh</span>
-              <span className="text-muted-foreground">Hiện là “Nhà hảo tâm ẩn danh”</span>
-            </button>
-          </div>
-        </section>
-
+        {isPublic && (
         <div className="flex flex-col gap-2">
           <label className="flex items-start gap-3 text-sm">
             <input type="checkbox" className="mt-0.5 size-5 shrink-0 accent-primary" {...register("consent")} />
@@ -148,6 +169,7 @@ export function DonationForm({ min }: { min: number }) {
           </label>
           <FieldError message={errors.consent?.message} />
         </div>
+        )}
       </fieldset>
 
       {serverError && (

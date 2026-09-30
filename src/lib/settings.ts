@@ -16,10 +16,12 @@ export const settingsSchema = z.object({
     PLAIN: z.number().int().nonnegative(),
     CUSTOM: z.number().int().nonnegative(),
     /** FR32: Hot Wheels blindbox. */
-    BLINDBOX: z.number().int().nonnegative().default(69000),
+    BLINDBOX: z.number().int().nonnegative().default(59000),
   }),
   colors: z.array(z.object({ key: z.string(), label: z.string(), hex: z.string() })).min(1),
   sizes: z.array(z.string()).min(1),
+  /** Sizes listed but not sold online right now: shown as disabled buttons, refused at checkout. */
+  sizes_disabled: z.array(z.string()).default([]),
   print_areas: z
     .array(
       z.object({
@@ -39,10 +41,20 @@ export const settingsSchema = z.object({
   bank_fund: bankSchema,
   donation_min: z.number().int().nonnegative(),
   donation_goal: z.number().int().nonnegative(),
-  /** FR21: organizer contact shown to buyers who need design help (e.g. on phones, FR03). */
+  /** FR21: organizer contact (Liên hệ page, footer icons, phone help on the canvas page). */
   contact: z
-    .object({ phone: z.string().max(50), facebook: z.string().max(300), email: z.string().max(200) })
-    .default({ phone: "", facebook: "", email: "" }),
+    .object({
+      phone: z.string().max(50),
+      facebook: z.string().max(300),
+      tiktok: z.string().max(300).default(""),
+      email: z.string().max(200),
+      /** Named people to call or message on Zalo, listed on the Liên hệ page. */
+      people: z
+        .array(z.object({ name: z.string().max(100), role: z.string().max(100), phone: z.string().max(50) }))
+        .max(10)
+        .default([]),
+    })
+    .default({ phone: "", facebook: "", tiktok: "", email: "", people: [] }),
   /** FR32: the one blindbox product. Boxes left = stock − boxes in live orders. */
   blindbox: z
     .object({

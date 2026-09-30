@@ -71,7 +71,7 @@ function readPromo(formData: FormData) {
 const DUPLICATE = "23505";
 
 export async function createPromoCode(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  await requireRole(["ADMIN"]);
+  await requireRole(["ADMIN", "STAFF"]);
   const parsed = readPromo(formData);
   if (!parsed.success) return fail(parsed.error);
   const { error } = await createServiceClient().from("promo_codes").insert(parsed.data);
@@ -81,7 +81,7 @@ export async function createPromoCode(_prev: ActionResult | null, formData: Form
 }
 
 export async function updatePromoCode(id: string, _prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  await requireRole(["ADMIN"]);
+  await requireRole(["ADMIN", "STAFF"]);
   const parsed = readPromo(formData);
   if (!parsed.success) return fail(parsed.error);
   const { error, count } = await createServiceClient().from("promo_codes").update(parsed.data, { count: "exact" }).eq("id", id);
@@ -92,7 +92,7 @@ export async function updatePromoCode(id: string, _prev: ActionResult | null, fo
 }
 
 export async function deletePromoCode(id: string): Promise<ActionResult> {
-  await requireRole(["ADMIN"]);
+  await requireRole(["ADMIN", "STAFF"]);
   const { error } = await createServiceClient().from("promo_codes").delete().eq("id", id);
   if (error) {
     // orders.promo_code_id is "on delete restrict".
@@ -141,7 +141,7 @@ function readCombo(formData: FormData) {
 }
 
 export async function createCombo(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  await requireRole(["ADMIN"]);
+  await requireRole(["ADMIN", "STAFF"]);
   const parsed = readCombo(formData);
   if (!parsed.success) return fail(parsed.error);
   const { error } = await createServiceClient().from("combos").insert(parsed.data);
@@ -151,7 +151,7 @@ export async function createCombo(_prev: ActionResult | null, formData: FormData
 }
 
 export async function updateCombo(id: string, _prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  await requireRole(["ADMIN"]);
+  await requireRole(["ADMIN", "STAFF"]);
   const parsed = readCombo(formData);
   if (!parsed.success) return fail(parsed.error);
   const { error, count } = await createServiceClient().from("combos").update(parsed.data, { count: "exact" }).eq("id", id);
@@ -163,7 +163,7 @@ export async function updateCombo(id: string, _prev: ActionResult | null, formDa
 
 /** Orders keep their discount note, so deleting a combo never changes a past order. */
 export async function deleteCombo(id: string): Promise<ActionResult> {
-  await requireRole(["ADMIN"]);
+  await requireRole(["ADMIN", "STAFF"]);
   const { error } = await createServiceClient().from("combos").delete().eq("id", id);
   if (error) return fail("Không xóa được combo. Vui lòng thử lại");
   refresh();

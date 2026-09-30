@@ -77,7 +77,7 @@ type ItemRow = {
 type DonationRow = {
   code: string;
   display_name: string;
-  contact: string;
+  contact: string | null;
   amount: number;
   message: string | null;
   is_public: boolean;
@@ -160,7 +160,7 @@ async function buildTabs(): Promise<Tab[]> {
       rows: donations.map((d) => [
         d.code,
         d.display_name,
-        d.contact,
+        d.contact ?? "",
         d.amount,
         d.message ?? "",
         d.is_public ? "Có" : "Ẩn danh",

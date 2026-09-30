@@ -1,57 +1,58 @@
 import Link from "next/link";
 import { AccountLink } from "@/components/account/account-link";
+import { Logo } from "@/components/brand/logo";
 import { CartLink } from "@/components/public/cart-link";
 import { MobileMenu } from "@/components/public/mobile-menu";
+import { NavLink } from "@/components/public/nav-link";
+import { SiteSearch } from "@/components/public/site-search";
+import { Button } from "@/components/ui/button";
 import type { CustomerSession } from "@/lib/customers/session";
 
+// Áo trơn and blindbox live under Cửa hàng; the donor wall is part of the Quyên góp page.
 const NAV = [
-  { href: "/mau-ao", label: "Áo mẫu" },
-  { href: "/thiet-ke", label: "Thiết kế áo" },
-  { href: "/ao-tron", label: "Áo trơn" },
-  { href: "/blindbox", label: "Blindbox" },
+  { href: "/", label: "Trang chủ" },
+  { href: "/cua-hang", label: "Cửa hàng" },
+  { href: "/thiet-ke", label: "Tự thiết kế áo" },
   { href: "/quyen-gop", label: "Quyên góp" },
-  { href: "/tra-cuu", label: "Tra cứu đơn" },
-  { href: "/vinh-danh", label: "Vinh danh" },
+  { href: "/lien-he", label: "Liên hệ" },
 ];
 
+/**
+ * Two rows from lg (logo, search, buttons / menu); one row with a menu button below that.
+ * "Tra cứu đơn hàng" stays in the bar at every width, signed in or not.
+ */
 export function SiteHeader({ session }: { session: CustomerSession | null }) {
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
-        <Link href="/" className="shrink-0 font-bold tracking-tight">
-          TỰA <span className="hidden font-normal text-muted-foreground sm:inline">– Nét Vẽ Yêu Thương</span>
+    <header className="sticky top-0 z-40 border-b border-brand-sand bg-brand-cream/95 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 lg:h-20 lg:gap-6">
+        <Link href="/" className="shrink-0 text-primary" aria-label="TỰA – Nét Vẽ Yêu Thương, về trang chủ">
+          <Logo variant="full" className="h-10 lg:h-12" title="" />
         </Link>
-        {/* Full nav only where it fits on one line; below lg it moves into MobileMenu. */}
-        <nav className="hidden items-center gap-1 text-sm lg:flex">
-          {NAV.map(({ href, label }) => (
-            <Link key={href} href={href} className="shrink-0 rounded-md px-3 py-2 hover:bg-muted">
-              {label}
-            </Link>
-          ))}
+        <SiteSearch className="hidden max-w-xl flex-1 lg:block" />
+        <div className="flex items-center gap-1 lg:gap-3">
+          <Button asChild size="cta" className="h-10 px-3.5 text-[13px] lg:h-11 lg:px-6 lg:text-[15px]">
+            <Link href="/tra-cuu">Tra cứu đơn hàng</Link>
+          </Button>
           <CartLink />
-          <AccountLink session={session} />
-        </nav>
-        <div className="flex items-center gap-1 lg:hidden">
-          <CartLink />
-          <MobileMenu nav={NAV}>
+          <div className="hidden lg:block">
             <AccountLink session={session} />
-          </MobileMenu>
+          </div>
+          <div className="lg:hidden">
+            <MobileMenu nav={NAV}>
+              <AccountLink session={session} />
+            </MobileMenu>
+          </div>
         </div>
       </div>
+      <nav aria-label="Menu chính" className="hidden h-12 border-t border-foreground/15 lg:block">
+        <ul className="mx-auto flex h-full max-w-6xl items-center justify-center gap-14 px-4">
+          {NAV.map((item) => (
+            <li key={item.href}>
+              <NavLink {...item} />
+            </li>
+          ))}
+        </ul>
+      </nav>
     </header>
-  );
-}
-
-export function SiteFooter() {
-  return (
-    <footer className="border-t bg-muted/40">
-      <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-8 text-sm text-muted-foreground">
-        <p className="font-medium text-foreground">TỰA – Nét Vẽ Yêu Thương</p>
-        <p>Toàn bộ lợi nhuận được dùng để hỗ trợ trẻ em có hoàn cảnh đặc biệt.</p>
-        <Link href="/chinh-sach" className="mt-2 w-fit underline underline-offset-4 hover:text-foreground">
-          Chính sách dữ liệu và điều khoản
-        </Link>
-      </div>
-    </footer>
   );
 }

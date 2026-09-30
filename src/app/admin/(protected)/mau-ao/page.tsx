@@ -47,7 +47,7 @@ export default async function PrototypesPage() {
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold">Áo mẫu</h1>
         <p className="text-sm text-muted-foreground">
-          Thiết kế có sẵn do Ban tổ chức đăng, bán với giá áo custom ({formatVND(settings.prices.CUSTOM)}). Sắp theo thứ tự (số nhỏ đứng trước). Mẫu đã có
+          Thiết kế có sẵn do Ban tổ chức đăng, chỉ bán trực tiếp qua form Workshop (không hiện trên web bán hàng), giá áo custom ({formatVND(settings.prices.CUSTOM)}). Sắp theo thứ tự (số nhỏ đứng trước). Mẫu đã có
           trong đơn hàng không xóa được, chỉ tắt bán.
         </p>
       </div>
@@ -106,9 +106,6 @@ export default async function PrototypesPage() {
                 }
                 actions={
                   <div className="flex flex-wrap gap-2">
-                    <a href={`/mau-ao/${p.slug}`} target="_blank" rel="noreferrer" className="inline-flex h-8 items-center rounded-md px-3 text-sm underline underline-offset-4">
-                      Xem trang mẫu
-                    </a>
                     <ConfirmActionButton
                       action={setPrototypeActive.bind(null, p.id, !p.is_active)}
                       successMessage={p.is_active ? "Đã tắt bán" : "Đã bật bán"}

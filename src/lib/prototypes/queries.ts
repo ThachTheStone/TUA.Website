@@ -1,12 +1,11 @@
 import "server-only";
 import type { ProtoSummary } from "@/components/cart/catalog";
-import { shirtsLeft } from "@/lib/inventory";
-import { getShirtStock, prototypeSold } from "@/lib/inventory.server";
-import { getSettings, type Settings } from "@/lib/settings";
+import { prototypeSold } from "@/lib/inventory.server";
+import type { Settings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Prototype } from "@/types/db";
 
-// FR27/FR28 reads. Public pages only ever see active prototypes.
+// FR27/FR28 reads. Prototypes are sold offline (workshop) only; there are no public prototype pages.
 
 export const PROTOTYPE_FIELDS = "id, slug, name, description, color, image_urls, design_id, sort_order, stock_limit, is_active, created_at, updated_at";
 
@@ -16,37 +15,6 @@ export async function listPrototypes({ activeOnly = false } = {}): Promise<Proto
   const { data, error } = await query.order("sort_order").order("created_at").returns<Prototype[]>();
   if (error) throw new Error(`Không đọc được áo mẫu: ${error.message}`);
   return data ?? [];
-}
-
-/** A prototype card on the public pages; `soldOut` when its cap is used up or every size of its colour ran out. */
-export type PrototypeOnSale = Prototype & { soldOut: boolean };
-
-/** Active prototypes buyers can order: a prototype whose colour was removed from settings is left out. */
-export async function listPrototypesOnSale(): Promise<PrototypeOnSale[]> {
-  const [settings, prototypes, stock, sold] = await Promise.all([
-    getSettings(),
-    listPrototypes({ activeOnly: true }),
-    getShirtStock(),
-    prototypeSold(),
-  ]);
-  return prototypes
-    .filter((p) => settings.colors.some((c) => c.key === p.color))
-    .map((p) => {
-      const capUsed = p.stock_limit !== null && (sold.get(p.id) ?? 0) >= p.stock_limit;
-      const noSizeLeft = settings.sizes.every((size) => (shirtsLeft(stock, p.color, size) ?? 1) <= 0);
-      return { ...p, soldOut: capUsed || noSizeLeft };
-    });
-}
-
-export async function getActivePrototype(slug: string): Promise<Prototype | null> {
-  const { data, error } = await createServiceClient()
-    .from("prototypes")
-    .select(PROTOTYPE_FIELDS)
-    .eq("slug", slug)
-    .eq("is_active", true)
-    .maybeSingle<Prototype>();
-  if (error) throw new Error(`Không đọc được áo mẫu: ${error.message}`);
-  return data;
 }
 
 /** What the cart and workshop form need to know about every prototype (inactive ones included). */

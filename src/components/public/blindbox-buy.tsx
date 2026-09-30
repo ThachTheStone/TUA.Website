@@ -42,12 +42,14 @@ export function BlindboxBuy({ price, remaining }: { price: number; remaining: nu
           <span className="text-sm text-muted-foreground">Còn {remaining} hộp</span>
         </div>
       </div>
-      <p className="text-sm text-muted-foreground">
-        Tạm tính: <strong className="text-foreground">{formatVND(price * quantity)}</strong>
-      </p>
-      <Button type="button" size="lg" className="h-12" onClick={add}>
-        <ShoppingCart /> Thêm vào giỏ
-      </Button>
+      <div className="flex flex-col gap-3 rounded-xl border bg-card p-4">
+        <p className="flex items-baseline justify-between text-sm text-muted-foreground">
+          Tạm tính <strong className="text-lg text-foreground">{formatVND(price * quantity)}</strong>
+        </p>
+        <Button type="button" size="lg" className="h-12 text-base" onClick={add}>
+          <ShoppingCart /> Thêm vào giỏ
+        </Button>
+      </div>
     </div>
   );
 }

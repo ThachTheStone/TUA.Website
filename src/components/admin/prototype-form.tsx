@@ -221,7 +221,7 @@ export function PrototypeForm({
               onChange={(e) => set({ name: e.target.value, ...(f.slugTouched ? {} : { slug: slugify(e.target.value) }) })}
             />
           </Field>
-          <Field label="Đường dẫn" htmlFor={id("slug")} hint={`Trang mẫu: /mau-ao/${f.slug || "…"}`}>
+          <Field label="Đường dẫn" htmlFor={id("slug")} hint="Mã nhận diện mẫu, chữ thường không dấu">
             <Input
               id={id("slug")}
               value={f.slug}

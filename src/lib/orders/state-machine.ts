@@ -66,3 +66,25 @@ export const APPROVAL_LABEL: Record<ApprovalStatus, string> = {
 export function isDebt(order: { status: OrderStatus; payment_status: PaymentStatus }): boolean {
   return order.status === "DELIVERED" && order.payment_status === "DEPOSIT_PAID";
 }
+
+export type StatusTone = "danger" | "warning" | "success" | "neutral";
+
+/**
+ * FR26 (S17): the one status a buyer sees per order in "Đơn hàng của tôi", picking what matters
+ * most to them: closed → overdue → a design to fix → payment → production progress.
+ */
+export function buyerStatus(order: {
+  status: OrderStatus;
+  payment_status: PaymentStatus;
+  overdue: boolean;
+  rejectedDesigns: number;
+}): { label: string; tone: StatusTone } {
+  const { status } = order;
+  if (status === "CANCELLED" || status === "EXPIRED") return { label: STATUS_LABEL[status], tone: "danger" };
+  if (order.overdue) return { label: "Quá hạn thanh toán", tone: "danger" };
+  if (order.rejectedDesigns > 0) return { label: "Cần sửa thiết kế", tone: "warning" };
+  if (status === "PENDING_PAYMENT") return { label: STATUS_LABEL[status], tone: "warning" };
+  if (isDebt(order)) return { label: "Đã giao, còn nợ", tone: "warning" };
+  if (status === "DELIVERED" || status === "READY") return { label: STATUS_LABEL[status], tone: "success" };
+  return { label: STATUS_LABEL[status], tone: "neutral" };
+}

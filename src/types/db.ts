@@ -146,7 +146,8 @@ export interface Donation {
   id: string;
   code: string;
   display_name: string;
-  contact: string;
+  /** Null for "Ẩn danh" / "Không hiển thị" donations (FR08). */
+  contact: string | null;
   amount: number;
   message: string | null;
   is_public: boolean;

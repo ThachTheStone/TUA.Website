@@ -16,15 +16,20 @@ function period(p: Promotion): string {
   return `${p.starts_at ? formatDate(p.starts_at) : "…"} – ${p.ends_at ? formatDate(p.ends_at) : "…"}`;
 }
 
+/** FR19: promotions shown on the home page (content only; money-off codes and combos are in Giảm giá). */
 export default async function PromotionsPage() {
-  await requireRole(["ADMIN"]);
+  await requireRole(["ADMIN", "STAFF"]);
   const promotions = await listPromotions();
 
   return (
-    <div className="flex flex-col gap-6">
-      <p className="text-sm text-muted-foreground">
-        Khuyến mãi ở đây chỉ là nội dung hiển thị trên trang chủ. Mã giảm giá và combo tự trừ tiền nằm ở mục Giảm giá.
-      </p>
+    <div className="flex max-w-4xl flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-semibold">Khuyến mãi</h1>
+        <p className="text-sm text-muted-foreground">
+          Chương trình khuyến mãi hiển thị trên trang chủ trong thời gian đã đặt. Mã giảm giá và combo tự trừ tiền nằm ở mục
+          Giảm giá.
+        </p>
+      </div>
 
       <EditPanel summary={<span className="font-medium">+ Thêm khuyến mãi</span>} defaultOpen={promotions.length === 0}>
         <PromotionForm action={createPromotion} />

@@ -25,9 +25,9 @@ export default async function PolicyPage() {
   const hasContact = !!(contact.phone || contact.email || contact.facebook);
 
   return (
-    <article className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-10 leading-relaxed [&_li]:ml-5 [&_li]:list-disc [&_ul]:flex [&_ul]:flex-col [&_ul]:gap-1">
+    <article className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 leading-relaxed *:max-w-3xl [&_li]:ml-5 [&_li]:list-disc [&_ul]:flex [&_ul]:flex-col [&_ul]:gap-1">
       <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Chính sách dữ liệu và điều khoản</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-primary sm:text-4xl">Chính sách dữ liệu và điều khoản</h1>
         <p className="text-sm text-muted-foreground">Cập nhật: {UPDATED}</p>
         <p className="text-muted-foreground">
           Trang này giải thích Ban tổ chức dự án TỰA – Nét Vẽ Yêu Thương (&quot;chúng mình&quot;) thu thập, sử dụng và bảo vệ dữ

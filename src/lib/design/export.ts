@@ -3,7 +3,7 @@
 import type Konva from "konva";
 import { loadAssetImage } from "@/lib/design/assets";
 import { loadFonts } from "@/lib/design/fonts";
-import { MOCKUP_HEIGHT, MOCKUP_WIDTH, areaOnMockup, shirtSvgUrl } from "@/lib/design/mockup";
+import { MOCKUP_HEIGHT, MOCKUP_WIDTH, areaOnMockup, shirtImageUrl } from "@/lib/design/mockup";
 import { loadImage, shapeKonva } from "@/lib/design/shapes";
 import {
   LOGICAL_WIDTH,
@@ -105,7 +105,7 @@ export async function renderMockupPreview(
   areas: DesignAreas,
   printAreas: CanvasPrintArea[],
   colorHex: string,
-  scale = 1.5,
+  scale = 2 / 3,
 ): Promise<string> {
   const images = await renderAreaPreviews(areas, printAreas, 300);
   const canvas = document.createElement("canvas");
@@ -116,7 +116,7 @@ export async function renderMockupPreview(
 
   for (const [i, side] of (["front", "back"] as const).entries()) {
     const offsetX = i * MOCKUP_WIDTH;
-    ctx.drawImage(await loadImage(shirtSvgUrl(side, colorHex)), offsetX, 0, MOCKUP_WIDTH, MOCKUP_HEIGHT);
+    ctx.drawImage(await loadImage(shirtImageUrl(side, colorHex)), offsetX, 0, MOCKUP_WIDTH, MOCKUP_HEIGHT);
     for (const area of printAreas) {
       if (area.side !== side || !images[area.key]) continue;
       const r = areaOnMockup(area);

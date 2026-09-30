@@ -20,7 +20,7 @@ function period(c: Combo): string {
 }
 
 export default async function CombosPage() {
-  await requireRole(["ADMIN"]);
+  await requireRole(["ADMIN", "STAFF"]);
   const [combos, settings] = await Promise.all([listCombos(), getSettings()]);
 
   return (
