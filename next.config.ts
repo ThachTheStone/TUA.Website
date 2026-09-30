@@ -4,6 +4,38 @@ const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
   ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
   : undefined;
 
+/**
+ * Content Security Policy – allows Supabase, Google Fonts, VietQR images and Vercel analytics.
+ * In production `unsafe-eval` can be removed once all dynamic code is eliminated; Next.js still
+ * needs `unsafe-inline` for its style injection.
+ */
+const cspDirectives = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com",
+  `img-src 'self' data: blob:${supabaseHost ? ` https://${supabaseHost}` : ""} https://img.vietqr.io`,
+  `connect-src 'self'${supabaseHost ? ` https://${supabaseHost} wss://${supabaseHost}` : ""}`,
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join("; ");
+
+const securityHeaders = [
+  // Chống clickjacking (bổ sung frame-ancestors trong CSP)
+  { key: "X-Frame-Options", value: "DENY" },
+  // Chống MIME-type sniffing
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  // Bắt buộc HTTPS (1 năm, bao gồm subdomain)
+  { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+  // Kiểm soát referrer
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  // Tắt các API trình duyệt không cần thiết
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), interest-cohort=()" },
+  // CSP
+  { key: "Content-Security-Policy", value: cspDirectives },
+];
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: supabaseHost
@@ -11,7 +43,10 @@ const nextConfig: NextConfig = {
       : [],
   },
   experimental: {
-    serverActions: { bodySizeLimit: "12mb" },
+    serverActions: { bodySizeLimit: "2mb" },
+  },
+  async headers() {
+    return [{ source: "/(.*)", headers: securityHeaders }];
   },
   // Áo mẫu are sold offline only now; old links land in Cửa hàng. Not permanent in case they come back.
   async redirects() {
@@ -26,3 +61,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
