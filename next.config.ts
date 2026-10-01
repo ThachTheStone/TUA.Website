@@ -43,7 +43,8 @@ const nextConfig: NextConfig = {
       : [],
   },
   experimental: {
-    serverActions: { bodySizeLimit: "2mb" },
+    // Print files (200 DPI PNG per print area) and buyer images (≤10MB, BR01) go through server actions.
+    serverActions: { bodySizeLimit: "12mb" },
   },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
