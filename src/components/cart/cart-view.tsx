@@ -12,14 +12,12 @@ import { maxOrderable } from "@/lib/inventory";
 import { shirtImageUrl } from "@/lib/design/mockup";
 import { colorLabel, formatVND } from "@/lib/format";
 import { computeDiscount } from "@/lib/orders/discounts";
-import { useIsPhone } from "@/lib/use-is-phone";
 
 function CartLine({ item, catalog, problem }: { item: CartItem; catalog: Catalog; problem: LineProblem | undefined }) {
   const draft = useCart((s) => (item.designDraftId ? s.drafts[item.designDraftId] : undefined));
   const setQuantity = useCart((s) => s.setQuantity);
   const removeItem = useCart((s) => s.removeItem);
   // FR06: no canvas on phones, so no "Sửa thiết kế" there.
-  const isPhone = useIsPhone();
   const proto = item.type === "PROTOTYPE" ? findPrototype(catalog, item.prototypeId) : undefined;
   const color = catalog.colors.find((c) => c.key === (proto?.color ?? item.color));
   const hex = color?.hex ?? "#ffffff";
@@ -91,7 +89,7 @@ function CartLine({ item, catalog, problem }: { item: CartItem; catalog: Catalog
             <Plus />
           </Button>
           <div className="ml-auto flex gap-2">
-            {item.type === "CUSTOM" && draft && isPhone === false && (
+            {item.type === "CUSTOM" && draft && (
               <Button asChild variant="outline" className="h-11">
                 <Link href={`/thiet-ke?sua=${item.id}`}>
                   <Pencil /> Sửa thiết kế

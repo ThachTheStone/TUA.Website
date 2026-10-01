@@ -1,5 +1,9 @@
 "use client";
 
+import { Ruler, X } from "lucide-react";
+import Image from "next/image";
+import { useRef } from "react";
+import { SIZE_CHART, formatCm } from "@/lib/size-chart";
 import { cn } from "@/lib/utils";
 
 export type ColorOption = { key: string; label: string; hex: string };
@@ -70,9 +74,19 @@ export function SizeOptions({
 }: Pick<Props, "sizes" | "disabledSizes" | "size" | "onSize" | "left">) {
   const current = left?.(size) ?? null;
   const offSale = sizes.filter((s) => disabledSizes.includes(s));
+  const chartRef = useRef<HTMLDialogElement>(null);
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="mb-2 text-sm font-semibold">Size</legend>
+      <legend className="mb-2 flex w-full items-center justify-between gap-3 text-sm font-semibold">
+        Size
+        <button
+          type="button"
+          onClick={() => chartRef.current?.showModal()}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary underline-offset-4 hover:underline"
+        >
+          <Ruler className="size-4" aria-hidden /> Bảng size
+        </button>
+      </legend>
       <div className="flex flex-wrap gap-2">
         {sizes.map((s) => {
           const disabled = disabledSizes.includes(s);
@@ -104,6 +118,66 @@ export function SizeOptions({
           {current > 0 ? `Còn ${current} áo size ${size}` : `Size ${size} đã hết hàng`}
         </p>
       )}
+      <SizeChartDialog ref={chartRef} sizes={sizes} />
     </fieldset>
+  );
+}
+
+/** Measurement diagram (public/size-diagram.webp) and the size table, in a centred popup. */
+function SizeChartDialog({ ref, sizes }: { ref: React.Ref<HTMLDialogElement>; sizes: string[] }) {
+  const rows = sizes.filter((s) => SIZE_CHART[s]);
+  return (
+    <dialog
+      ref={ref}
+      aria-label="Bảng size áo"
+      className="m-auto w-[min(40rem,calc(100vw-2rem))] rounded-3xl border bg-card p-0 text-foreground shadow-2xl backdrop:bg-black/50"
+    >
+      <div className="flex flex-col gap-3 p-4 sm:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-bold">Bảng size áo</h2>
+          <button
+            type="button"
+            aria-label="Đóng"
+            onClick={(e) => e.currentTarget.closest("dialog")?.close()}
+            className="flex size-10 items-center justify-center rounded-full hover:bg-muted"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+        <Image
+          src="/size-diagram.webp"
+          alt="Cách đo áo: dài áo từ vai xuống gấu, rộng đo ngang thân, dài tay đo từ vai tới cửa tay."
+          width={700}
+          height={555}
+          sizes="(min-width: 672px) 592px, 100vw"
+          className="mx-auto h-auto w-full max-w-md rounded-2xl"
+        />
+        {rows.length > 0 && (
+          <div className="overflow-hidden rounded-2xl border">
+            <table className="w-full text-center text-sm tabular-nums sm:text-base">
+              <thead className="bg-brand-sage text-brand-cream">
+                <tr>
+                  <th scope="col" className="px-3 py-2.5 font-semibold">Size</th>
+                  <th scope="col" className="px-3 py-2.5 font-semibold">Dài áo</th>
+                  <th scope="col" className="px-3 py-2.5 font-semibold">Rộng</th>
+                  <th scope="col" className="px-3 py-2.5 font-semibold">Dài tay</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((s) => (
+                  <tr key={s} className="border-t even:bg-muted/50">
+                    <th scope="row" className="px-3 py-2.5 font-semibold text-primary">{s}</th>
+                    <td className="px-3 py-2.5">{formatCm(SIZE_CHART[s].length)}</td>
+                    <td className="px-3 py-2.5">{formatCm(SIZE_CHART[s].width)}</td>
+                    <td className="px-3 py-2.5">{formatCm(SIZE_CHART[s].sleeve)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="text-sm text-muted-foreground">Cần tư vấn chọn size, bạn liên hệ Ban tổ chức ở trang Liên hệ.</p>
+      </div>
+    </dialog>
   );
 }

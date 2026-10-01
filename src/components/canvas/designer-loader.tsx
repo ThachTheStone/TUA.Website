@@ -4,8 +4,6 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { DesignerProps } from "@/components/canvas/designer";
-import { PhoneGate } from "@/components/canvas/phone-gate";
-import type { Contact } from "@/lib/settings";
 
 // Konva needs `window`, so the designer is client-only.
 const Designer = dynamic(() => import("@/components/canvas/designer").then((m) => m.Designer), {
@@ -17,14 +15,13 @@ const Designer = dynamic(() => import("@/components/canvas/designer").then((m) =
   ),
 });
 
-export function DesignerLoader({ contact, ...props }: Omit<DesignerProps, "onSaved"> & { contact: Contact }) {
+export function DesignerLoader(props: Omit<DesignerProps, "onSaved">) {
   const router = useRouter();
   const [session, setSession] = useState(0);
   const [editItemId, setEditItemId] = useState(props.editItemId);
 
   return (
-    <PhoneGate contact={contact}>
-      <Designer
+    <Designer
         key={session}
         {...props}
         editItemId={editItemId}
@@ -34,6 +31,5 @@ export function DesignerLoader({ contact, ...props }: Omit<DesignerProps, "onSav
           if (props.editItemId) router.replace("/thiet-ke", { scroll: false });
         }}
       />
-    </PhoneGate>
   );
 }

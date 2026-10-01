@@ -45,7 +45,7 @@ export function LookupForm() {
       <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end" noValidate>
         <div className="flex flex-col gap-2">
           <Label htmlFor="code">Mã đơn</Label>
-          <Input id="code" placeholder="TUA0001" autoCapitalize="characters" {...register("code")} />
+          <Input id="code" placeholder="TUA0001" autoCapitalize="characters" className="placeholder:text-muted-foreground/70" {...register("code")} />
           {formState.errors.code && <p className="text-sm text-destructive">{formState.errors.code.message}</p>}
         </div>
         <div className="flex flex-col gap-2">

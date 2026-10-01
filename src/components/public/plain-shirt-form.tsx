@@ -41,15 +41,23 @@ export function PlainShirtForm({ colors, sizes, disabledSizes, price, customPric
   const maxQty = Math.max(1, Math.min(MAX_QUANTITY, left ?? MAX_QUANTITY));
   const unavailable = disabledSizes.includes(size) || (left !== null && left <= 0);
 
+  /** Keep the chosen quantity when switching; only cap it to what the new colour/size has left. */
+  function keepQuantity(c: string, s: string) {
+    const leftNow = shirtsLeft(stock, c, s);
+    const cap = Math.max(1, Math.min(MAX_QUANTITY, leftNow ?? MAX_QUANTITY));
+    setQuantity((q) => Math.min(q, cap));
+  }
+
   function changeColor(key: string) {
+    const nextSize = pickSize(sizes, size, leftIn(key), disabledSizes);
     setColor(key);
-    setSize((s) => pickSize(sizes, s, leftIn(key), disabledSizes));
-    setQuantity(1);
+    setSize(nextSize);
+    keepQuantity(key, nextSize);
   }
 
   function changeSize(s: string) {
     setSize(s);
-    setQuantity(1);
+    keepQuantity(color, s);
   }
 
   function add() {

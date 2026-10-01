@@ -8,7 +8,6 @@ import { normalizePhone } from "@/lib/orders/checkout-schema";
 export const DONATION_CODE_RE = /^UH\d{4,}$/;
 /** Upper bound against typos (an extra zero or two), not a business rule. */
 export const DONATION_MAX = 1_000_000_000;
-export const DONATION_PRESETS = [300_000, 500_000, 1_000_000, 2_000_000];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^0[35789]\d{8}$/;
@@ -41,7 +40,7 @@ export function donationFormSchema(min: number) {
       amount: z.coerce
         .number({ error: "Số tiền không hợp lệ" })
         .int("Số tiền phải là số nguyên")
-        .min(min, `Số tiền quyên góp tối thiểu là ${formatVND(min)}`)
+        .min(min, `Số tiền quyên góp phải từ ${formatVND(min)} trở lên`)
         .max(DONATION_MAX, `Số tiền tối đa ${formatVND(DONATION_MAX)}`),
       message: z.string().trim().max(300, "Lời nhắn tối đa 300 ký tự").nullish(),
       consent: z.boolean(),

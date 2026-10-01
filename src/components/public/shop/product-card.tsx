@@ -33,8 +33,8 @@ export function ProductCard({ href, name, description, note, price, badge, art, 
         <div className="mt-auto flex items-center justify-between gap-3 pt-4">
           <span className="text-xl font-bold text-primary">{formatVND(price)}</span>
           {!disabled && (
-            <span className="inline-flex items-center gap-1 text-sm font-semibold text-primary group-hover:underline underline-offset-4">
-              Xem chi tiết <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+            <span className="inline-flex h-10 items-center gap-1.5 rounded-full bg-primary px-5 text-sm text-primary-foreground transition-colors group-hover:bg-primary/85">
+              Mua ngay <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </span>
           )}
         </div>

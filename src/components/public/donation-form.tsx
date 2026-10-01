@@ -13,7 +13,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createDonationAction } from "@/lib/donations/actions";
 import {
-  DONATION_PRESETS,
   donationFormSchema,
   type DonationFormInput,
   type DonationFormValues,
@@ -44,11 +43,10 @@ export function DonationForm({ min }: { min: number }) {
   const [pending, startTransition] = useTransition();
   const [serverError, setServerError] = useState<string | null>(null);
   const schema = useMemo(() => donationFormSchema(min), [min]);
-  const presets = DONATION_PRESETS.filter((p) => p >= min);
 
   const { register, handleSubmit, watch, setValue, formState } = useForm<DonationFormInput, unknown, DonationFormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { visibility: "public", display_name: "", contact: "", amount: presets[0] ?? min, message: "", consent: false },
+    defaultValues: { visibility: "public", display_name: "", contact: "", amount: "", message: "", consent: false },
   });
   const errors = formState.errors;
   const amount = Number(watch("amount"));
@@ -72,7 +70,7 @@ export function DonationForm({ min }: { min: number }) {
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-6">
       <fieldset disabled={pending} className="flex flex-col gap-6">
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-medium">Bảng vinh danh</h2>
+          <h2 className="text-lg font-semibold">Bảng vinh danh</h2>
           <div className="grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Hiển thị trên Bảng vinh danh">
             {VISIBILITY.map((v) => (
               <button
@@ -91,23 +89,7 @@ export function DonationForm({ min }: { min: number }) {
         </section>
 
         <section className="flex flex-col gap-3">
-          <Label htmlFor="amount">Số tiền quyên góp</Label>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {presets.map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setValue("amount", p, { shouldValidate: true })}
-                aria-pressed={amount === p}
-                className={cn(
-                  "h-11 rounded-full border text-sm font-medium tabular-nums",
-                  amount === p ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
-                )}
-              >
-                {formatVND(p)}
-              </button>
-            ))}
-          </div>
+          <Label htmlFor="amount" className="text-lg font-semibold">Số tiền quyên góp</Label>
           <div className="relative">
             <Input
               id="amount"
@@ -115,13 +97,14 @@ export function DonationForm({ min }: { min: number }) {
               inputMode="numeric"
               min={min}
               step={1000}
+              placeholder="Nhập số tiền"
               className="h-11 pr-8 text-base tabular-nums"
               {...register("amount")}
             />
             <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm text-muted-foreground">đ</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            Tối thiểu {formatVND(min)}.{amount >= min ? ` Bạn sẽ chuyển ${formatVND(amount)}.` : ""}
+            {amount >= min && amount > 0 ? `Bạn sẽ chuyển ${formatVND(amount)}.` : "Nhập số tiền bạn muốn quyên góp."}
           </p>
           <FieldError message={errors.amount?.message} />
         </section>
@@ -135,12 +118,12 @@ export function DonationForm({ min }: { min: number }) {
             </p>
           )}
           <div className="flex flex-col gap-2">
-            <Label htmlFor="display_name">Tên hiển thị</Label>
+            <Label htmlFor="display_name" className="text-lg font-semibold">Tên hiển thị</Label>
             <Input id="display_name" autoComplete="name" maxLength={100} {...register("display_name")} />
             <FieldError message={errors.display_name?.message} />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="contact">Email hoặc số điện thoại</Label>
+            <Label htmlFor="contact" className="text-lg font-semibold">Email hoặc số điện thoại</Label>
             <Input id="contact" autoComplete="email" maxLength={200} {...register("contact")} />
             <p className="text-xs text-muted-foreground">
               Chỉ Ban tổ chức xem được. Nhập email để nhận thư cảm ơn khi khoản quyên góp được xác nhận.
@@ -148,7 +131,7 @@ export function DonationForm({ min }: { min: number }) {
             <FieldError message={errors.contact?.message} />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="message">Lời nhắn (không bắt buộc)</Label>
+            <Label htmlFor="message" className="text-lg font-semibold">Lời nhắn (không bắt buộc)</Label>
             <Textarea id="message" rows={3} maxLength={300} {...register("message")} />
             <p className="text-right text-xs text-muted-foreground tabular-nums">{message.length}/300</p>
             <FieldError message={errors.message?.message} />

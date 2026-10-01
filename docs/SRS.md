@@ -50,7 +50,7 @@ Khách vẽ tay trên giấy tại Campus Workshop được Staff scan bản v�
 
 Mỗi đơn có hai trạng thái song song: **trạng thái thanh toán** (Chưa thanh toán → Đã cọc / Đã thanh toán 100%) và **trạng thái đơn** (Chờ thanh toán → Chờ xác nhận thanh toán → Đã xác nhận → Đang in → Kiểm tra chất lượng → Sẵn sàng giao/nhận → Đã giao). Đơn chưa thanh toán quá hạn sẽ tự động hủy.
 
-Khách dùng điện thoại được xem nội dung, mua áo mẫu, mua áo trơn, quyên góp và theo dõi đơn. Tự thiết kế áo chỉ dùng trên máy tính hoặc máy tính bảng; trên điện thoại, khách được hướng dẫn dùng máy tính hoặc liên hệ Ban tổ chức để được hỗ trợ.
+Khách dùng điện thoại được xem nội dung, mua áo trơn, blindbox, tự thiết kế áo trên canvas, quyên góp và theo dõi đơn (từ 01/10/2026 canvas dùng được cả trên điện thoại).
 
 Toàn bộ dữ liệu đơn hàng, quyên góp và trạng thái được lưu trong cơ sở dữ liệu chính và đồng bộ sang Google Sheets để Ban tổ chức theo dõi minh bạch.
 
@@ -97,7 +97,7 @@ Trang chủ (màn hình S01) gồm các phần theo thứ tự:
 
 **FR02 – Chọn sản phẩm**
 - Trên web, khách chọn Áo custom (159.000đ, tự thiết kế) hoặc Áo trơn (89.000đ). Ngoài áo, khách mua được Blindbox Hot Wheels (59.000đ, FR32). Áo mẫu (giá bằng áo custom, FR27) chỉ bán offline qua form Workshop.
-- Áo custom và áo trơn: chọn màu áo và size từ danh sách do Admin cấu hình. Hiện chỉ có màu Đen; size S, M, L, XL, trong đó XL hiển thị nhưng bị vô hiệu hóa ("chưa mở bán").
+- Áo custom và áo trơn: chọn màu áo và size từ danh sách do Admin cấu hình. Hiện chỉ có màu Đen; size S, M, L, XL (không còn XXL), tất cả đang bán. Cạnh chữ Size có nút **Bảng size** mở popup: hình cách đo (`public/size-diagram.webp`) và bảng số đo (dài áo / rộng / dài tay): S 69 / 50 / 21,5 cm; M 71 / 52 / 22 cm; L 73 / 54 / 22,5 cm; XL 75 / 60 / 25 cm (`src/lib/size-chart.ts`).
 - Size tạm ngưng bán (`settings.sizes_disabled`) hiện thành nút bị khóa, không thêm vào giỏ được, và bị server từ chối khi đặt hàng. Admin bật/tắt trong Cài đặt → Size.
 - Giá lấy từ bảng cài đặt, không hardcode.
 
@@ -105,7 +105,7 @@ Trang chủ (màn hình S01) gồm các phần theo thứ tự:
 - Canvas hiển thị trên mockup áo. Khách chuyển giữa 3 vùng in; chỉ được vẽ trong vùng in, nét vẽ ngoài vùng bị cắt (clip).
 - Công cụ: Cọ vẽ, Cục tẩy, Bảng màu, Kích thước cọ, Chữ (chọn kiểu chữ trong danh sách có sẵn, chữ đậm; kiểu chữ không hỗ trợ dấu tiếng Việt được ghi chú rõ), Hình khối (chữ nhật, tròn, đường thẳng), Tô màu (Fill), Lớp (Layers: thêm, xóa, ẩn/hiện, đổi thứ tự), Hoàn tác/Làm lại (tối thiểu 30 bước), Xóa toàn bộ vùng.
 - Hoạt động trên máy tính (chuột) và máy tính bảng (cảm ứng, bút). Không cuộn trang khi đang vẽ.
-- **Không dùng trên điện thoại** (thiết bị có cạnh ngắn màn hình dưới 600px). Trên điện thoại, trang Thiết kế áo không mở canvas mà hiển thị: "Tính năng tự thiết kế cần máy tính hoặc máy tính bảng", thông tin liên hệ Ban tổ chức để được hỗ trợ (FR21), và nút chuyển sang Áo trơn / Cửa hàng.
+- **Dùng được trên điện thoại** (từ 01/10/2026, bỏ màn hình chặn trên điện thoại): canvas co theo bề ngang màn hình, các nút công cụ tự xuống dòng, phần Lớp, xem trước, màu, size và nút Thêm vào giỏ nằm trong thanh trượt "Lớp & đặt áo". Giỏ hàng hiện nút "Sửa thiết kế" trên mọi thiết bị.
 - Vùng in có thể để trống, nhưng áo custom phải có ít nhất 1 vùng có nội dung.
 - **Chèn ảnh (sticker, hình ảnh):** khách đã đăng nhập được tải ảnh từ thiết bị lên canvas (BR01). Ảnh là một đối tượng trên lớp: di chuyển, phóng to/thu nhỏ, xoay, xóa như hình khối; bị cắt theo vùng in.
   - Định dạng JPG, PNG, WebP; tối đa 10MB mỗi ảnh; tối đa 10 ảnh mỗi thiết kế.
@@ -146,7 +146,7 @@ Trang chủ (màn hình S01) gồm các phần theo thứ tự:
 - Gửi email xác nhận đặt hàng có kèm thông tin thanh toán.
 
 **FR08 – Quyên góp**
-- Đầu form, khách chọn cách hiển thị trên Bảng vinh danh: **Hiển thị công khai**, **Ẩn danh** (hiện là "Nhà hảo tâm ẩn danh") hoặc **Không hiển thị** (không có trên Bảng vinh danh, vẫn cộng vào tổng). Sau đó nhập số tiền (tối thiểu 300.000đ).
+- Đầu form, khách chọn cách hiển thị trên Bảng vinh danh: **Hiển thị công khai**, **Ẩn danh** (hiện là "Nhà hảo tâm ẩn danh") hoặc **Không hiển thị** (không có trên Bảng vinh danh, vẫn cộng vào tổng). Sau đó nhập số tiền (không giới hạn tối thiểu, BR08).
 - Chỉ khi chọn Hiển thị công khai mới điền được tên hiển thị, email/SĐT, lời nhắn và tick đồng ý xử lý dữ liệu cá nhân (bắt buộc). Chọn Ẩn danh hoặc Không hiển thị thì các ô này bị khóa, không lưu dữ liệu cá nhân và không gửi email cảm ơn (migration 0015 cho phép `contact` trống; Không hiển thị lưu `is_hidden = true`).
 - Hệ thống tạo Donation Code và sinh VietQR vào tài khoản quỹ (theo BR04). Quét mã là app ngân hàng tự điền số tiền và nội dung `DONATION UH0001` (chữ DONATION để tách tiền quyên góp với tiền bán áo, mã UH để Staff đối soát từng khoản).- Gửi email xác nhận khi Staff xác nhận đã nhận tiền.
 
@@ -289,7 +289,7 @@ Trang chủ (màn hình S01) gồm các phần theo thứ tự:
 
 **FR26 – Đăng ký, đăng nhập, đăng xuất cho Người mua**
 - Đăng ký bằng email + mật khẩu (tối thiểu 8 ký tự) kèm Họ tên và Số điện thoại. Tài khoản chỉ dùng được sau khi bấm liên kết xác thực gửi qua email. **Tạm thời** (từ 30/09/2026, do chưa gửi được email qua SMTP Gmail) bước xác thực email đang tắt trong Supabase (Authentication → Email → Confirm email): đăng ký xong là vào thẳng tài khoản; bật lại khi email hoạt động, code tự quay về luồng gửi link.
-- **Tạm thời** (từ 30/09/2026, email chưa gửi được): trang "Quên mật khẩu" không gửi liên kết mà thông báo hệ thống gửi email đang trục trặc, mời khách gọi hoặc nhắn Zalo số liên hệ chính trong Cài đặt (0868 296 939) để được hỗ trợ đặt hàng. Khi email hoạt động lại, đưa form gửi liên kết (ForgotPasswordForm) trở lại trang này.
+- **Tạm thời** (từ 30/09/2026, email chưa gửi được): trang "Quên mật khẩu" không gửi liên kết mà thông báo hệ thống gửi email đang trục trặc, mời khách gọi hoặc nhắn Zalo số liên hệ chính trong Cài đặt (hiện là 0383 591 607) để được hỗ trợ đặt hàng. Khi email hoạt động lại, đưa form gửi liên kết (ForgotPasswordForm) trở lại trang này.
 - Đăng nhập bằng email + mật khẩu hoặc bằng Google. Người dùng Google không bắt buộc nhập SĐT khi đăng ký; SĐT được hỏi ở bước đặt hàng và lưu lại vào tài khoản.
 - Có chức năng đăng xuất. Khi đăng xuất, giỏ hàng trên trình duyệt được xóa (vẫn còn lưu trong tài khoản).
 - Trang "Tài khoản": xem và sửa Họ tên, SĐT; danh sách "Đơn hàng của tôi" (mã đơn, ngày, **một** trạng thái duy nhất, tổng tiền, đã trả). Trạng thái hiển thị chọn theo thứ tự ưu tiên: Đã hủy/Hết hạn → Quá hạn thanh toán → Cần sửa thiết kế → Chờ thanh toán → Đã giao, còn nợ → trạng thái đơn (S17). Trạng thái thanh toán chi tiết xem trong trang chi tiết đơn; xem chi tiết và lịch sử trạng thái từng đơn, trạng thái duyệt của từng áo custom và lý do nếu bị từ chối; sửa và gửi lại thiết kế bị từ chối (FR29); thanh toán lại đơn đang Chờ thanh toán.
@@ -366,7 +366,7 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 ## 6. Yêu cầu phi chức năng
 
 - **NFR01 – Hiệu năng canvas:** độ trễ nét vẽ dưới 50ms trên máy tính và tablet phổ thông (iPad 9, Galaxy Tab A).
-- **NFR02 – Tương thích:** Chrome, Safari, Edge bản mới nhất. Điện thoại: xem nội dung, mua áo trơn và blindbox, giỏ hàng, đặt hàng, thanh toán, quyên góp, tài khoản và tra cứu đơn. Máy tính bảng và máy tính: toàn bộ tính năng, kể cả tự thiết kế áo (FR03).
+- **NFR02 – Tương thích:** Chrome, Safari, Edge bản mới nhất. Máy tính, máy tính bảng và điện thoại đều dùng được mọi chức năng phía khách, kể cả tự thiết kế áo trên canvas (từ 01/10/2026).
 - **NFR03 – Bảo mật:** Admin yêu cầu đăng nhập; mật khẩu được băm (do dịch vụ xác thực đảm nhiệm); phân quyền kiểm tra ở phía server; khóa bí mật không lộ ra trình duyệt; tra cứu đơn bắt buộc khớp cả Order Code và SĐT.
 - **NFR04 – Tốc độ:** sinh QR dưới 2 giây; trang chủ tải dưới 3 giây trên mạng 4G.
 - **NFR05 – Chất lượng in:** file xuất cho mỗi vùng in có độ phân giải 200 DPI theo kích thước thật của vùng in, định dạng PNG nền trong suốt.
@@ -388,7 +388,7 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 - **BR05:** Thiết kế có nội dung phản cảm, bạo lực hoặc vi phạm bản quyền (kể cả ảnh tải lên) bị từ chối kèm lý do (FR29). Khách sửa và gửi lại, hoặc Staff hủy đơn.
 - **BR06:** Hoàn tiền được Ban tổ chức quyết định theo từng trường hợp và ghi nhận bằng `refund_status`.
 - **BR07:** Đơn ở trạng thái Chờ thanh toán quá thời hạn cấu hình (mặc định 24 giờ) tự động chuyển sang Hết hạn.
-- **BR08:** Số tiền quyên góp tối thiểu là 300.000đ.
+- **BR08:** Không giới hạn số tiền quyên góp tối thiểu (từ 01/10/2026); cài đặt `donation_min` để 1.000đ chỉ để chặn số tiền 0. Mục tiêu quyên góp hiện là 5.000.000đ (cài đặt `donation_goal`).
 - **BR09:** Giá áo trơn 89.000đ, áo custom 159.000đ, Blindbox Hot Wheels 59.000đ (từ 30/09/2026), cấu hình được trong Admin. Áo mẫu dùng giá áo custom. Giá và số tiền giảm được "chốt" vào đơn tại thời điểm đặt.
 - **BR13:** Mỗi đơn nhận một ưu đãi: hoặc một mã giảm giá, hoặc các combo, tùy cái nào có lợi hơn cho khách (FR31).
 - **BR10:** Phí vận chuyển (nếu giao hàng) do khách trả trực tiếp cho đơn vị vận chuyển, không tính vào tổng đơn trên website.
@@ -439,7 +439,7 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 | 1 | Kích thước và vị trí 3 vùng in | Ngực trái 10×10cm, mặt trước 28×36cm, mặt sau 30×40cm; vị trí theo FR04 (chỉnh trong Cài đặt) |
 | 2 | Quyền lợi khi quyên góp trên 300.000đ (câu trả lời bị cắt) | Chưa xác định |
 | 3 | Bộ nhận diện (màu, font, logo) | Đã có (29/09): logo TỰA, 5 màu moodboard (FR33), font Be Vietnam Pro |
-| 4 | Danh sách màu áo và size | Chỉ màu Đen (đã bỏ Trắng và Be; đơn cũ vẫn giữ màu đã đặt); S, M, L, XL, trong đó XL tạm ngưng bán (migration 0013) |
+| 4 | Danh sách màu áo và size | Chỉ màu Đen (đã bỏ Trắng và Be; đơn cũ vẫn giữ màu đã đặt); S, M, L, XL (đã bỏ XXL), XL mở bán từ 01/10/2026; `sizes_disabled` để trống |
 | 5 | Ngân hàng và số tài khoản | Cấu hình trong Cài đặt |
 | 6 | Khuyến mãi có giảm giá vào giỏ hàng không | Khuyến mãi (FR17) vẫn chỉ là nội dung hiển thị; giảm giá thật dùng mã giảm giá và combo (FR31) |
 | 7 | Áo mẫu có giới hạn số lượng (tồn kho) không | Có (cập nhật 27/09): kho áo trơn theo màu × size (trang Kho áo, Staff/Admin) và giới hạn tùy chọn cho từng mẫu áo. Áo trong đơn chưa Hủy/Hết hạn tính là đã lấy (trừ ngay khi đặt); đơn Hủy/Hết hạn tự trả lại kho; hết hàng thì không đặt được. Để trống = không giới hạn. Migration 0012 |
@@ -479,6 +479,6 @@ Mục tiêu ra mắt theo kế hoạch ban đầu: 08/10.
 | 8b | Blindbox Hot Wheels, mã giảm giá, combo; giá mới; chỉ bán màu Đen | FR31, FR32, BR09, BR13 | Đã code, chờ kiểm thử với cơ sở dữ liệu (migration 0010) |
 | 9 | Trang chủ mới: Hero, Áo mẫu, Về chúng tôi, Ý nghĩa, Vinh danh | FR01, FR17 | Đã code (migration 0011); đã kiểm thử giao diện 390/820/1440px (thêm menu điện thoại, sửa font); chờ nội dung thật |
 | 9b | Kho áo: tồn kho áo trơn theo màu × size (trang Kho áo), giới hạn số lượng từng mẫu áo, trừ kho khi đặt hàng, trả lại khi Hủy/Hết hạn, chặn đặt khi hết hàng (web, giỏ hàng, Workshop), nhãn "Hết hàng" trên lưới Áo mẫu | §10 #7, FR02, FR06, FR16, FR27, FR28 | Đã code (migration 0012); đã kiểm thử với cơ sở dữ liệu và trên trình duyệt (trang khách, giỏ hàng); chờ kiểm thử trang Kho áo, form Workshop và bước đặt hàng (cần đăng nhập) |
-| 9c | Nâng cấp UI/UX theo góp ý thiết kế: logo và bảng màu, breadcrumb, trang Cửa hàng, bỏ Áo mẫu khỏi web, trang chủ mới (S01), combo ở Áo trơn/Thiết kế, XL bị khóa, một trạng thái trong "Đơn hàng của tôi" (S17) | FR01, FR02, FR26, FR27, FR33 | Đã code (migration 0013); đã kiểm thử giao diện 390/820/1440px; chờ chạy migration 0013 |
-| 9d | Header 2 tầng, Hero và footer theo thiết kế Figma; font Lexend + Tektur; ô tìm kiếm lọc Cửa hàng; trang Liên hệ; link TikTok trong cài đặt; đồng bộ giao diện mọi trang khách (nút bo tròn, tiêu đề trang chung, lưới 6xl); góp ý web: gộp Vinh danh vào trang Quyên góp, header "Tra cứu đơn hàng" luôn hiện, bỏ tên và nút Đăng xuất khỏi header, một nhãn trạng thái ở Tra cứu đơn hàng; đợt 2: ảnh áo thật làm mockup, vị trí/kích thước vùng in mới, popup cam kết khi thêm vào giỏ, 3 lựa chọn hiển thị khi quyên góp, mục Khuyến mãi riêng trong Admin, icon Tài khoản | FR01, FR04, FR05, FR08, FR09, FR11, FR17, FR21, FR33 | Đã code; đã kiểm thử giao diện 390/1280/1440px; chờ chạy migration 0014, 0015 |
+| 9c | Nâng cấp UI/UX theo góp ý thiết kế: logo và bảng màu, breadcrumb, trang Cửa hàng, bỏ Áo mẫu khỏi web, trang chủ mới (S01), combo ở Áo trơn/Thiết kế, XL bị khóa, một trạng thái trong "Đơn hàng của tôi" (S17) | FR01, FR02, FR26, FR27, FR33 | Đã code (migration 0013, XL không khóa); đã kiểm thử giao diện 390/820/1440px |
+| 9d | Header 2 tầng, Hero và footer theo thiết kế Figma; font Lexend + Tektur; ô tìm kiếm lọc Cửa hàng; trang Liên hệ; link TikTok trong cài đặt; đồng bộ giao diện mọi trang khách (nút bo tròn, tiêu đề trang chung, lưới 6xl); góp ý web: gộp Vinh danh vào trang Quyên góp, header "Tra cứu đơn hàng" luôn hiện, bỏ tên và nút Đăng xuất khỏi header, một nhãn trạng thái ở Tra cứu đơn hàng; đợt 2: ảnh áo thật làm mockup, vị trí/kích thước vùng in mới, popup cam kết khi thêm vào giỏ, 3 lựa chọn hiển thị khi quyên góp, mục Khuyến mãi riêng trong Admin, icon Tài khoản | FR01, FR04, FR05, FR08, FR09, FR11, FR17, FR21, FR33 | Đã code; đã kiểm thử giao diện 390/1280/1440px; đã chạy migration 0014, 0015 (01/10/2026) |
 | 10 | Hoàn thiện, kiểm thử trên tablet, deploy, ra mắt | NFR | Chưa làm |

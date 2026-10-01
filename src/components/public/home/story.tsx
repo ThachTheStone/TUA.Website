@@ -39,7 +39,7 @@ export function StorySection({ block }: { block?: ContentBlock }) {
     <section id="cau-chuyen" className="scroll-mt-(--header-h) bg-brand-cream">
       <div className="mx-auto max-w-6xl px-6 pt-12 pb-24 sm:px-8 sm:pt-16 sm:pb-32 lg:pt-20 lg:pb-40">
         {/* ── Heading ────────────────────────────────────────────────── */}
-        <h2 className="max-w-4xl font-serif text-[2.25rem] leading-[1.08] font-bold tracking-[-0.02em] text-primary sm:text-[2.75rem] sm:leading-[1.08] lg:text-[3.75rem] lg:leading-[1.05]">
+        <h2 className="max-w-4xl font-serif text-[1.875rem] leading-[1.1] font-bold tracking-[-0.02em] text-primary sm:text-[2.375rem] sm:leading-[1.08] lg:text-[3.25rem] lg:leading-[1.05]">
           {block.title || FALLBACK_TITLE}
         </h2>
 
@@ -62,7 +62,7 @@ export function StorySection({ block }: { block?: ContentBlock }) {
                 return (
                   <ul key={i} className="flex flex-col gap-4 border-l-2 border-primary/15 pl-7">
                     {piece.items.map((item, j) => (
-                      <li key={j} className="relative text-lg leading-relaxed font-medium text-foreground/90">
+                      <li key={j} className="relative text-[0.9375rem] leading-relaxed font-medium text-foreground/90">
                         <span
                           className="absolute top-[0.75em] -left-7 h-[2px] w-4 rounded-full bg-primary/60"
                           aria-hidden
@@ -75,7 +75,7 @@ export function StorySection({ block }: { block?: ContentBlock }) {
               }
               if (piece === lead) {
                 return (
-                  <p key={i} className="text-base leading-[1.85] text-foreground/75 sm:text-[1.075rem] sm:leading-[1.85]">
+                  <p key={i} className="text-[0.9375rem] leading-[1.85] text-foreground/75 sm:text-base sm:leading-[1.85]">
                     {piece.text}
                   </p>
                 );
@@ -84,14 +84,14 @@ export function StorySection({ block }: { block?: ContentBlock }) {
                 return (
                   <p
                     key={i}
-                    className="mt-6 border-t border-primary/10 pt-10 font-serif text-[1.65rem] leading-snug text-primary italic sm:text-3xl sm:leading-snug"
+                    className="mt-6 border-t border-primary/10 pt-10 font-serif text-[1.375rem] leading-snug text-primary italic sm:text-[1.625rem] sm:leading-snug"
                   >
                     {piece.text}
                   </p>
                 );
               }
               return (
-                <p key={i} className="text-base leading-[1.85] text-foreground/75 sm:text-[1.075rem] sm:leading-[1.85]">
+                <p key={i} className="text-[0.9375rem] leading-[1.85] text-foreground/75 sm:text-base sm:leading-[1.85]">
                   {piece.text}
                 </p>
               );

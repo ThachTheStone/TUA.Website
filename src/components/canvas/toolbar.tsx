@@ -49,7 +49,7 @@ export function Toolbar(props: Props) {
 
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t bg-background px-3 py-2">
-      <div className="flex gap-1" role="toolbar" aria-label="Công cụ">
+      <div className="flex flex-wrap gap-1" role="toolbar" aria-label="Công cụ">
         {TOOLS.map(({ tool: t, label, Icon }) => (
           <button
             key={t}

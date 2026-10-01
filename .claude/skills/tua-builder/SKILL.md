@@ -100,12 +100,12 @@ URLs are Vietnamese slugs without diacritics.
 - Cart: new line kind `{type: "PROTOTYPE", prototypeId, size, quantity}`; same prototype + size merges. Color comes from the prototype.
 - Checkout: server loads the prototype (must be active), uses its color and `prices.CUSTOM`, links `order_items.design_id` to the prototype's design so admin print downloads work unchanged.
 - Workshop form (Phase 5) can pick a prototype.
-- Phones (shorter screen side < 600px): `/thiet-ke` shows "Tính năng tự thiết kế cần máy tính hoặc máy tính bảng", the organizer contact from `settings.contact`, and buttons to Áo mẫu / Áo trơn instead of the canvas. Hide "Sửa thiết kế" in the cart on phones. Add the contact fields to the admin settings form.
+- ~~Phones get a help message instead of the canvas~~ Removed 01/10/2026: the canvas runs on phones too (tools wrap, side panel slides in).
 - Check plain + prototype buying, checkout, payment and account pages at 390px.
 **Done when:** on a phone the canvas is replaced by the help message, and admin publishes a prototype, a buyer orders it with a plain and a custom shirt, totals use the custom price, a deactivated prototype blocks checkout, and admin order detail downloads the prototype's print file.
 
 ### Phase 8 — Donations, Sheets, cron (FR08, FR09, FR18, FR23, FR25) ✅ code done (migration 0008, `supabase/cron.example.sql`)
-- Donation form (min from settings, default 300.000đ), donation QR using the fund account and prefix `UH`, admin confirm, donor wall and progress bar.
+- Donation form (min from settings; since 01/10/2026 effectively none, `donation_min` = 1.000đ), donation QR using the fund account and prefix `UH`, admin confirm, donor wall and progress bar.
 - `lib/sheets.ts` full-resync approach (see integrations), called after every mutation plus an admin "Đồng bộ lại" button. OrderItems sheet includes the prototype name.
 - Expire cron, plus a daily cleanup of buyer uploads older than 30 days that no live order uses (NFR06).
 **Done when:** a confirmed donation appears on the wall and in the sheet, and an old unpaid order becomes EXPIRED within 15 minutes.
@@ -141,7 +141,7 @@ URLs are Vietnamese slugs without diacritics.
 - [ ] "Quên mật khẩu" emails a reset link that works on another device and ends on /tai-khoan with the new password.
 - [ ] An unpaid order expires.
 - [ ] A workshop cash order with a scanned image.
-- [ ] A donation under 300.000đ is rejected; an anonymous donation shows "Nhà hảo tâm ẩn danh".
+- [ ] Any donation amount from 1.000đ is accepted; an anonymous donation shows "Nhà hảo tâm ẩn danh".
 - [ ] The Sheets tabs match the DB after a resync.
 - [ ] The only public upload is the canvas "Chèn ảnh" tool, and it requires login (search the code for `type="file"` outside `admin/`).
 - [ ] A rejected design blocks printing; the buyer can resubmit; uploaded photos are not reachable without a signed URL.
