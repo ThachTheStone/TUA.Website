@@ -37,6 +37,7 @@ function readSponsor(formData: FormData) {
 function refresh() {
   revalidatePath("/");
   revalidatePath("/quyen-gop");
+  revalidatePath("/vinh-danh");
   revalidatePath("/admin/nha-tai-tro");
 }
 

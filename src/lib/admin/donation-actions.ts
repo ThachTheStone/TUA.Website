@@ -17,6 +17,7 @@ function refresh() {
   revalidatePath("/admin/quyen-gop");
   revalidatePath("/admin");
   revalidatePath("/quyen-gop");
+  revalidatePath("/vinh-danh");
   revalidatePath("/");
 }
 

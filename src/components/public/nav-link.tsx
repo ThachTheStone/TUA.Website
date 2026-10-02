@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 /** A menu item stays highlighted on the pages grouped under it. */
 const SECTION_PATHS: Record<string, string[]> = {
   "/cua-hang": ["/cua-hang", "/ao-tron", "/blindbox"],
+  "/quyen-gop": ["/quyen-gop", "/vinh-danh"],
 };
 
 export function isActiveNav(href: string, pathname: string): boolean {

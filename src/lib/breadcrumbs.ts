@@ -19,6 +19,7 @@ const PAGES: Record<string, [Crumb[], string]> = {
   "/thanh-toan": [[CART], "Đặt hàng"],
   "/tra-cuu": [[], "Tra cứu đơn hàng"],
   "/quyen-gop": [[], "Quyên góp"],
+  "/vinh-danh": [[DONATE], "Vinh danh"],
   "/chinh-sach": [[], "Chính sách"],
   "/lien-he": [[], "Liên hệ"],
   "/dang-nhap": [[], "Đăng nhập"],

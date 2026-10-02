@@ -90,7 +90,7 @@ Trang chủ (màn hình S01) gồm các phần theo thứ tự:
 - Trang xem đơn bằng mã đơn + số điện thoại thống nhất tên "Tra cứu đơn hàng" (header, tiêu đề trang, breadcrumb, footer).
 - Ô tìm kiếm chuyển tới Cửa hàng (`/cua-hang?q=…`) và lọc 3 sản phẩm theo tên, mô tả và từ khóa (không phân biệt dấu).
 - Trang "Liên hệ" (`/lien-he`): khối đỏ có logo TỰA và các icon mạng xã hội; các thẻ liên hệ có logo đúng màu thương hiệu: từng người liên hệ qua Zalo (tên, phụ trách, số, nút Nhắn Zalo và Gọi), Facebook, email, TikTok (nếu có); liên kết Tra cứu đơn hàng. Toàn bộ lấy từ cài đặt (FR21).
-- Footer (nền be nhạt): logo, liên kết Về dự án, Quyên góp, Vinh danh (→ `/quyen-gop#vinh-danh`), Tra cứu đơn hàng, Liên hệ; biểu tượng Facebook/TikTok (ẩn nếu chưa nhập link trong cài đặt); Chính sách dữ liệu và điều khoản; "© <năm> TỰA – Nét Vẽ Yêu Thương". Không có chuyển ngôn ngữ vì web chỉ có tiếng Việt.
+- Footer (nền be nhạt): logo, liên kết Về dự án, Quyên góp, Vinh danh (→ `/vinh-danh`), Tra cứu đơn hàng, Liên hệ; biểu tượng Facebook/TikTok (ẩn nếu chưa nhập link trong cài đặt); Chính sách dữ liệu và điều khoản; "© <năm> TỰA – Nét Vẽ Yêu Thương". Không có chuyển ngôn ngữ vì web chỉ có tiếng Việt.
 - Mọi trang phía khách trừ trang chủ có breadcrumb (ví dụ "Trang chủ › Cửa hàng › Áo trơn") để khách biết mình đang ở đâu.
 - Trang Áo trơn có hình áo đen mặt trước/mặt sau và bảng combo ưu đãi phía dưới (giống trang Blindbox). Trang Thiết kế áo có bảng combo ưu đãi ở cột bên phải, dưới nút "Thêm vào giỏ".
 - Nhận diện: logo TỰA; bảng màu #801c1c (đỏ), #fffdeb (be nhạt), #e8dbb3 (vàng be), #7aa4c2, #5f7470; giao diện dùng chủ yếu đỏ và be nhạt. Font chữ: Lexend cho toàn bộ nội dung, Tektur cho tiêu đề lớn ở Hero. Trên các trang khách: nút bo tròn hai đầu (chữ thường, không in đậm), ô nhập cao bằng nút, tiêu đề trang màu đỏ căn thẳng với breadcrumb; trang Admin và thanh công cụ canvas giữ kiểu gọn.
@@ -151,7 +151,7 @@ Trang chủ (màn hình S01) gồm các phần theo thứ tự:
 - Hệ thống tạo Donation Code và sinh VietQR vào tài khoản quỹ (theo BR04). Quét mã là app ngân hàng tự điền số tiền và nội dung `DONATION UH0001` (chữ DONATION để tách tiền quyên góp với tiền bán áo, mã UH để Staff đối soát từng khoản).- Gửi email xác nhận khi Staff xác nhận đã nhận tiền.
 
 **FR09 – Bảng vinh danh nhà hảo tâm**
-- Không có trang riêng: Bảng vinh danh là mục "Vinh danh" (`#vinh-danh`) nằm dưới form quyên góp trên trang Quyên góp (`/quyen-gop`), tiếp theo là Nhà tài trợ. Đường dẫn cũ `/vinh-danh` chuyển về mục này.
+- Trang riêng `/vinh-danh` (từ 02/10/2026) chỉ có Bảng vinh danh: tổng tiền, thanh tiến độ, danh sách khoản đã xác nhận và Nhà tài trợ. Mọi link "Vinh danh" (footer, trang chủ, trang QR quyên góp) mở trang này. Trang Quyên góp vẫn có mục Vinh danh bên dưới form.
 - Hiển thị các khoản quyên góp đã xác nhận: tên hiển thị (hoặc "Nhà hảo tâm ẩn danh"), số tiền, lời nhắn, ngày.
 - Hiển thị tổng số tiền đã quyên góp và thanh tiến độ so với mục tiêu (Admin cấu hình).
 

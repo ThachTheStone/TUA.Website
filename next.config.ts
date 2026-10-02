@@ -54,8 +54,6 @@ const nextConfig: NextConfig = {
     return [
       { source: "/mau-ao", destination: "/cua-hang", permanent: false },
       { source: "/mau-ao/:slug", destination: "/cua-hang", permanent: false },
-      // The donor wall is now the "Vinh danh" part of the Quyên góp page.
-      { source: "/vinh-danh", destination: "/quyen-gop#vinh-danh", permanent: false },
       { source: "/admin/noi-dung/khuyen-mai", destination: "/admin/khuyen-mai", permanent: false },
     ];
   },

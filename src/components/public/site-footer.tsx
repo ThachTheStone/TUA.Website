@@ -6,7 +6,7 @@ import type { Contact } from "@/lib/settings";
 const LINKS = [
   { href: "/#cau-chuyen", label: "Về dự án" },
   { href: "/quyen-gop", label: "Quyên góp" },
-  { href: "/quyen-gop#vinh-danh", label: "Vinh danh" },
+  { href: "/vinh-danh", label: "Vinh danh" },
   { href: "/tra-cuu", label: "Tra cứu đơn hàng" },
   { href: "/lien-he", label: "Liên hệ" },
 ];

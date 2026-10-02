@@ -33,7 +33,7 @@ export default async function DonationQrPage({ params, searchParams }: Props) {
           <p className="text-lg font-semibold">Ban tổ chức đã nhận khoản quyên góp của bạn. Cảm ơn bạn rất nhiều!</p>
           {!donation.isHidden && (
             <Button asChild variant="outline">
-              <Link href="/quyen-gop#vinh-danh">Xem Bảng vinh danh</Link>
+              <Link href="/vinh-danh">Xem Bảng vinh danh</Link>
             </Button>
           )}
         </div>
@@ -84,7 +84,7 @@ export default async function DonationQrPage({ params, searchParams }: Props) {
                 ) : (
                   <>
                     Sau khi Ban tổ chức xác nhận đã nhận tiền, khoản quyên góp sẽ hiện trên{" "}
-                    <Link href="/quyen-gop#vinh-danh" className="underline underline-offset-4">
+                    <Link href="/vinh-danh" className="underline underline-offset-4">
                       Bảng vinh danh
                     </Link>
                     {donation.isPublic ? " và bạn nhận được email cảm ơn (nếu đã để lại email)" : " dưới tên “Nhà hảo tâm ẩn danh”"}.

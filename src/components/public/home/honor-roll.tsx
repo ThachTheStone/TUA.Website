@@ -24,7 +24,7 @@ export function HonorRoll({ total, goal, donations }: {
           <Link href="/quyen-gop">Quyên góp</Link>
         </Button>
         <Button asChild size="cta" variant="brand-outline">
-          <Link href="/quyen-gop#vinh-danh">Xem tất cả nhà hảo tâm</Link>
+          <Link href="/vinh-danh">Xem tất cả nhà hảo tâm</Link>
         </Button>
       </div>
     </Section>
