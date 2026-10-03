@@ -15,7 +15,8 @@ const cspDirectives = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   `img-src 'self' data: blob:${supabaseHost ? ` https://${supabaseHost}` : ""} https://img.vietqr.io`,
-  `connect-src 'self'${supabaseHost ? ` https://${supabaseHost} wss://${supabaseHost}` : ""}`,
+  // data:/blob: — checkout turns the canvas print files (data URLs) into Blobs with fetch().
+  `connect-src 'self' data: blob:${supabaseHost ? ` https://${supabaseHost} wss://${supabaseHost}` : ""}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
