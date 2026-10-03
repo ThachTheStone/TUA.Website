@@ -346,6 +346,23 @@ export function Designer(props: DesignerProps) {
           </div>
         </div>
 
+        <Toolbar
+          tool={tool}
+          onTool={setTool}
+          color={brushColor}
+          onColor={setBrushColor}
+          size={brushSize}
+          onSize={setBrushSize}
+          filled={filled}
+          onFilled={setFilled}
+          font={font}
+          onFont={setFont}
+          bold={bold}
+          onBold={setBold}
+          onInsertImage={openImagePicker}
+          inserting={inserting}
+        />
+
         <div className="flex min-h-0 flex-1 bg-neutral-200 p-4">
           <AreaStage
             key={area.key}
@@ -368,22 +385,6 @@ export function Designer(props: DesignerProps) {
           vừa vẽ để kéo, phóng to/thu nhỏ bằng khung nét đứt; chạm đúp vào chữ để sửa.
         </p>
 
-        <Toolbar
-          tool={tool}
-          onTool={setTool}
-          color={brushColor}
-          onColor={setBrushColor}
-          size={brushSize}
-          onSize={setBrushSize}
-          filled={filled}
-          onFilled={setFilled}
-          font={font}
-          onFont={setFont}
-          bold={bold}
-          onBold={setBold}
-          onInsertImage={openImagePicker}
-          inserting={inserting}
-        />
         {/* BR01: the only place a buyer can pick a file; signed-in only, checked again on the server. */}
         <input
           ref={fileRef}

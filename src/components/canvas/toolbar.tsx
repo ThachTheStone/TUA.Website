@@ -41,14 +41,14 @@ type Props = {
   inserting: boolean;
 };
 
-const TAP = "flex size-11 shrink-0 items-center justify-center rounded-md border transition-colors";
+const TAP = "flex size-10 shrink-0 items-center justify-center rounded-md border transition-colors sm:size-11";
 
 export function Toolbar(props: Props) {
   const { tool, onTool, color, onColor, size, onSize, filled, onFilled, font, onFont, bold, onBold, onInsertImage, inserting } = props;
   const isShape = tool === "rect" || tool === "ellipse";
 
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t bg-background px-3 py-2">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b bg-background px-3 py-1.5 sm:py-2">
       <div className="flex flex-wrap gap-1" role="toolbar" aria-label="Công cụ">
         {TOOLS.map(({ tool: t, label, Icon }) => (
           <button
@@ -63,18 +63,18 @@ export function Toolbar(props: Props) {
             <Icon className="size-5" />
           </button>
         ))}
-        <button
-          type="button"
-          title="Chèn ảnh hoặc sticker"
-          aria-label="Chèn ảnh hoặc sticker"
-          onClick={onInsertImage}
-          disabled={inserting}
-          className={cn(TAP, "w-auto gap-1.5 px-3 text-sm hover:bg-muted disabled:opacity-60")}
-        >
-          {inserting ? <Loader2 className="size-5 animate-spin" /> : <ImagePlus className="size-5" />}
-          <span className="hidden sm:inline">{inserting ? "Đang tải ảnh…" : "Chèn ảnh"}</span>
-        </button>
       </div>
+
+      <button
+        type="button"
+        title="Chèn ảnh hoặc sticker từ thiết bị"
+        onClick={onInsertImage}
+        disabled={inserting}
+        className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-primary sm:h-11 px-5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/85 disabled:opacity-60"
+      >
+        {inserting ? <Loader2 className="size-5 animate-spin" /> : <ImagePlus className="size-5" />}
+        {inserting ? "Đang tải ảnh…" : "Chèn ảnh"}
+      </button>
 
       {isShape && (
         <div className="flex gap-1">
@@ -141,7 +141,7 @@ export function Toolbar(props: Props) {
         <span className="w-6 text-right tabular-nums">{size}</span>
       </label>
 
-      <div className="flex flex-wrap items-center gap-1" aria-label="Bảng màu">
+      <div className="flex w-full flex-wrap items-center gap-1 sm:w-auto" aria-label="Bảng màu">
         {SWATCHES.map((hex) => (
           <button
             key={hex}
@@ -149,14 +149,14 @@ export function Toolbar(props: Props) {
             aria-label={`Màu ${hex}`}
             onClick={() => onColor(hex)}
             className={cn(
-              "size-9 rounded-full border-2 shadow-sm",
+              "size-8 rounded-full border-2 shadow-sm sm:size-9",
               color.toLowerCase() === hex ? "border-primary ring-2 ring-primary ring-offset-1" : "border-border",
             )}
             style={{ background: hex }}
           />
         ))}
         <label
-          className="relative flex size-9 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-dashed"
+          className="relative flex size-8 cursor-pointer sm:size-9 items-center justify-center overflow-hidden rounded-full border-2 border-dashed"
           title="Chọn màu khác"
         >
           <span className="size-5 rounded-full" style={{ background: color }} />
