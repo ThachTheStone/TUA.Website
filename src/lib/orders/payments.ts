@@ -9,7 +9,8 @@ import type { ActionResult } from "@/types/action";
 import type { OrderStatus, PaymentMethod, PaymentStatus } from "@/types/db";
 
 // SRS §5.2, FR14/FR15: the "Đã cọc" and "Đã thanh toán 100%" buttons.
-// The server decides every amount (hard rule 4): "Đã cọc" takes the amount staff counted,
+// The server decides every amount (hard rule 4): "Đã cọc" takes the amount staff counted
+// (buyers rarely transfer the exact deposit, so below 50% is allowed and flagged in the history),
 // "Đã thanh toán 100%" always records exactly what is still owed.
 
 export type PaymentKind = "DEPOSIT" | "FULL";
@@ -47,12 +48,12 @@ export async function confirmPayment(orderId: string, input: ConfirmPaymentInput
   }
 
   let amount: number;
+  let belowMin = false;
   if (input.kind === "DEPOSIT") {
     amount = Math.round(input.amount ?? 0);
     const paid = order.paid_amount + amount;
-    const min = minConfirmAmount(order.subtotal);
     if (!Number.isInteger(amount) || amount <= 0) return { ok: false, error: "Vui lòng nhập số tiền đã nhận" };
-    if (paid < min) return { ok: false, error: `Tiền cọc tối thiểu là ${formatVND(min)} (50% tổng đơn, BR02)` };
+    belowMin = paid < minConfirmAmount(order.subtotal);
     if (paid >= order.subtotal) {
       return { ok: false, error: 'Số tiền bằng hoặc hơn tổng đơn. Hãy dùng nút "Đã thanh toán 100%".' };
     }
@@ -72,7 +73,7 @@ export async function confirmPayment(orderId: string, input: ConfirmPaymentInput
   }
   const nextStatus: OrderStatus = status === "PAYMENT_REVIEW" ? "CONFIRMED" : status;
   const label = input.kind === "DEPOSIT" ? "Đã cọc" : "Đã thanh toán 100%";
-  const note = [`${label}: ${formatVND(amount)}`, input.note?.trim()].filter(Boolean).join(" · ");
+  const note = [`${label}: ${formatVND(amount)}`, belowMin && "dưới mức cọc 50%", input.note?.trim()].filter(Boolean).join(" · ");
 
   const { data: changed, error: rpcError } = await db.rpc("confirm_payment", {
     p_order_id: orderId,
@@ -100,7 +101,7 @@ export async function confirmPayment(orderId: string, input: ConfirmPaymentInput
 export const MISSING_RPC = "PGRST202";
 
 /**
- * FR15 "Sửa số tiền đã nhận" (Admin only, checked by the caller): replaces the total received
+ * FR14 "Sửa số tiền đã nhận" (Staff/Admin, checked by the caller): replaces the total received
  * with what the bank statement really shows. Payment status follows the new total; the old and
  * new totals and the reason go into the order history in the same RPC.
  */

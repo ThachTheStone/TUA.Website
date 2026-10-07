@@ -187,14 +187,14 @@ Trang chủ (màn hình S01) gồm các phần theo thứ tự:
 **FR14 – Chi tiết đơn và xác nhận thanh toán**
 - Xem thông tin khách, danh sách áo (áo mẫu hiển thị tên mẫu), ảnh thiết kế từng vùng in (tải file in độ phân giải cao; với áo mẫu là file in của mẫu), nội dung chuyển khoản và số tiền dự kiến.
 - Staff/Admin đối soát sao kê rồi bấm một trong hai nút:
-  - **"Đã cọc"**: dùng khi khách trả trước 50% hoặc 75%. Staff nhập số tiền thực nhận (mặc định bằng số tiền cọc của đơn); số tiền phải từ 50% tổng đơn trở lên (BR02) và nhỏ hơn tổng đơn. Trạng thái thanh toán thành Đã cọc.
+  - **"Đã cọc"**: dùng khi khách trả trước 50% hoặc 75%. Staff nhập đúng số tiền thực nhận (mặc định bằng số tiền cọc của đơn), lớn hơn 0 và nhỏ hơn tổng đơn. Khách thường không chuyển đúng chính xác, nên số dưới 50% tổng đơn vẫn được ghi nhận: màn hình cảnh báo và lịch sử ghi "dưới mức cọc 50%" (từ 07/10/2026). Trạng thái thanh toán thành Đã cọc.
   - **"Đã thanh toán 100%"**: dùng khi khách đã trả đủ. Hệ thống ghi nhận khoản còn thiếu để số đã trả bằng tổng đơn. Trạng thái thanh toán thành Đã thanh toán 100%.
 - Lần xác nhận đầu tiên chuyển trạng thái đơn từ Chờ xác nhận thanh toán sang Đã xác nhận.
 - Mỗi lần bấm ghi một khoản vào `payments` (số tiền, phương thức, người bấm, thời gian) và một dòng lịch sử.
 - Duyệt từng thiết kế custom ngay trong trang chi tiết đơn (FR29).
 - Staff có thể hủy đơn kèm lý do. Nếu khách đã chuyển tiền, đánh dấu cần hoàn tiền (BR06).
 - Mọi ô nhập số tiền (Admin và form quyên góp) nhận số lẻ đến từng đồng, không bắt buộc bội số 1.000đ (từ 07/10/2026).
-- **"Sửa số tiền đã nhận"** (chỉ Admin): dùng khi đã ghi nhận sai hoặc khách chuyển thêm. Admin nhập lại tổng số tiền thực tế đã nhận (0đ đến tổng đơn) và lý do bắt buộc. Trạng thái thanh toán tính lại theo số mới: 0đ → Chưa thanh toán, bằng tổng đơn → Đã thanh toán 100%, còn lại → Đã cọc. Chỉ dùng khi đơn ở Đã xác nhận, Đang in, Kiểm tra chất lượng, Sẵn sàng giao/nhận hoặc Đã giao. Không tạo khoản mới trong `payments`; lịch sử ghi "số cũ → số mới", người sửa, lý do.
+- **"Sửa số tiền đã nhận"** (Staff và Admin, từ 07/10/2026): dùng khi đã ghi nhận sai hoặc khách chuyển thêm. Admin nhập lại tổng số tiền thực tế đã nhận (0đ đến tổng đơn) và lý do bắt buộc. Trạng thái thanh toán tính lại theo số mới: 0đ → Chưa thanh toán, bằng tổng đơn → Đã thanh toán 100%, còn lại → Đã cọc. Chỉ dùng khi đơn ở Đã xác nhận, Đang in, Kiểm tra chất lượng, Sẵn sàng giao/nhận hoặc Đã giao. Không tạo khoản mới trong `payments`; lịch sử ghi "số cũ → số mới", người sửa, lý do.
 - **"Sửa thông tin đơn"** (Staff và Admin): sửa họ tên, SĐT, email, hình thức nhận hàng, địa chỉ hoặc địa điểm hẹn, thời gian, ghi chú khi đơn chưa Hết hạn/Đã hủy. Không sửa sản phẩm và số tiền. Lịch sử ghi các trường đã đổi (họ tên, SĐT, email, nhận hàng kèm giá trị cũ → mới). Khách tra cứu đơn bằng SĐT mới sau khi đổi.
 - Các dòng chỉnh sửa chỉ hiện trong lịch sử Admin; khách chỉ thấy các lần đổi trạng thái đơn.
 
@@ -343,7 +343,7 @@ PAYMENT_REVIEW → CONFIRMED chỉ xảy ra qua nút "Đã cọc" hoặc "Đã t
 UNPAID       → DEPOSIT_PAID | FULLY_PAID
 DEPOSIT_PAID → FULLY_PAID
 ```
-- Chỉ Staff/Admin đổi được trạng thái thanh toán, bằng các nút trên. Ngoài sơ đồ trên, Admin có thể "Sửa số tiền đã nhận" (FR14); khi đó trạng thái thanh toán được tính lại theo tổng tiền mới, kể cả lùi về Đã cọc hoặc Chưa thanh toán. Khách bấm "Tôi đã chuyển khoản" chỉ chuyển trạng thái đơn sang Chờ xác nhận thanh toán.
+- Chỉ Staff/Admin đổi được trạng thái thanh toán, bằng các nút trên. Ngoài sơ đồ trên, Staff/Admin có thể "Sửa số tiền đã nhận" (FR14); khi đó trạng thái thanh toán được tính lại theo tổng tiền mới, kể cả lùi về Đã cọc hoặc Chưa thanh toán. Khách bấm "Tôi đã chuyển khoản" chỉ chuyển trạng thái đơn sang Chờ xác nhận thanh toán.
 - Đơn Đã giao nhưng thanh toán vẫn là Đã cọc được hiển thị là "Còn nợ" trong Admin.
 
 ### 5.3. Trạng thái duyệt thiết kế (từng áo custom)
@@ -384,7 +384,7 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 ## 7. Quy tắc nghiệp vụ
 
 - **BR01:** Khách chỉ được tải ảnh lên ở một nơi: công cụ Chèn ảnh trong canvas thiết kế (FR03), và phải đăng nhập. Ảnh khách tải lên được kiểm tra định dạng và dung lượng ở server, lưu riêng tư, không bao giờ hiển thị công khai. Staff/Admin được tải ảnh trong trang quản trị: ảnh scan cho đơn Workshop, ảnh và file in của áo mẫu, ảnh nội dung và logo nhà tài trợ.
-- **BR02:** Đơn chỉ được đưa vào sản xuất khi trạng thái thanh toán là Đã cọc (tối thiểu 50% tổng đơn) hoặc Đã thanh toán 100%, do Staff/Admin xác nhận.
+- **BR02:** Đơn chỉ được đưa vào sản xuất khi trạng thái thanh toán là Đã cọc hoặc Đã thanh toán 100%, do Staff/Admin xác nhận. Mức cọc chuẩn là 50% tổng đơn; từ 07/10/2026 Staff được ghi nhận số tiền cọc thực tế thấp hơn 50% (có cảnh báo và ghi lịch sử).
 - **BR12:** Đơn chỉ được chuyển sang Đang in khi mọi áo custom trong đơn ở trạng thái Đã duyệt.
 - **BR11:** Đơn Đã cọc được phép giao; phần còn lại thu khi giao/nhận và ghi nhận bằng nút "Đã thanh toán 100%".
 - **BR03:** Khách chọn trả trước 50%, 75% hoặc 100%. Phần còn lại thanh toán khi giao hoặc nhận hàng.

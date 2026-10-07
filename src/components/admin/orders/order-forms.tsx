@@ -34,9 +34,11 @@ function NoteInput({ id }: { id: string }) {
   );
 }
 
-/** "Đã cọc": amount received, at least `min` and below `subtotal`. */
+/** "Đã cọc": the amount that really arrived, below `subtotal`. Under `min` (50%) only warns. */
 export function DepositForm({ action, defaultAmount, min, subtotal }: { action: FormAction; defaultAmount: number; min: number; subtotal: number }) {
   const { state, onSubmit, pending, formRef, key } = useAdminForm(action, "Đã ghi nhận tiền cọc");
+  const [amount, setAmount] = useState(defaultAmount);
+  const belowMin = amount > 0 && amount < min;
   return (
     <form key={key} ref={formRef} onSubmit={onSubmit} className="flex flex-col gap-3">
       <FormError state={state} />
@@ -48,10 +50,11 @@ export function DepositForm({ action, defaultAmount, min, subtotal }: { action: 
             name="amount"
             type="number"
             inputMode="numeric"
-            min={min}
+            min={1}
             max={subtotal - 1}
             step={1}
-            defaultValue={defaultAmount}
+            value={Number.isNaN(amount) ? "" : amount}
+            onChange={(e) => setAmount(e.target.valueAsNumber)}
             required
             className="h-9 w-40"
           />
@@ -61,8 +64,13 @@ export function DepositForm({ action, defaultAmount, min, subtotal }: { action: 
         <SubmitButton pending={pending}>Đã cọc</SubmitButton>
       </div>
       <p className="text-xs text-muted-foreground">
-        Tối thiểu {formatVND(min)} (50%), nhỏ hơn tổng đơn {formatVND(subtotal)}.
+        Nhập đúng số tiền khách đã chuyển, nhỏ hơn tổng đơn {formatVND(subtotal)}. Mức cọc 50% là {formatVND(min)}.
       </p>
+      {belowMin && (
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          Thấp hơn mức cọc 50% (BR02). Vẫn lưu được; lịch sử sẽ ghi &quot;dưới mức cọc 50%&quot;.
+        </p>
+      )}
     </form>
   );
 }
@@ -176,7 +184,7 @@ export function EditableCard({
 const paymentPreview = (amount: number, subtotal: number) =>
   amount <= 0 ? "Chưa thanh toán" : amount >= subtotal ? "Đã thanh toán 100%" : "Đã cọc";
 
-/** Admin: re-enter the total actually received. The server recomputes the payment status. */
+/** Staff/Admin: re-enter the total actually received. The server recomputes the payment status. */
 export function AdjustPaidForm({
   action,
   paidAmount,
@@ -229,7 +237,7 @@ export function AdjustPaidForm({
         )}
       </p>
       {valid && amount > 0 && amount < minDeposit && (
-        <p className="text-xs text-amber-700 dark:text-amber-400">Thấp hơn mức cọc tối thiểu {formatVND(minDeposit)} (50%, BR02).</p>
+        <p className="text-xs text-amber-700 dark:text-amber-400">Thấp hơn mức cọc 50% ({formatVND(minDeposit)}, BR02).</p>
       )}
       <Textarea name="reason" rows={2} maxLength={300} required placeholder="Lý do sửa (ví dụ: nhập nhầm, khách chuyển thêm…)" />
       <SubmitButton pending={pending}>Lưu số tiền</SubmitButton>

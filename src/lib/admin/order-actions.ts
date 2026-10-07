@@ -69,14 +69,14 @@ const adjustSchema = z.object({
   reason: requiredText(300, "Lý do sửa"),
 });
 
-/** "Sửa số tiền đã nhận": Admin only, replaces the total received (history keeps old → new). */
+/** "Sửa số tiền đã nhận": replaces the total received (history keeps old → new, who, why). */
 export async function adjustPaid(orderId: string, code: string, _prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  const admin = await requireRole(["ADMIN"]);
+  const staff = await requireRole();
   if (!idSchema.safeParse(orderId).success) return fail("Đơn hàng không hợp lệ");
   const parsed = adjustSchema.safeParse(readForm(formData, ["amount", "reason"]));
   if (!parsed.success) return fail(parsed.error);
 
-  const result = await adjustPaidAmount(orderId, { ...parsed.data, userId: admin.userId });
+  const result = await adjustPaidAmount(orderId, { ...parsed.data, userId: staff.userId });
   if (!result.ok) return result;
   refresh(code);
   return OK;

@@ -64,7 +64,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 
 /** FR14/FR15/FR29: everything staff needs to process one order. */
 export default async function AdminOrderPage({ params }: Props) {
-  const staff = await requireRole();
+  await requireRole();
   const { code } = await params;
   const order = await getAdminOrder(code);
   if (!order) notFound();
@@ -75,8 +75,7 @@ export default async function AdminOrderPage({ params }: Props) {
   const unapproved = customItems.filter((i) => i.approvalStatus !== "APPROVED").length;
   const next = ALLOWED[order.status];
   const steps = next.filter((s) => STEP_BUTTON[s]);
-  // "Sửa số tiền đã nhận" is Admin only; the action checks the role again (hard rule 8).
-  const canAdjustPaid = staff.profile.role === "ADMIN" && PAID_ADJUSTABLE.includes(order.status);
+  const canAdjustPaid = PAID_ADJUSTABLE.includes(order.status);
   const bind = <A extends unknown[], R>(fn: (id: string, code: string, ...rest: A) => R) => fn.bind(null, order.id, order.code);
 
   return (

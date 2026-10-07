@@ -6,7 +6,7 @@ import type { ItemType } from "@/types/db";
 export const PREPAY_PERCENTS = [50, 75, 100] as const;
 export type PrepayPercent = (typeof PREPAY_PERCENTS)[number];
 
-/** Minimum share of the subtotal that must be paid before production (BR02). */
+/** Standard deposit share (BR02). Staff may still record a smaller real transfer, with a warning. */
 export const MIN_PREPAY_PERCENT = 50;
 
 export type PricedLine = { type: ItemType; quantity: number };
@@ -29,7 +29,7 @@ export function prepayAmount(subtotal: number, percent: number): number {
   return Math.ceil((subtotal * percent) / 100 / 1000) * 1000;
 }
 
-/** Minimum paid amount for an order to be confirmed (BR02). */
+/** The standard 50% deposit (BR02); below it the admin forms warn instead of blocking. */
 export function minConfirmAmount(subtotal: number): number {
   return Math.ceil((subtotal * MIN_PREPAY_PERCENT) / 100);
 }
