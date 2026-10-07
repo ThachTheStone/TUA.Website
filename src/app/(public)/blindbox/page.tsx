@@ -9,6 +9,7 @@ import { getBlindboxStatus } from "@/lib/blindbox";
 import { listCombos } from "@/lib/discounts/queries";
 import { formatVND } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Blindbox Hot Wheels" };
 export const dynamic = "force-dynamic";
@@ -31,7 +32,8 @@ export default async function BlindboxPage() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 py-10">
-      <div className="grid gap-8 md:grid-cols-2 lg:gap-12">
+      {/* Sold out: the whole product area turns grey. */}
+      <div className={cn("grid gap-8 md:grid-cols-2 lg:gap-12", box.remaining <= 0 && "rounded-2xl bg-neutral-100 p-4 opacity-70 grayscale dark:bg-neutral-900")}>
         <div className="flex items-center justify-center overflow-hidden rounded-2xl border bg-muted p-6">
           <BlindboxArt image={box.image_url} name={box.name} className="max-w-md" />
         </div>
@@ -39,6 +41,7 @@ export default async function BlindboxPage() {
           <div className="flex flex-col gap-2">
             <h1 className="text-3xl font-bold tracking-tight">{box.name}</h1>
             <p className="text-3xl font-bold text-primary">{formatVND(box.price)}</p>
+            {box.remaining > 0 && <p className="text-lg font-semibold">Chỉ còn {box.remaining} hộp</p>}
           </div>
           {/* Buyers mix this up with the shirts; say plainly what is inside. */}
           <p className="flex items-start gap-3 rounded-xl border border-brand-sky bg-brand-sky/15 p-4 text-sm">

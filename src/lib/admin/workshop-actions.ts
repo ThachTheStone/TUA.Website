@@ -32,7 +32,8 @@ export async function checkWorkshopPromo(code: string): Promise<ActionResult<Pro
   return { ok: true, data: { id, code: key, kind, value, max_discount, min_subtotal } };
 }
 
-export async function submitWorkshopOrder(input: WorkshopOrderInput): Promise<ActionResult<{ code: string }>> {
+/** `paymentPath`: transfer orders go on to the buyer's QR page, like a website order (FR16). */
+export async function submitWorkshopOrder(input: WorkshopOrderInput): Promise<ActionResult<{ code: string; paymentPath: string | null }>> {
   const staff = await requireRole();
   const settings = await getSettings();
   if (input.method === "TRANSFER" && !isBankConfigured(settings.bank_sales)) {
@@ -54,5 +55,6 @@ export async function submitWorkshopOrder(input: WorkshopOrderInput): Promise<Ac
 
   revalidatePath("/admin/don-hang");
   revalidatePath("/admin");
-  return { ok: true, data: { code: order.code } };
+  const paymentPath = order.method === "TRANSFER" ? `/thanh-toan/${order.code}?t=${order.accessToken}` : null;
+  return { ok: true, data: { code: order.code, paymentPath } };
 }

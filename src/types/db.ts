@@ -18,6 +18,8 @@ export type PaymentStatus = "UNPAID" | "DEPOSIT_PAID" | "FULLY_PAID";
 export type ApprovalStatus = "PENDING_APPROVAL" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
 export type ItemType = "PLAIN" | "CUSTOM" | "PROTOTYPE" | "BLINDBOX";
 export type DesignSource = "CANVAS" | "SCAN" | "PROTOTYPE";
+/** FR16/FR29 (migration 0017): UPLOAD = image file, LINK = Drive link or prototype look added by staff, SELF = the buyer designs it. */
+export type CustomKind = "UPLOAD" | "LINK" | "SELF";
 export type PaymentMethod = "TRANSFER" | "CASH";
 export type DonationStatus = "PENDING" | "CONFIRMED" | "CANCELLED";
 
@@ -57,7 +59,8 @@ export interface Order {
   promo_code_id: string | null;
   /** Amount the buyer owes: items_total − discount_amount. Payments are checked against this. */
   subtotal: number;
-  prepay_percent: 50 | 75 | 100;
+  /** 0 = the buyer chose their own amount ("Số tiền khác", migration 0018). */
+  prepay_percent: 0 | 50 | 75 | 100;
   prepay_amount: number;
   paid_amount: number;
   status: OrderStatus;
@@ -100,6 +103,12 @@ export interface OrderItem {
   reject_reason: string | null;
   reviewed_by: string | null;
   reviewed_at: string | null;
+  /** CUSTOM only (migration 0017). */
+  custom_kind: CustomKind | null;
+  /** Drive link to the design, added by staff (LINK, or SELF from the Workshop). */
+  design_link: string | null;
+  /** Workshop custom shirts: the chosen print area (migration 0018). */
+  print_area: string | null;
 }
 
 /** FR27/FR28 "Áo mẫu": a ready-made design sold at the custom price (BR09). */

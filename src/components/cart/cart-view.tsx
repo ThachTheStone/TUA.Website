@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element -- inline SVG mockup */
-import { Minus, Package, Pencil, Plus, Trash2 } from "lucide-react";
+import { MessageCircle, Minus, Package, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { ShirtPreview } from "@/components/canvas/shirt-preview";
 import { TYPE_LABEL, cartProblems, findPrototype, lineColor, linePrice, variantText, type Catalog, type LineProblem } from "@/components/cart/catalog";
@@ -29,7 +29,7 @@ function CartLine({ item, catalog, problem }: { item: CartItem; catalog: Catalog
   const maxQty = left === null ? MAX_QUANTITY : Math.max(1, Math.min(MAX_QUANTITY, left));
 
   function remove() {
-    if (item.type === "CUSTOM" && !window.confirm("Xóa áo này cùng bản thiết kế khỏi giỏ hàng?")) return;
+    if (item.type === "CUSTOM" && !item.consult && !window.confirm("Xóa áo này cùng bản thiết kế khỏi giỏ hàng?")) return;
     removeItem(item.id);
   }
 
@@ -38,6 +38,13 @@ function CartLine({ item, catalog, problem }: { item: CartItem; catalog: Catalog
       <div className="w-full shrink-0 rounded-lg bg-muted/50 p-2 sm:w-56">
         {item.type === "CUSTOM" && draft ? (
           <ShirtPreview areas={draft} printAreas={catalog.printAreas} colorHex={hex} debounceMs={0} />
+        ) : item.consult ? (
+          <div className="flex flex-col items-center gap-2 py-4 text-center text-sm text-muted-foreground">
+            <img src={shirtImageUrl("front", hex)} alt="" className="w-28" />
+            <span className="inline-flex items-center gap-1.5">
+              <MessageCircle className="size-4" aria-hidden /> Thiết kế cùng TỰA qua Zalo
+            </span>
+          </div>
         ) : proto?.image ? (
           <img src={proto.image} alt={proto.name} className="mx-auto aspect-square w-40 rounded-md object-cover sm:w-full" />
         ) : isBox ? (
@@ -61,6 +68,7 @@ function CartLine({ item, catalog, problem }: { item: CartItem; catalog: Catalog
               ) : (
                 TYPE_LABEL[item.type]
               )}
+              {item.consult && " (cần tư vấn)"}
               {proto && (
                 <>
                   {": "}
@@ -74,7 +82,12 @@ function CartLine({ item, catalog, problem }: { item: CartItem; catalog: Catalog
                 : `${variantText(item, color?.label ?? colorLabel(catalog.colors, item.color))} · ${formatVND(price)}/áo`}
             </p>
             {problem && <p className="mt-1 text-sm text-destructive">{problemText(problem, item, catalog)}</p>}
-            {item.type === "CUSTOM" && !draft && (
+            {item.consult && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Sau khi bạn đặt cọc, tụi mình sẽ liên hệ qua Zalo để cùng bạn lên thiết kế.
+              </p>
+            )}
+            {item.type === "CUSTOM" && !item.consult && !draft && (
               <p className="mt-1 text-sm text-destructive">Không tìm thấy bản thiết kế. Vui lòng xóa dòng này.</p>
             )}
           </div>
@@ -152,7 +165,7 @@ export function CartView({ catalog, signedIn }: { catalog: Catalog; signedIn: bo
   }
 
   const problems = cartProblems(items, catalog);
-  const missingDesign = items.some((i) => i.type === "CUSTOM" && !i.designDraftId);
+  const missingDesign = items.some((i) => i.type === "CUSTOM" && !i.consult && !i.designDraftId);
   const blocked = problems.size > 0 || missingDesign;
   // FR31: combos apply by themselves; a promo code is entered at checkout.
   const discount = computeDiscount(items, catalog.prices, catalog.combos, null);

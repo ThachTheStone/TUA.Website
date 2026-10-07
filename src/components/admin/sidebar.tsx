@@ -40,7 +40,7 @@ const NAV: NavItem[] = [
   { href: "/admin/noi-dung", label: "Nội dung", icon: FileText, adminOnly: true },
   { href: "/admin/mau-ao", label: "Áo mẫu", icon: Shirt },
   { href: "/admin/blindbox", label: "Blindbox", icon: Package },
-  { href: "/admin/kho", label: "Kho áo", icon: Warehouse },
+  { href: "/admin/kho", label: "Kho hàng", icon: Warehouse },
   { href: "/admin/khuyen-mai", label: "Khuyến mãi", icon: Megaphone },
   { href: "/admin/giam-gia", label: "Giảm giá", icon: TicketPercent },
   { href: "/admin/nha-tai-tro", label: "Nhà tài trợ", icon: Handshake, adminOnly: true },

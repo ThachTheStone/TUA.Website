@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { OK, cleanupImage, fail, readForm, requiredText, resolveImage } from "@/lib/admin/form";
+import { blindboxSold } from "@/lib/blindbox";
 import { getSettings, updateSetting } from "@/lib/settings";
 import { requireRole } from "@/lib/supabase/auth";
 import type { ActionResult } from "@/types/action";
@@ -42,5 +43,34 @@ export async function saveBlindbox(_prev: ActionResult | null, formData: FormDat
   revalidatePath("/admin/blindbox");
   revalidatePath("/blindbox");
   revalidatePath("/");
+  return OK;
+}
+
+const remainingSchema = z.object({
+  remaining: z.coerce
+    .number({ error: "Số hộp còn lại phải là số" })
+    .int("Số hộp còn lại phải là số nguyên")
+    .min(0, "Số hộp còn lại không được âm")
+    .max(100000, "Số hộp còn lại quá lớn"),
+});
+
+/** Kho hàng: staff enter the boxes physically left; total = boxes in live orders + that number. */
+export async function saveBlindboxRemaining(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  await requireRole(["ADMIN", "STAFF"]);
+  const parsed = remainingSchema.safeParse(readForm(formData, ["remaining"]));
+  if (!parsed.success) return fail(parsed.error);
+
+  try {
+    const [current, sold] = await Promise.all([getSettings().then((s) => s.blindbox), blindboxSold()]);
+    await updateSetting("blindbox", { ...current, stock: sold + parsed.data.remaining });
+  } catch (err) {
+    console.error("[blindbox] save remaining failed", err);
+    return fail("Không lưu được số hộp còn lại. Vui lòng thử lại");
+  }
+
+  revalidatePath("/admin/kho");
+  revalidatePath("/admin/blindbox");
+  revalidatePath("/blindbox");
+  revalidatePath("/cua-hang");
   return OK;
 }

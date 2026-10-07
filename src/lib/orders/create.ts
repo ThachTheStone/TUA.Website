@@ -4,8 +4,8 @@ import { checkStock, stockRpcError } from "@/lib/inventory.server";
 import { foreignAssets } from "@/lib/design/assets.server";
 import { discountRpcError, resolveDiscount } from "@/lib/discounts/queries";
 import { collectUploadedDesign, type UploadedDesign } from "@/lib/orders/design-upload";
-import { createOrderSchema, formatPickupTime, type CreateOrderInput } from "@/lib/orders/checkout-schema";
-import { prepayAmount, unitPrice } from "@/lib/orders/pricing";
+import { createOrderSchema, formatReceiveTime, leadDaysFor, receiveTimeIssue, type CreateOrderInput } from "@/lib/orders/checkout-schema";
+import { customPrepayIssue, PREPAY_CUSTOM, prepayFor, unitPrice } from "@/lib/orders/pricing";
 import { orderablePrototypes } from "@/lib/prototypes/queries";
 import { getSettings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -27,6 +27,9 @@ export type CreatedOrder = {
   expiresAt: string;
 };
 
+/** "Cần tư vấn áo": an empty design; the print files or a Drive link come after the Zalo chat. */
+const CONSULT_DESIGN = { source: "CANVAS", canvas_json: null, preview_url: null, files: [] };
+
 /** `customerId`: the signed-in buyer placing the order (FR26). */
 export async function createWebOrder(
   input: CreateOrderInput,
@@ -35,6 +38,10 @@ export async function createWebOrder(
   const parsed = createOrderSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const { form, items, promoCode } = parsed.data;
+
+  // A custom shirt needs a week before pickup/delivery (the form checks this too).
+  const timeIssue = receiveTimeIssue(form.receive_date, form.receive_time, leadDaysFor(items));
+  if (timeIssue) return { ok: false, error: timeIssue.message };
 
   const settings = await getSettings();
   if (!isBankConfigured(settings.bank_sales)) {
@@ -64,7 +71,7 @@ export async function createWebOrder(
     if (!colorKeys.has(item.color) || !settings.sizes.includes(item.size) || settings.sizes_disabled.includes(item.size)) {
       return { ok: false, error: "Màu hoặc size trong giỏ hàng không còn được bán. Vui lòng cập nhật giỏ hàng." };
     }
-    if (item.type === "CUSTOM") {
+    if (item.type === "CUSTOM" && !item.consult) {
       if (!item.uploadId || designs.has(item.uploadId)) {
         return { ok: false, error: "Thiếu thiết kế cho áo custom" };
       }
@@ -99,7 +106,12 @@ export async function createWebOrder(
   }
 
   const { itemsTotal, discount: discountAmount, total: subtotal, note: discountNote, promo } = discount.data;
-  const prepay = prepayAmount(subtotal, form.prepay_percent);
+  // "Số tiền khác": checked against the real total (hard rule 4).
+  if (form.prepay_percent === PREPAY_CUSTOM) {
+    const problem = customPrepayIssue(form.prepay_custom ?? 0, subtotal);
+    if (problem) return { ok: false, error: problem };
+  }
+  const prepay = prepayFor(subtotal, form.prepay_percent, form.prepay_custom ?? 0);
   const expiresAt = new Date(Date.now() + settings.order_expire_hours * 3600_000).toISOString();
   const isDelivery = form.fulfillment === "DELIVERY";
 
@@ -111,7 +123,7 @@ export async function createWebOrder(
       email: form.email,
       fulfillment: form.fulfillment,
       address: isDelivery ? form.address : null,
-      preferred_time: isDelivery ? form.preferred_time || null : formatPickupTime(form.pickup_date, form.pickup_time),
+      preferred_time: formatReceiveTime(form.receive_date, form.receive_time),
       pickup_location: isDelivery ? null : form.pickup_location,
       note: form.note || null,
       items_total: itemsTotal,
@@ -131,7 +143,9 @@ export async function createWebOrder(
       size: item.size,
       quantity: item.quantity,
       unit_price: unitPrice(item.type, settings.prices), // BR09: price locked into the order
-      design: item.type === "CUSTOM" ? designs.get(item.uploadId!) : null,
+      design: item.type === "CUSTOM" ? (item.consult ? CONSULT_DESIGN : designs.get(item.uploadId!)) : null,
+      // FR29: drawn on the website = Tự thiết kế; "Cần tư vấn áo" = staff add the Drive link later.
+      custom_kind: item.type === "CUSTOM" ? (item.consult ? "LINK" : "SELF") : undefined,
       // The RPC links the prototype's current print files (and re-checks it is active).
       prototype_id: item.type === "PROTOTYPE" ? item.prototypeId : null,
     })),

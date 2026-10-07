@@ -111,6 +111,11 @@ Trang chủ (màn hình S01) gồm các phần theo thứ tự:
   - Định dạng JPG, PNG, WebP; tối đa 10MB mỗi ảnh; tối đa 10 ảnh mỗi thiết kế.
   - Ảnh được thu nhỏ trên trình duyệt về kích thước đủ in 200 DPI cho vùng in trước khi tải lên, và được lưu riêng tư (chỉ khách đó và Staff/Admin xem được).
   - Nếu ảnh quá nhỏ so với kích thước đang đặt trên áo (dưới 150 DPI khi in), hiển thị cảnh báo "Ảnh có thể bị mờ khi in".
+- **"Cần tư vấn áo"** (từ 07/10/2026): nút ở thanh trên cùng của trang Tự thiết kế, cho khách chưa nghĩ ra thiết kế. Bấm vào hiện popup "Bạn hãy cọc trước để tụi mình hỗ trợ bạn nhé" với 2 nút:
+  - **"Đồng ý"**: thêm vào giỏ một áo custom chưa có thiết kế (màu, size đang chọn, số lượng 1), rồi chuyển thẳng tới trang Đặt hàng → trang QR chuyển khoản như đặt hàng bình thường. Áo này có dạng **Link Drive / thiết kế áo mẫu** (FR29): Ban tổ chức liên hệ khách qua Zalo, rồi Staff dán link thiết kế vào đơn và duyệt trước khi in.
+  - **"Không đồng ý"**: đóng popup, ở lại trang Tự thiết kế.
+- Sản phẩm hết hàng (từ 07/10/2026): cả thẻ sản phẩm ở Cửa hàng chuyển màu xám, nhãn "Hết hàng", không có nút "Mua ngay" và không bấm vào được. Áo trơn/áo thiết kế hết hàng khi mọi màu × size đang bán đều đã hết trong Kho; Blindbox hết khi không còn hộp (trang `/blindbox` cũng xám toàn bộ khu vực sản phẩm). Size hết hàng vẫn hiện nút xám gạch ngang như trước.
+- Thẻ "Áo thiết kế" ở Cửa hàng ghi thêm: "Với những design bạn chưa nghĩ ra, tụi mình sẽ hỗ trợ cho bạn qua Zalo."
 
 **FR04 – Xem trước (Preview)**
 - Hiển thị bản vẽ áp lên mockup áo theo màu áo đã chọn, xem được cả mặt trước và mặt sau.
@@ -131,15 +136,19 @@ Trang chủ (màn hình S01) gồm các phần theo thứ tự:
 - Giỏ hàng lưu tạm trên trình duyệt (localStorage) để không mất khi tải lại trang.
 - Khi đã đăng nhập, giỏ hàng được lưu theo tài khoản (xem FR26).
 - Trên điện thoại vẫn đặt được áo custom đã thiết kế sẵn trên thiết bị khác (giỏ hàng theo tài khoản), nhưng không có nút "Sửa thiết kế".
+- Dòng áo "Cần tư vấn" (FR03) không có bản thiết kế và không có nút "Sửa thiết kế"; giỏ ghi "Sau khi bạn đặt cọc, tụi mình sẽ liên hệ qua Zalo để cùng bạn lên thiết kế."
 
 **FR07 – Đặt hàng và thanh toán trước**
 - Phải đăng nhập tài khoản Người mua mới được đặt hàng (FR26). Họ tên, SĐT, email được điền sẵn từ tài khoản.
 - Khách nhập: Họ tên, Số điện thoại, Email.
 - Khách chọn hình thức nhận hàng:
-  - **Giao hàng:** địa chỉ nhận, thời gian mong muốn nhận hàng (văn bản), ghi chú.
-  - **Nhận tại campus:** thời gian hẹn nhận (chọn ngày trên lịch và chọn giờ; phải sau thời điểm đặt hàng), địa điểm hẹn (văn bản tự do, ví dụ "sảnh tòa Alpha").
+  - **Giao hàng:** địa chỉ nhận, thời gian mong muốn nhận hàng, ghi chú.
+  - **Nhận tại campus:** địa điểm hẹn, thời gian hẹn nhận, ghi chú. "Campus" là 2 nơi thành viên TỰA học: Nhà văn hóa và Trường Đại học FPT.
+  - **Địa điểm hẹn** (từ 07/10/2026) là ô chọn: Sảnh Trống Đồng; Cổng chính thư viện; 7-Eleven ngay lối ra vào bãi giữ xe; hoặc **Địa điểm khác (tự nhập)**, ví dụ tên phòng học nếu học chung lớp. Danh sách nằm ở `src/lib/orders/pickup.ts`.
+  - **Thời gian nhận** (cả hai hình thức, từ 07/10/2026): bắt buộc chọn ngày trên lịch và giờ phút; phải sau thời điểm hiện tại. **Đơn có áo custom** (kể cả áo "Cần tư vấn"): ngày nhận phải cách ngày đặt hàng ít nhất **7 ngày** (BR14). Lưu dạng văn bản "Thứ Tư, 14/10/2026 lúc 14:30".
+  - Khi Nhận tại campus, ô ghi chú có tên "Ghi chú: slot học bạn có thể nhận hàng và bạn học ở Nhà văn hóa hay Trường Đại học FPT" (không bắt buộc, người đặt tự nhập).
 - Khách có thể nhập một mã giảm giá (FR31). Số tiền giảm hiển thị ngay; server kiểm tra lại khi tạo đơn.
-- Khách chọn mức thanh toán trước: 50% / 75% / 100% (tính trên tổng đơn sau giảm giá).
+- Khách chọn mức thanh toán trước: 50% / 75% / 100% (tính trên tổng đơn sau giảm giá), hoặc **Số tiền khác** (từ 07/10/2026): khách tự nhập số tiền, từ 50% tổng đơn (BR02) đến tổng đơn, nhận số lẻ. Server kiểm tra lại; đơn lưu `prepay_percent = 0` và số tiền trong `prepay_amount` (migration 0018). Form Workshop có nút "Khác" tương tự.
 - Khách tick đồng ý chính sách xử lý dữ liệu cá nhân.
 - Hệ thống tạo Order Code, tính tổng tiền và số tiền cần chuyển (làm tròn lên hàng nghìn), rồi sinh mã VietQR kèm số tiền và nội dung `TUA0001`.
 - Trang thanh toán hiển thị: QR, số tài khoản, tên chủ tài khoản, số tiền, nội dung chuyển khoản (có nút sao chép), thời hạn thanh toán, và nút "Tôi đã chuyển khoản".
@@ -173,6 +182,7 @@ Trang chủ (màn hình S01) gồm các phần theo thứ tự:
 - Blindbox không có màu hay size. Không đặt được quá số hộp còn lại; khi hết hàng hoặc tắt bán thì không thêm được vào giỏ.
 - Số hộp còn lại = tổng số hộp Staff/Admin nhập − số hộp trong các đơn chưa Hủy/Hết hạn. Đơn bị hủy hoặc hết hạn tự trả hộp lại kho.
 - Staff/Admin sửa tên, mô tả, ảnh, tổng số hộp và bật/tắt bán ở trang Admin "Blindbox". Giá nằm trong Cài đặt (Admin).
+- Từ 07/10/2026: còn **4 hộp** (migration 0017 đặt tổng số hộp = số hộp trong đơn chưa Hủy/Hết hạn + 4). Thẻ Blindbox ở Cửa hàng hiện nhãn "Còn N hộp", trang `/blindbox` hiện "Chỉ còn N hộp". Trang Admin "Kho hàng" (trước là "Kho áo") có mục Blindbox để Staff/Admin nhập thẳng **số hộp còn lại**; hệ thống tự cộng số hộp đang nằm trong đơn.
 
 ### 4.2. Phía Ban tổ chức
 
@@ -195,7 +205,7 @@ Trang chủ (màn hình S01) gồm các phần theo thứ tự:
 - Staff có thể hủy đơn kèm lý do. Nếu khách đã chuyển tiền, đánh dấu cần hoàn tiền (BR06).
 - Mọi ô nhập số tiền (Admin và form quyên góp) nhận số lẻ đến từng đồng, không bắt buộc bội số 1.000đ (từ 07/10/2026).
 - **"Sửa số tiền đã nhận"** (Staff và Admin, từ 07/10/2026): dùng khi đã ghi nhận sai hoặc khách chuyển thêm. Admin nhập lại tổng số tiền thực tế đã nhận (0đ đến tổng đơn) và lý do bắt buộc. Trạng thái thanh toán tính lại theo số mới: 0đ → Chưa thanh toán, bằng tổng đơn → Đã thanh toán 100%, còn lại → Đã cọc. Chỉ dùng khi đơn ở Đã xác nhận, Đang in, Kiểm tra chất lượng, Sẵn sàng giao/nhận hoặc Đã giao. Không tạo khoản mới trong `payments`; lịch sử ghi "số cũ → số mới", người sửa, lý do.
-- **"Sửa thông tin đơn"** (Staff và Admin): sửa họ tên, SĐT, email, hình thức nhận hàng, địa chỉ hoặc địa điểm hẹn, thời gian, ghi chú khi đơn chưa Hết hạn/Đã hủy. Không sửa sản phẩm và số tiền. Lịch sử ghi các trường đã đổi (họ tên, SĐT, email, nhận hàng kèm giá trị cũ → mới). Khách tra cứu đơn bằng SĐT mới sau khi đổi.
+- **"Sửa thông tin đơn"** (Staff và Admin): sửa họ tên, SĐT, email, hình thức nhận hàng, địa chỉ hoặc địa điểm hẹn (ô chọn như FR07), thời gian (chọn ngày + giờ; thời gian mới phải sau hiện tại và, với đơn có áo custom, cách ngày đặt ít nhất 7 ngày; để trống thì giữ thời gian cũ), ghi chú khi đơn chưa Hết hạn/Đã hủy. Không sửa sản phẩm và số tiền. Lịch sử ghi các trường đã đổi (họ tên, SĐT, email, nhận hàng kèm giá trị cũ → mới). Khách tra cứu đơn bằng SĐT mới sau khi đổi.
 - Các dòng chỉnh sửa chỉ hiện trong lịch sử Admin; khách chỉ thấy các lần đổi trạng thái đơn.
 
 **FR15 – Cập nhật trạng thái**
@@ -206,8 +216,15 @@ Trang chủ (màn hình S01) gồm các phần theo thứ tự:
 
 **FR16 – Tạo đơn Workshop**
 - Form nhập thông tin khách, danh sách áo, hình thức nhận, phương thức thanh toán (tiền mặt tại chỗ hoặc chuyển khoản).
-- Staff upload ảnh scan bản vẽ (JPG/PNG, tối đa 10MB mỗi ảnh) cho từng áo custom; thiết kế Workshop được tạo ở trạng thái Đã duyệt (Staff đã xem tại chỗ). Có thể chọn áo mẫu (không cần scan).
+- Mỗi áo custom có ô chọn **Dạng áo custom** (từ 07/10/2026, `order_items.custom_kind`, migration 0017):
+  - **Upload file ảnh trực tiếp**: Staff tải file ảnh (JPG/PNG, tối đa 10MB) và chọn vùng in; áo được tạo ở trạng thái Đã duyệt (Staff đã xem tại chỗ).
+  - **Link Drive / thiết kế áo mẫu**: dán link Drive của khách hoặc link thiết kế giống áo mẫu; có thể để trống và thêm sau. Có link thì Đã duyệt; chưa có thì Chờ duyệt.
+  - **Tự thiết kế**: khách tự lên thiết kế sau; lúc tạo đơn không cần file. Áo ở trạng thái Chờ duyệt cho đến khi Staff thêm link thiết kế và duyệt. Đơn đặt từ trang "Tự thiết kế" trên web cũng thuộc dạng này.
+- Mọi dạng áo custom đều bắt buộc chọn **vùng in** (từ 07/10/2026). Áo chưa có file lưu vùng in ở `order_items.print_area` (migration 0018) và trang chi tiết đơn hiện "Vùng in".
+- Có thể chọn áo mẫu (không cần file).
+- Địa điểm hẹn, thời gian nhận (chọn ngày + giờ, quy tắc 7 ngày cho áo custom) và tên ô ghi chú giống FR07.
 - Nếu khách trả tiền mặt tại chỗ, đơn được tạo thẳng ở trạng thái Đã xác nhận, với trạng thái thanh toán Đã cọc (trả từ 50% đến dưới 100%) hoặc Đã thanh toán 100%.
+- Nếu khách **chuyển khoản**, sau khi bấm "Tạo đơn Workshop" hệ thống chuyển sang trang QR chuyển khoản của đơn (giống trang thanh toán khi khách đặt trên web) để khách quét ngay.
 
 **FR17 – Quản lý nội dung (Admin)**
 - Sửa nội dung Hero (tiêu đề, câu giới thiệu, ảnh nền), Về chúng tôi, Ý nghĩa dự án, câu chuyện dự án (văn bản và ảnh), Top 5 tranh (ảnh, tên bé hoặc biệt danh, mô tả), thông tin sự kiện, khuyến mãi (tiêu đề, mô tả, ảnh, giá, thời gian hiển thị, bật/tắt). Khuyến mãi có mục riêng "Khuyến mãi" (`/admin/khuyen-mai`) trên menu Admin, cạnh "Giảm giá"; Staff cũng thêm/sửa/xóa được khuyến mãi (các nội dung khác vẫn chỉ Admin).
@@ -239,6 +256,8 @@ Trang chủ (màn hình S01) gồm các phần theo thứ tự:
 - Thiết kế Bị từ chối: khách mở lại áo đó từ trang Tài khoản trên máy tính/máy tính bảng, sửa và bấm "Gửi lại". Thiết kế mới thay thế thiết kế cũ, quay về **Chờ duyệt**. Chỉ đổi được thiết kế; loại áo, màu, size, số lượng và giá giữ nguyên.
 - Nếu không thống nhất được với khách, Staff hủy đơn kèm lý do (hoàn tiền theo BR06).
 - Mỗi lần đổi trạng thái duyệt được ghi lịch sử (ai, lúc nào, lý do). Danh sách đơn trong Admin có bộ đếm "Thiết kế chờ duyệt".
+- Áo custom dạng **Link Drive** và **Tự thiết kế** chưa có file in (áo "Cần tư vấn" trên web, áo Workshop chưa có thiết kế): trang chi tiết đơn hiện dạng áo, link thiết kế (mở tab mới) và ô **"Link Drive thiết kế"** để Staff/Admin thêm hoặc sửa link khi áo chưa được duyệt. Mỗi lần đổi link ghi vào lịch sử đơn. Chưa có link thì không có nút "Duyệt" (server cũng từ chối). Nếu áo đang Bị từ chối, lưu link mới đưa áo về Chờ duyệt. Khách không sửa được các áo này trên web (không có nút "Sửa và gửi lại thiết kế").
+- Google Sheets (tab OrderItems) có thêm cột "Dạng custom" và "Link Drive".
 
 **FR30 – Quản lý mẫu email (Admin)**
 - Trang "Mẫu email" trong Admin liệt kê mọi email hệ thống gửi (FR24): tên, mô tả khi nào gửi, trạng thái bật/tắt, lần sửa cuối (ai, lúc nào).
@@ -395,6 +414,7 @@ Trạng thái quyên góp: `PENDING` → `CONFIRMED` | `CANCELLED`.
 - **BR08:** Không giới hạn số tiền quyên góp tối thiểu (từ 01/10/2026); cài đặt `donation_min` để 1.000đ chỉ để chặn số tiền 0. Mục tiêu quyên góp hiện là 5.000.000đ (cài đặt `donation_goal`).
 - **BR09:** Giá áo trơn 89.000đ, áo custom 159.000đ, Blindbox Hot Wheels 59.000đ (từ 30/09/2026), cấu hình được trong Admin. Áo mẫu dùng giá áo custom. Giá và số tiền giảm được "chốt" vào đơn tại thời điểm đặt.
 - **BR13:** Mỗi đơn nhận một ưu đãi: hoặc một mã giảm giá, hoặc các combo, tùy cái nào có lợi hơn cho khách (FR31).
+- **BR14:** Đơn có áo custom chỉ được hẹn nhận/giao từ ngày đặt hàng + 7 ngày trở đi (thời gian thiết kế, duyệt và in). Áp dụng cho web, Workshop và khi Staff sửa thời gian (từ 07/10/2026).
 - **BR10:** Phí vận chuyển (nếu giao hàng) do khách trả trực tiếp cho đơn vị vận chuyển, không tính vào tổng đơn trên website.
 
 ---

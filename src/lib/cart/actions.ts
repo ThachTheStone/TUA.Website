@@ -20,6 +20,7 @@ const cartItemSchema = z.object({
   quantity: z.number().int().min(1).max(50),
   designDraftId: z.string().min(1).max(64).optional(),
   prototypeId: z.uuid().optional(),
+  consult: z.boolean().optional(),
 });
 
 const cartSchema = z.object({

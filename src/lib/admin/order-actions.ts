@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { z } from "zod";
 import { OK, fail, optionalText, readForm, requiredText } from "@/lib/admin/form";
-import { reviewDesign } from "@/lib/orders/approval";
+import { reviewDesign, updateDesignLink } from "@/lib/orders/approval";
+import { designLinkSchema } from "@/lib/orders/checkout-schema";
 import { notifyOrder } from "@/lib/orders/notify";
 import { orderInfoSchema, updateOrderInfo } from "@/lib/orders/edit-info";
 import { adjustPaidAmount, confirmPayment } from "@/lib/orders/payments";
@@ -87,7 +88,7 @@ export async function editOrderInfo(orderId: string, code: string, _prev: Action
   const staff = await requireRole();
   if (!idSchema.safeParse(orderId).success) return fail("Đơn hàng không hợp lệ");
   const parsed = orderInfoSchema.safeParse(
-    readForm(formData, ["customer_name", "phone", "email", "fulfillment", "address", "preferred_time", "pickup_location", "note"]),
+    readForm(formData, ["customer_name", "phone", "email", "fulfillment", "address", "receive_date", "receive_time", "pickup_location", "note"]),
   );
   if (!parsed.success) return fail(parsed.error);
 
@@ -169,6 +170,21 @@ export async function rejectDesign(itemId: string, code: string, _prev: ActionRe
   if (!result.ok) return result;
   const { orderId } = result.data;
   after(() => notifyOrder(orderId, { kind: "DESIGN_REJECTED", itemId, reason: parsed.data.reason }));
+  refresh(code);
+  return OK;
+}
+
+const linkSchema = z.object({ link: designLinkSchema });
+
+/** FR29: the Drive link of a "Link Drive" / "Tự thiết kế" custom shirt (Staff and Admin). */
+export async function setDesignLink(itemId: string, code: string, _prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const staff = await requireRole();
+  if (!idSchema.safeParse(itemId).success) return fail("Áo không hợp lệ");
+  const parsed = linkSchema.safeParse(readForm(formData, ["link"]));
+  if (!parsed.success) return fail(parsed.error);
+
+  const result = await updateDesignLink(itemId, parsed.data.link || null, staff.userId);
+  if (!result.ok) return result;
   refresh(code);
   return OK;
 }

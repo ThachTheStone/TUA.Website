@@ -30,6 +30,7 @@ export function OrderDetails({ order, editHref }: { order: OrderView; editHref?:
                 <div className="flex justify-between gap-2">
                   <span>
                     {TYPE_LABEL[item.type]}
+                    {item.customKind === "LINK" && " (thiết kế cùng TỰA)"}
                     {item.prototypeName && ` "${item.prototypeName}"`}
                     {item.type !== "BLINDBOX" && ` · ${item.colorLabel} · ${item.size}`} × {item.quantity}
                     {item.approvalLabel && (
@@ -45,7 +46,7 @@ export function OrderDetails({ order, editHref }: { order: OrderView; editHref?:
                     Thiết kế chưa được duyệt: {item.rejectReason}. Ban tổ chức sẽ liên hệ với bạn.
                   </p>
                 )}
-                {editHref && item.approvalStatus === "REJECTED" && !closed && (
+                {editHref && item.approvalStatus === "REJECTED" && item.customKind !== "LINK" && !closed && (
                   <Button asChild size="sm" variant="outline" className="self-start">
                     <Link href={editHref(item.id)}>Sửa và gửi lại thiết kế</Link>
                   </Button>

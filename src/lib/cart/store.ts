@@ -19,6 +19,8 @@ export type CartItem = {
   designDraftId?: string;
   /** PROTOTYPE only (FR27). */
   prototypeId?: string;
+  /** CUSTOM only: "Cần tư vấn áo", no design yet; TỰA designs it with the buyer over Zalo. */
+  consult?: boolean;
 };
 
 /** The design currently open in the canvas, kept so a reload doesn't lose the drawing. */
@@ -37,6 +39,8 @@ type CartState = {
   addPrototype: (input: { prototypeId: string; color: string; size: string; quantity: number }) => void;
   /** FR32: all blindboxes share one line. */
   addBlindbox: (quantity: number) => void;
+  /** "Cần tư vấn áo": a custom shirt without a design (one line per click). */
+  addConsult: (input: { color: string; size: string }) => void;
   /** Adds a custom shirt, or updates `wip.editingItemId` when the customer reopened one. */
   saveCustom: (input: { itemId: string | null; color: string; size: string; areas: DesignAreas }) => void;
   setQuantity: (itemId: string, quantity: number) => void;
@@ -120,6 +124,9 @@ export const useCart = create<CartState>()(
           }
           return { items: [...s.items, { id: newId(), type: "BLINDBOX", color: "", size: "", quantity: clampQty(quantity) }] };
         }),
+
+      addConsult: ({ color, size }) =>
+        set((s) => ({ items: [...s.items, { id: newId(), type: "CUSTOM", color, size, quantity: 1, consult: true }] })),
 
       saveCustom: ({ itemId, color, size, areas }) =>
         set((s) => {

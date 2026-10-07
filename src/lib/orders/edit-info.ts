@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { phoneSchema } from "@/lib/orders/checkout-schema";
+import { formatReceiveTime, leadDaysFor, phoneSchema, receiveTimeIssue, vietnamDate } from "@/lib/orders/checkout-schema";
 import { MISSING_RPC } from "@/lib/orders/payments";
 import { CLOSED_STATUSES, STATUS_LABEL } from "@/lib/orders/state-machine";
 import { syncSheetsLater } from "@/lib/sheets";
@@ -20,7 +20,9 @@ export const orderInfoSchema = z
     email: text(200, "Email").refine((v) => !v || z.email().safeParse(v).success, "Email không hợp lệ"),
     fulfillment: z.enum(["DELIVERY", "PICKUP"], { error: "Vui lòng chọn hình thức nhận hàng" }),
     address: text(300, "Địa chỉ"),
-    preferred_time: text(200, "Thời gian"),
+    /** Both empty = keep the stored time (older orders have free text). */
+    receive_date: z.string().trim().max(10),
+    receive_time: z.string().trim().max(5),
     pickup_location: text(200, "Địa điểm"),
     note: text(500, "Ghi chú"),
   })
@@ -29,7 +31,10 @@ export const orderInfoSchema = z
       ctx.addIssue({ code: "custom", path: ["address"], message: "Vui lòng nhập địa chỉ nhận hàng" });
     }
     if (v.fulfillment === "PICKUP" && !v.pickup_location) {
-      ctx.addIssue({ code: "custom", path: ["pickup_location"], message: "Vui lòng nhập địa điểm hẹn nhận" });
+      ctx.addIssue({ code: "custom", path: ["pickup_location"], message: "Vui lòng chọn địa điểm hẹn nhận" });
+    }
+    if (!v.receive_date !== !v.receive_time) {
+      ctx.addIssue({ code: "custom", path: ["receive_date"], message: "Vui lòng chọn cả ngày và giờ nhận hàng" });
     }
   });
 
@@ -55,8 +60,8 @@ const FIELDS: { key: keyof Stored; label: string; showValues: boolean }[] = [
   { key: "email", label: "Email", showValues: true },
   { key: "fulfillment", label: "Nhận hàng", showValues: true },
   { key: "address", label: "Địa chỉ", showValues: false },
-  { key: "pickup_location", label: "Địa điểm hẹn", showValues: false },
-  { key: "preferred_time", label: "Thời gian", showValues: false },
+  { key: "pickup_location", label: "Địa điểm hẹn", showValues: true },
+  { key: "preferred_time", label: "Thời gian", showValues: true },
   { key: "note", label: "Ghi chú", showValues: false },
 ];
 
@@ -69,7 +74,7 @@ export async function updateOrderInfo(orderId: string, info: OrderInfo, userId: 
   const db = createServiceClient();
   const { data: order, error } = await db
     .from("orders")
-    .select("status, customer_name, phone, email, fulfillment, address, preferred_time, pickup_location, note")
+    .select("status, created_at, customer_name, phone, email, fulfillment, address, preferred_time, pickup_location, note, order_items(type)")
     .eq("id", orderId)
     .maybeSingle();
   if (error) return { ok: false, error: "Không đọc được đơn hàng" };
@@ -80,6 +85,18 @@ export async function updateOrderInfo(orderId: string, info: OrderInfo, userId: 
     return { ok: false, error: `Đơn đang ở trạng thái "${STATUS_LABEL[status]}", không sửa thông tin được` };
   }
 
+  // A new time is checked like at checkout: in the future, and a week after the order date for custom shirts.
+  let preferredTime = order.preferred_time as string | null;
+  if (info.receive_date && info.receive_time) {
+    const formatted = formatReceiveTime(info.receive_date, info.receive_time);
+    if (formatted !== preferredTime) {
+      const items = (order.order_items ?? []) as { type: string }[];
+      const issue = receiveTimeIssue(info.receive_date, info.receive_time, leadDaysFor(items), vietnamDate(new Date(order.created_at)));
+      if (issue) return { ok: false, error: issue.message };
+      preferredTime = formatted;
+    }
+  }
+
   // Same shape create_order stores: only the fields of the chosen fulfillment are kept.
   const isDelivery = info.fulfillment === "DELIVERY";
   const next: Stored = {
@@ -88,7 +105,7 @@ export async function updateOrderInfo(orderId: string, info: OrderInfo, userId: 
     email: info.email || null,
     fulfillment: info.fulfillment,
     address: isDelivery ? info.address : null,
-    preferred_time: info.preferred_time || null,
+    preferred_time: preferredTime,
     pickup_location: isDelivery ? null : info.pickup_location,
     note: info.note || null,
   };

@@ -4,7 +4,7 @@ import { APPROVAL_LABEL, STATUS_LABEL, buyerStatus, type StatusTone } from "@/li
 import { getSettings, type Settings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
 import { transferContent, vietQrUrl } from "@/lib/vietqr";
-import type { ApprovalStatus, FulfillmentType, ItemType, Order, OrderStatus, PaymentStatus } from "@/types/db";
+import type { ApprovalStatus, CustomKind, FulfillmentType, ItemType, Order, OrderStatus, PaymentStatus } from "@/types/db";
 
 // Customer-facing order reads. Access needs code + phone (NFR03) or code + access token
 // (payment link). The view never includes the customer's personal details.
@@ -51,6 +51,8 @@ export type OrderView = {
     approvalStatus: ApprovalStatus | null;
     approvalLabel: string | null;
     rejectReason: string | null;
+    /** FR29: only "Tự thiết kế" shirts can be fixed on the website; others are fixed with TỰA. */
+    customKind: CustomKind | null;
   }[];
   history: { status: OrderStatus; label: string; at: string }[];
   /** Only while the order is waiting for the customer's transfer. */
@@ -88,7 +90,7 @@ async function buildView(order: OrderRow): Promise<OrderView> {
     getSettings(),
     db
       .from("order_items")
-      .select("id, type, color, size, quantity, unit_price, approval_status, reject_reason, prototypes(name)")
+      .select("id, type, color, size, quantity, unit_price, approval_status, reject_reason, custom_kind, prototypes(name)")
       .eq("order_id", order.id)
       .order("id"),
     db
@@ -127,6 +129,7 @@ async function buildView(order: OrderRow): Promise<OrderView> {
       approvalStatus: i.approval_status,
       approvalLabel: i.approval_status ? APPROVAL_LABEL[i.approval_status as ApprovalStatus] : null,
       rejectReason: i.approval_status === "REJECTED" ? i.reject_reason : null,
+      customKind: (i.custom_kind as CustomKind | null) ?? null,
     })),
     // Staff edits (from = to) are internal; the buyer sees status changes only.
     history: (history.data ?? []).filter((h) => h.from_status !== h.to_status).map((h) => ({

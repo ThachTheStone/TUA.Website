@@ -5,8 +5,11 @@ import { FormError, SubmitButton, useAdminForm, type FormAction } from "@/compon
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PickupLocationField } from "@/components/order/pickup-location";
 import { Textarea } from "@/components/ui/textarea";
 import { formatVND } from "@/lib/format";
+import { parseReceiveTime } from "@/lib/orders/checkout-schema";
+import { PICKUP_NOTE_LABEL, PICKUP_NOTE_PLACEHOLDER } from "@/lib/orders/pickup";
 
 // Client forms on the admin order detail page (FR14, FR15, FR29). The server re-checks
 // every amount; the hints here are for staff only.
@@ -129,6 +132,31 @@ export function RejectDesignForm({ action, id }: { action: FormAction; id: strin
         placeholder="Lý do từ chối (khách sẽ thấy trong tài khoản và email)"
       />
       <SubmitButton pending={pending}>Từ chối</SubmitButton>
+    </form>
+  );
+}
+
+/** FR29: paste or change the Drive link of a custom shirt designed outside the website. */
+export function DesignLinkForm({ action, id, link }: { action: FormAction; id: string; link: string | null }) {
+  const { state, onSubmit, pending, formRef, key } = useAdminForm(action, "Đã lưu link thiết kế");
+  return (
+    <form key={key} ref={formRef} onSubmit={onSubmit} className="flex flex-col gap-2">
+      <FormError state={state} />
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="flex min-w-56 flex-1 flex-col gap-1 text-xs text-muted-foreground" htmlFor={`link-${id}`}>
+          Link Drive thiết kế
+          <Input
+            id={`link-${id}`}
+            name="link"
+            type="url"
+            defaultValue={link ?? ""}
+            maxLength={500}
+            placeholder="https://drive.google.com/…"
+            className="h-9"
+          />
+        </label>
+        <SubmitButton pending={pending}>{link ? "Lưu link" : "Thêm link"}</SubmitButton>
+      </div>
     </form>
   );
 }
@@ -268,7 +296,9 @@ function InfoField({ id, label, children }: { id: string; label: string; childre
 }
 
 /** Staff/Admin: buyer contact and delivery details. Items and money are not editable here. */
-export function OrderInfoForm({ action, values }: { action: FormAction; values: OrderInfoValues }) {
+/** `minDate`: earliest date allowed (a week after the order date when it has a custom shirt). */
+export function OrderInfoForm({ action, values, minDate }: { action: FormAction; values: OrderInfoValues; minDate: string }) {
+  const picked = parseReceiveTime(values.preferred_time);
   const { state, onSubmit, pending, formRef, key } = useAdminForm(action, "Đã lưu thông tin đơn");
   const [fulfillment, setFulfillment] = useState(values.fulfillment);
   useCloseOnSuccess(state?.ok);
@@ -302,14 +332,27 @@ export function OrderInfoForm({ action, values }: { action: FormAction; values: 
         </InfoField>
       ) : (
         <InfoField id="info-location" label="Địa điểm hẹn">
-          <Input id="info-location" name="pickup_location" defaultValue={values.pickup_location ?? ""} maxLength={200} required className="h-9" />
+          <PickupLocationField id="info-location" name="pickup_location" defaultValue={values.pickup_location ?? ""} />
         </InfoField>
       )}
-      <InfoField id="info-time" label="Thời gian (không bắt buộc)">
-        <Input id="info-time" name="preferred_time" defaultValue={values.preferred_time ?? ""} maxLength={200} className="h-9" />
+      <InfoField id="info-time" label={fulfillment === "PICKUP" ? "Thời gian hẹn nhận" : "Thời gian nhận hàng"}>
+        <div className="grid grid-cols-[1fr_7rem] gap-2">
+          <Input id="info-time" name="receive_date" type="date" min={minDate} defaultValue={picked?.date ?? ""} aria-label="Ngày nhận hàng" className="h-9" />
+          <Input name="receive_time" type="time" step={300} defaultValue={picked?.time ?? ""} aria-label="Giờ nhận hàng" className="h-9" />
+        </div>
+        {!picked && values.preferred_time && (
+          <p className="text-xs text-muted-foreground">Hiện tại: {values.preferred_time}. Để trống nếu giữ nguyên.</p>
+        )}
       </InfoField>
-      <InfoField id="info-note" label="Ghi chú (không bắt buộc)">
-        <Textarea id="info-note" name="note" rows={2} defaultValue={values.note ?? ""} maxLength={500} />
+      <InfoField id="info-note" label={fulfillment === "PICKUP" ? `${PICKUP_NOTE_LABEL} (không bắt buộc)` : "Ghi chú (không bắt buộc)"}>
+        <Textarea
+          id="info-note"
+          name="note"
+          rows={2}
+          defaultValue={values.note ?? ""}
+          maxLength={500}
+          placeholder={fulfillment === "PICKUP" ? PICKUP_NOTE_PLACEHOLDER : undefined}
+        />
       </InfoField>
       <p className="text-xs text-muted-foreground">Khách tra cứu đơn bằng mã đơn và số điện thoại, nên báo khách nếu đổi số.</p>
       <SubmitButton pending={pending}>Lưu thông tin</SubmitButton>

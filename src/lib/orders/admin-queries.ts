@@ -4,17 +4,7 @@ import { signedAssetUrls } from "@/lib/design/assets.server";
 import { colorLabel } from "@/lib/format";
 import { getSettings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
-import type {
-  ApprovalStatus,
-  DesignSource,
-  FulfillmentType,
-  ItemType,
-  Order,
-  OrderSource,
-  OrderStatus,
-  PaymentMethod,
-  PaymentStatus,
-} from "@/types/db";
+import type { ApprovalStatus, CustomKind, DesignSource, FulfillmentType, ItemType, Order, OrderSource, OrderStatus, PaymentMethod, PaymentStatus } from "@/types/db";
 
 // Staff-side order reads (FR13, FR14, FR29). Callers must have passed requireRole().
 
@@ -122,6 +112,11 @@ export type AdminOrderItem = {
   reviewedBy: string | null;
   reviewedAt: string | null;
   designSource: DesignSource | null;
+  /** CUSTOM only (FR16/FR29). */
+  customKind: CustomKind | null;
+  designLink: string | null;
+  /** Print area chosen at the Workshop for a shirt without a file yet (label). */
+  printAreaLabel: string | null;
   previewUrl: string | null;
   files: DesignFileView[];
   /** Original photos/stickers the buyer uploaded for this design (FR29 review). */
@@ -155,6 +150,9 @@ type ItemRow = {
   reject_reason: string | null;
   reviewed_by: string | null;
   reviewed_at: string | null;
+  custom_kind: CustomKind | null;
+  design_link: string | null;
+  print_area: string | null;
   designs: { source: DesignSource; preview_url: string | null; canvas_json: { assets?: string[] } | null; design_files: { area: string; file_path: string; width_px: number | null; height_px: number | null }[] } | null;
 };
 
@@ -179,7 +177,7 @@ export async function getAdminOrder(code: string): Promise<AdminOrder | null> {
     db
       .from("order_items")
       .select(
-        "id, type, color, size, quantity, unit_price, approval_status, reject_reason, reviewed_by, reviewed_at, prototypes(name, slug, image_urls), designs(source, preview_url, canvas_json, design_files(area, file_path, width_px, height_px))",
+        "id, type, color, size, quantity, unit_price, approval_status, reject_reason, reviewed_by, reviewed_at, custom_kind, design_link, print_area, prototypes(name, slug, image_urls), designs(source, preview_url, canvas_json, design_files(area, file_path, width_px, height_px))",
       )
       .eq("order_id", order.id)
       .order("id"),
@@ -231,6 +229,9 @@ export async function getAdminOrder(code: string): Promise<AdminOrder | null> {
         reviewedBy: nameOf(i.reviewed_by),
         reviewedAt: i.reviewed_at,
         designSource: design?.source ?? null,
+        customKind: i.custom_kind,
+        designLink: i.design_link,
+        printAreaLabel: i.print_area ? areaLabel(i.print_area) : null,
         assetUrls: (design?.canvas_json?.assets ?? []).flatMap((id) => (assetUrlById[id] ? [assetUrlById[id]] : [])),
         previewUrl: design?.preview_url ? await signedUrl(bucket, design.preview_url) : null,
         files: design

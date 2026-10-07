@@ -1,7 +1,8 @@
 "use client";
 
-import { Eraser, Loader2, PanelRight, Printer, Redo2, Send, ShoppingCart, Undo2, X } from "lucide-react";
+import { Eraser, Loader2, MessageCircle, PanelRight, Printer, Redo2, Send, ShoppingCart, Undo2, X } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AreaStage, type Tool } from "@/components/canvas/area-stage";
@@ -138,9 +139,13 @@ export function Designer(props: DesignerProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   /** FR05 content pledge, asked in a popup when adding to the cart (or resubmitting). */
   const confirmRef = useRef<HTMLDialogElement>(null);
+  /** "Cần tư vấn áo": deposit first, then TỰA designs it with the buyer over Zalo. */
+  const consultRef = useRef<HTMLDialogElement>(null);
+  const router = useRouter();
   const resubmit = props.resubmit;
 
   const saveCustom = useCart((s) => s.saveCustom);
+  const addConsult = useCart((s) => s.addConsult);
   const cart = useCart((s) => s.items);
   const setWip = useCart((s) => s.setWip);
 
@@ -273,6 +278,17 @@ export function Designer(props: DesignerProps) {
     props.onSaved();
   }
 
+  /** "Đồng ý": a custom shirt without design goes to the cart, then straight to checkout and the QR. */
+  function acceptConsult() {
+    if (props.stock) {
+      const problem = addToCartProblem(cart, props.stock, { color: shirtColor, size, quantity: 1 });
+      if (problem) return toast.error(problem);
+    }
+    consultRef.current?.close();
+    addConsult({ color: shirtColor, size });
+    router.push("/thanh-toan");
+  }
+
   function openConfirm() {
     if (!hasContent) return;
     setAgreed(false);
@@ -330,7 +346,18 @@ export function Designer(props: DesignerProps) {
               </button>
             ))}
           </div>
-          <div className="ml-auto flex gap-1">
+          <div className="ml-auto flex flex-wrap justify-end gap-1">
+            {!resubmit && !editingItemId && (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 border-primary text-primary"
+                onClick={() => consultRef.current?.showModal()}
+                title="Chưa nghĩ ra thiết kế? Tụi mình hỗ trợ bạn qua Zalo"
+              >
+                <MessageCircle /> Cần tư vấn áo
+              </Button>
+            )}
             <Button type="button" variant="outline" size="icon" className="size-11" onClick={() => undo(area.key)} disabled={!canUndo(area.key)} aria-label="Hoàn tác" title="Hoàn tác">
               <Undo2 />
             </Button>
@@ -536,6 +563,32 @@ export function Designer(props: DesignerProps) {
           <Button type="button" size="cta" disabled={!agreed} onClick={confirmAndSave}>
             {resubmit ? <Send /> : <ShoppingCart />}
             {resubmit ? "Gửi lại thiết kế" : editingItemId ? "Cập nhật giỏ hàng" : "Thêm vào giỏ"}
+          </Button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog
+      ref={consultRef}
+      aria-labelledby="consult-title"
+      className="m-auto w-[min(30rem,calc(100vw-2rem))] rounded-3xl border bg-card p-0 text-foreground shadow-2xl backdrop:bg-black/50"
+    >
+      <div className="flex flex-col gap-4 p-6">
+        <h2 id="consult-title" className="text-lg font-bold">
+          Cần tư vấn áo
+        </h2>
+        <p className="text-base font-medium">Bạn hãy cọc trước để tụi mình hỗ trợ bạn nhé.</p>
+        <p className="text-sm text-muted-foreground">
+          Sau khi bạn đặt cọc, tụi mình sẽ liên hệ qua Zalo để cùng bạn lên thiết kế. Áo{" "}
+          <strong className="text-foreground">{colors.find((c) => c.key === shirtColor)?.label ?? shirtColor}</strong> · size{" "}
+          <strong className="text-foreground">{size}</strong> · {formatVND(price)}.
+        </p>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <Button type="button" variant="brand-outline" size="cta" onClick={() => consultRef.current?.close()}>
+            Không đồng ý
+          </Button>
+          <Button type="button" size="cta" onClick={acceptConsult}>
+            Đồng ý
           </Button>
         </div>
       </div>

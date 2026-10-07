@@ -45,7 +45,8 @@ export async function uploadCartDesigns(
   catalog: Catalog,
   onProgress: (p: SubmitProgress) => void,
 ): Promise<Map<string, string>> {
-  const custom = items.filter((i) => i.type === "CUSTOM");
+  // "Cần tư vấn áo" lines have no design to upload yet.
+  const custom = items.filter((i) => i.type === "CUSTOM" && !i.consult);
   const uploads = new Map<string, string>();
 
   for (const [index, item] of custom.entries()) {

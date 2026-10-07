@@ -6,6 +6,8 @@ import { PageHeader } from "@/components/public/page-header";
 import { BlindboxArt, DesignedShirtArt, ShirtArt } from "@/components/public/shop/product-art";
 import { ProductCard } from "@/components/public/shop/product-card";
 import { getBlindboxStatus } from "@/lib/blindbox";
+import { shirtsLeft } from "@/lib/inventory";
+import { getShirtStock } from "@/lib/inventory.server";
 import { listCombos } from "@/lib/discounts/queries";
 import { matchesSearch } from "@/lib/search";
 import { getSettings } from "@/lib/settings";
@@ -20,16 +22,22 @@ type Product = { card: ComponentProps<typeof ProductCard>; keywords: string };
 
 /** The three products on sale online: plain shirt, custom shirt and the Hot Wheels blindbox. `?q=` comes from the header search. */
 export default async function ShopPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
-  const [settings, box, combos, params] = await Promise.all([
+  const [settings, box, combos, params, stock] = await Promise.all([
     getSettings(),
     getBlindboxStatus(),
     listCombos({ liveOnly: true }),
     searchParams,
+    getShirtStock(),
   ]);
+  // Shirts are sold out when every colour × size on sale is tracked and at 0.
+  const sizesOnSale = settings.sizes.filter((s) => !settings.sizes_disabled.includes(s));
+  const shirtsSoldOut =
+    sizesOnSale.length > 0 &&
+    settings.colors.every((c) => sizesOnSale.every((s) => (shirtsLeft(stock, c.key, s) ?? 1) <= 0));
   const q = (Array.isArray(params.q) ? params.q[0] : params.q ?? "").trim().slice(0, 100);
   const shirt = settings.colors[0];
   const colorNames = settings.colors.map((c) => c.label.toLowerCase()).join(", ");
-  const boxBadge = !box.is_active ? "Sắp mở bán" : box.remaining <= 0 ? "Hết hàng" : undefined;
+  const boxBadge = !box.is_active ? "Sắp mở bán" : `Còn ${box.remaining} hộp`;
 
   const products: Product[] = [
     {
@@ -38,6 +46,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
         name: "Áo trơn",
         description: `Áo thun màu ${colorNames}, không in hình. Chọn size và số lượng là xong.`,
         price: settings.prices.PLAIN,
+        soldOut: shirtsSoldOut,
         art: <ShirtArt hex={shirt.hex} className="max-w-64" />,
       },
       keywords: "áo thun basic",
@@ -47,8 +56,9 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
         href: "/thiet-ke",
         name: "Áo thiết kế",
         description:
-          "Tự vẽ, viết chữ hoặc chèn ảnh lên áo ngay trên web. Ban tổ chức duyệt thiết kế trước khi in. Cần máy tính hoặc máy tính bảng.",
+          "Tự vẽ, viết chữ hoặc chèn ảnh lên áo ngay trên web. Ban tổ chức duyệt thiết kế trước khi in. Với những design bạn chưa nghĩ ra, tụi mình sẽ hỗ trợ cho bạn qua Zalo.",
         price: settings.prices.CUSTOM,
+        soldOut: shirtsSoldOut,
         badge: "Tự thiết kế",
         art: <DesignedShirtArt hex={shirt.hex} className="max-w-64" />,
       },
@@ -63,6 +73,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
         price: box.price,
         badge: boxBadge,
         disabled: !box.is_active,
+        soldOut: box.is_active && box.remaining <= 0,
         art: <BlindboxArt image={box.image_url} name={box.name} className="max-w-64" />,
       },
       keywords: "blindbox blind box hot wheels quà",

@@ -25,6 +25,7 @@ import {
 } from "@/lib/admin/order-actions";
 import { formatDate, formatVND } from "@/lib/format";
 import { getAdminOrder } from "@/lib/orders/admin-queries";
+import { CUSTOM_LEAD_DAYS, addDays, todayInVietnam, vietnamDate } from "@/lib/orders/checkout-schema";
 import { minConfirmAmount } from "@/lib/orders/pricing";
 import { ALLOWED, CLOSED_STATUSES, PAID_ADJUSTABLE } from "@/lib/orders/state-machine";
 import { requireRole } from "@/lib/supabase/auth";
@@ -76,6 +77,10 @@ export default async function AdminOrderPage({ params }: Props) {
   const next = ALLOWED[order.status];
   const steps = next.filter((s) => STEP_BUTTON[s]);
   const canAdjustPaid = PAID_ADJUSTABLE.includes(order.status);
+  // "Sửa thông tin đơn": a new pickup/delivery date follows the checkout rule (custom = a week after ordering).
+  const leadMin = customItems.length ? addDays(vietnamDate(new Date(order.created_at)), CUSTOM_LEAD_DAYS) : "";
+  const today = todayInVietnam();
+  const infoMinDate = leadMin > today ? leadMin : today;
   const bind = <A extends unknown[], R>(fn: (id: string, code: string, ...rest: A) => R) => fn.bind(null, order.id, order.code);
 
   return (
@@ -119,6 +124,7 @@ export default async function AdminOrderPage({ params }: Props) {
                       pickup_location: order.pickup_location,
                       note: order.note,
                     }}
+                    minDate={infoMinDate}
                   />
                 )
               }
@@ -155,7 +161,10 @@ export default async function AdminOrderPage({ params }: Props) {
                 </>
               )}
               <Row label="Tổng đơn" value={formatVND(order.subtotal)} />
-              <Row label={`Khách chọn trả trước (${order.prepay_percent}%)`} value={formatVND(order.prepay_amount)} />
+              <Row
+                label={`Khách chọn trả trước (${order.prepay_percent ? `${order.prepay_percent}%` : "số tiền khác"})`}
+                value={formatVND(order.prepay_amount)}
+              />
               <Row label="Đã nhận" value={formatVND(order.paid_amount)} />
               <Row label="Còn lại" value={formatVND(remaining)} />
               <Row label="Nội dung chuyển khoản" value={<code>{transferContent(order.code)}</code>} />

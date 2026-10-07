@@ -4,10 +4,11 @@ import { auth, sheets as sheetsApi, type sheets_v4 } from "@googleapis/sheets";
 import { TYPE_LABEL } from "@/components/cart/catalog";
 import { siteUrl } from "@/lib/email";
 import { colorLabel, formatDate } from "@/lib/format";
+import { CUSTOM_KIND_LABEL } from "@/lib/orders/pickup";
 import { APPROVAL_LABEL, PAYMENT_LABEL, STATUS_LABEL } from "@/lib/orders/state-machine";
 import { getSettings } from "@/lib/settings";
 import { createServiceClient } from "@/lib/supabase/server";
-import type { ApprovalStatus, DonationStatus, ItemType, Order, RefundStatus } from "@/types/db";
+import type { ApprovalStatus, CustomKind, DonationStatus, ItemType, Order, RefundStatus } from "@/types/db";
 
 // FR23: Google Sheets is a read-only mirror of the database. Every sync rewrites the three
 // tabs from scratch (simple and idempotent at this size). Hard rule 7: a failed sync is logged
@@ -70,6 +71,8 @@ type ItemRow = {
   quantity: number;
   unit_price: number;
   approval_status: ApprovalStatus | null;
+  custom_kind: CustomKind | null;
+  design_link: string | null;
   orders: { code: string } | null;
   prototypes: { name: string } | null;
 };
@@ -96,7 +99,7 @@ async function buildTabs(): Promise<Tab[]> {
     ),
     selectAll<ItemRow>(
       "order_items",
-      "id, type, color, size, quantity, unit_price, approval_status, orders(code), prototypes(name)",
+      "id, type, color, size, quantity, unit_price, approval_status, custom_kind, design_link, orders(code), prototypes(name)",
       "id",
     ),
     selectAll<DonationRow>("donations", "code, display_name, contact, amount, message, is_public, is_hidden, status, created_at", "created_at"),
@@ -125,7 +128,7 @@ async function buildTabs(): Promise<Tab[]> {
         o.discount_amount,
         o.discount_note ?? "",
         o.subtotal,
-        o.prepay_percent,
+        o.prepay_percent || "Số tiền khác",
         o.paid_amount,
         Math.max(0, o.subtotal - o.paid_amount),
         STATUS_LABEL[o.status],
@@ -136,7 +139,7 @@ async function buildTabs(): Promise<Tab[]> {
     },
     {
       name: "OrderItems",
-      header: ["Mã đơn", "Loại", "Áo mẫu", "Màu", "Size", "SL", "Đơn giá", "Thành tiền", "Duyệt thiết kế", "Link thiết kế"],
+      header: ["Mã đơn", "Loại", "Áo mẫu", "Màu", "Size", "SL", "Đơn giá", "Thành tiền", "Duyệt thiết kế", "Link thiết kế", "Dạng custom", "Link Drive"],
       rows: items.map((i) => {
         const code = i.orders?.code ?? "";
         return [
@@ -151,6 +154,8 @@ async function buildTabs(): Promise<Tab[]> {
           i.approval_status ? APPROVAL_LABEL[i.approval_status] : "",
           // Admin page (staff login required), never a raw storage URL.
           i.type === "PLAIN" || i.type === "BLINDBOX" || !code ? "" : siteUrl(`/admin/don-hang/${code}`),
+          i.custom_kind ? CUSTOM_KIND_LABEL[i.custom_kind] : "",
+          i.design_link ?? "",
         ];
       }),
     },

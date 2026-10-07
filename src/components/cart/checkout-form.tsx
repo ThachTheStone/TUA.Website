@@ -4,9 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useRef, useState } from "react";
+import { useForm, type Resolver } from "react-hook-form";
 import { TYPE_LABEL, findPrototype, linePrice, cartProblems, type Catalog } from "@/components/cart/catalog";
+import { PickupLocationPicker } from "@/components/order/pickup-location";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,13 +19,16 @@ import { useHydrated } from "@/lib/cart/use-hydrated";
 import { colorLabel, formatVND } from "@/lib/format";
 import { checkPromoCode, createOrder } from "@/lib/orders/actions";
 import {
-  checkoutFormSchema,
+  addDays,
+  leadDaysFor,
+  makeCheckoutFormSchema,
   type CheckoutForm as CheckoutValues,
   type CheckoutFormInput,
   todayInVietnam,
 } from "@/lib/orders/checkout-schema";
 import { computeDiscount, promoSummary, type PromoRule } from "@/lib/orders/discounts";
-import { PREPAY_PERCENTS, prepayAmount } from "@/lib/orders/pricing";
+import { PICKUP_NOTE_LABEL, PICKUP_NOTE_PLACEHOLDER } from "@/lib/orders/pickup";
+import { PREPAY_CUSTOM, PREPAY_PERCENTS, minConfirmAmount, prepayAmount, prepayFor } from "@/lib/orders/pricing";
 import { cn } from "@/lib/utils";
 
 function FieldError({ message }: { message?: string }) {
@@ -54,24 +58,33 @@ export function CheckoutForm({ catalog, contact }: { catalog: Catalog; contact: 
   const [codeError, setCodeError] = useState<string | null>(null);
   const [checkingCode, setCheckingCode] = useState(false);
 
+  // A custom shirt needs a week before pickup/delivery; the cart can change, so read it at validation time.
+  const leadDays = leadDaysFor(items);
+  const leadRef = useRef(leadDays);
+  leadRef.current = leadDays;
+  const subtotalRef = useRef<number | undefined>(undefined);
+  const resolver: Resolver<CheckoutFormInput, unknown, CheckoutValues> = (values, context, options) =>
+    zodResolver(makeCheckoutFormSchema(leadRef.current, subtotalRef.current))(values, context, options);
+
   const form = useForm<CheckoutFormInput, unknown, CheckoutValues>({
-    resolver: zodResolver(checkoutFormSchema),
+    resolver,
     defaultValues: {
       ...contact,
       fulfillment: "PICKUP",
       address: "",
-      preferred_time: "",
-      pickup_date: "",
-      pickup_time: "",
+      receive_date: "",
+      receive_time: "",
       pickup_location: "",
       note: "",
       prepay_percent: 50,
       consent: false,
     },
   });
-  const { register, handleSubmit, watch, formState } = form;
+  const { register, handleSubmit, watch, setValue, formState } = form;
   const errors = formState.errors;
   const fulfillment = watch("fulfillment");
+  const pickupLocation = watch("pickup_location");
+  const minDate = addDays(todayInVietnam(), leadDays);
   const percent = Number(watch("prepay_percent"));
 
   if (!hydrated) return <p className="py-12 text-center text-muted-foreground">Đang tải…</p>;
@@ -98,6 +111,9 @@ export function CheckoutForm({ catalog, contact }: { catalog: Catalog; contact: 
 
   const discount = computeDiscount(items, catalog.prices, catalog.combos, promo);
   const subtotal = discount.total;
+  subtotalRef.current = subtotal;
+  const customAmount = Number(watch("prepay_custom")) || 0;
+  const prepayNow = prepayFor(subtotal, percent, customAmount);
   const submitting = progress !== null;
 
   async function applyCode() {
@@ -134,6 +150,7 @@ export function CheckoutForm({ catalog, contact }: { catalog: Catalog; contact: 
           quantity: i.quantity,
           uploadId: uploads.get(i.id),
           prototypeId: i.type === "PROTOTYPE" ? i.prototypeId : undefined,
+          consult: i.type === "CUSTOM" && i.consult ? true : undefined,
         })),
         promoCode: promo?.code,
       });
@@ -189,53 +206,73 @@ export function CheckoutForm({ catalog, contact }: { catalog: Catalog; contact: 
             </label>
           </div>
 
-          {fulfillment === "DELIVERY" ? (
-            <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {fulfillment === "DELIVERY" ? (
               <div className="flex flex-col gap-2">
                 <Label htmlFor="address">Địa chỉ nhận hàng</Label>
                 <Textarea id="address" rows={2} autoComplete="street-address" {...register("address")} />
                 <FieldError message={errors.address?.message} />
               </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="preferred_time">Thời gian mong muốn nhận hàng (không bắt buộc)</Label>
-                <Input id="preferred_time" placeholder="Ví dụ: buổi tối các ngày trong tuần" {...register("preferred_time")} />
-                <FieldError message={errors.preferred_time?.message} />
-              </div>
-            </>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <fieldset className="flex flex-col gap-2">
-                <legend className="mb-2 text-sm font-medium">Thời gian hẹn nhận</legend>
-                <div className="grid grid-cols-[1fr_8rem] gap-2">
-                  <Input
-                    id="pickup_date"
-                    type="date"
-                    aria-label="Ngày hẹn nhận"
-                    min={todayInVietnam()}
-                    className="h-11"
-                    {...register("pickup_date")}
-                  />
-                  <Input id="pickup_time" type="time" aria-label="Giờ hẹn nhận" step={300} className="h-11" {...register("pickup_time")} />
-                </div>
-                <FieldError message={errors.pickup_date?.message ?? errors.pickup_time?.message} />
-              </fieldset>
+            ) : (
               <div className="flex flex-col gap-2">
                 <Label htmlFor="pickup_location">Địa điểm hẹn</Label>
-                <Input id="pickup_location" placeholder="Ví dụ: sảnh tòa Alpha" {...register("pickup_location")} />
+                <PickupLocationPicker
+                  id="pickup_location"
+                  value={pickupLocation}
+                  onChange={(v) => setValue("pickup_location", v, { shouldValidate: formState.isSubmitted })}
+                  invalid={!!errors.pickup_location}
+                />
                 <FieldError message={errors.pickup_location?.message} />
               </div>
-            </div>
-          )}
+            )}
+            <fieldset className="flex flex-col gap-2">
+              <legend className="mb-2 text-sm font-medium">
+                {fulfillment === "PICKUP" ? "Thời gian hẹn nhận" : "Thời gian mong muốn nhận hàng"}
+              </legend>
+              <div className="grid grid-cols-[1fr_8rem] gap-2">
+                <Input
+                  id="receive_date"
+                  type="date"
+                  aria-label="Ngày nhận hàng"
+                  min={minDate}
+                  className="h-11"
+                  aria-invalid={!!errors.receive_date || undefined}
+                  {...register("receive_date")}
+                />
+                <Input
+                  id="receive_time"
+                  type="time"
+                  aria-label="Giờ nhận hàng"
+                  step={300}
+                  className="h-11"
+                  aria-invalid={!!errors.receive_time || undefined}
+                  {...register("receive_time")}
+                />
+              </div>
+              {leadDays > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Đơn có áo custom cần ít nhất {leadDays} ngày để thiết kế và in: chọn ngày từ{" "}
+                  {minDate.split("-").reverse().join("/")}.
+                </p>
+              )}
+              <FieldError message={errors.receive_date?.message ?? errors.receive_time?.message} />
+            </fieldset>
+          </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="note">Ghi chú (không bắt buộc)</Label>
-            <Textarea id="note" rows={2} {...register("note")} />
+            <Label htmlFor="note">{fulfillment === "PICKUP" ? `${PICKUP_NOTE_LABEL} (không bắt buộc)` : "Ghi chú (không bắt buộc)"}</Label>
+            <Textarea
+              id="note"
+              rows={2}
+              placeholder={fulfillment === "PICKUP" ? PICKUP_NOTE_PLACEHOLDER : undefined}
+              {...register("note")}
+            />
             <FieldError message={errors.note?.message} />
           </div>
         </section>
 
         <section className="flex flex-col gap-4">
           <h2 className="text-lg font-semibold">Thanh toán trước</h2>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {PREPAY_PERCENTS.map((p) => (
               <label key={p} className={choice(percent === p)}>
                 <span className="flex items-center gap-2 font-medium">
@@ -245,7 +282,34 @@ export function CheckoutForm({ catalog, contact }: { catalog: Catalog; contact: 
                 <span className="pl-6 tabular-nums text-muted-foreground">{formatVND(prepayAmount(subtotal, p))}</span>
               </label>
             ))}
+            <label className={choice(percent === PREPAY_CUSTOM)}>
+              <span className="flex items-center gap-2 font-medium">
+                <input type="radio" value={PREPAY_CUSTOM} className="size-4 accent-primary" {...register("prepay_percent")} />
+                Số tiền khác
+              </span>
+              <span className="pl-6 text-muted-foreground">Tự nhập</span>
+            </label>
           </div>
+          {percent === PREPAY_CUSTOM && (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="prepay_custom">Số tiền bạn muốn chuyển trước (đ)</Label>
+              <Input
+                id="prepay_custom"
+                type="number"
+                inputMode="numeric"
+                min={minConfirmAmount(subtotal)}
+                max={subtotal}
+                step={1}
+                className="sm:max-w-60"
+                aria-invalid={!!errors.prepay_custom || undefined}
+                {...register("prepay_custom")}
+              />
+              <p className="text-sm text-muted-foreground">
+                Từ {formatVND(minConfirmAmount(subtotal))} (50% tổng đơn) đến {formatVND(subtotal)}.
+              </p>
+              <FieldError message={errors.prepay_custom?.message} />
+            </div>
+          )}
           <FieldError message={errors.prepay_percent?.message} />
           <p className="text-sm text-muted-foreground">Phần còn lại thanh toán khi nhận áo.</p>
         </section>
@@ -273,7 +337,7 @@ export function CheckoutForm({ catalog, contact }: { catalog: Catalog; contact: 
               <span>
                 {i.type === "BLINDBOX"
                   ? `${catalog.blindbox?.name ?? TYPE_LABEL.BLINDBOX} × ${i.quantity}`
-                  : `${i.type === "PROTOTYPE" ? `${TYPE_LABEL.PROTOTYPE} "${findPrototype(catalog, i.prototypeId)?.name ?? ""}"` : TYPE_LABEL[i.type]} · ${colorLabel(catalog.colors, i.color)} · ${i.size} × ${i.quantity}`}
+                  : `${i.type === "PROTOTYPE" ? `${TYPE_LABEL.PROTOTYPE} "${findPrototype(catalog, i.prototypeId)?.name ?? ""}"` : TYPE_LABEL[i.type]}${i.consult ? " (cần tư vấn)" : ""} · ${colorLabel(catalog.colors, i.color)} · ${i.size} × ${i.quantity}`}
               </span>
               <span className="tabular-nums">{formatVND(linePrice(i.type, catalog) * i.quantity)}</span>
             </li>
@@ -342,8 +406,8 @@ export function CheckoutForm({ catalog, contact }: { catalog: Catalog; contact: 
             <span className="font-semibold tabular-nums">{formatVND(subtotal)}</span>
           </p>
           <p className="flex justify-between">
-            <span className="text-muted-foreground">Chuyển khoản trước ({percent}%)</span>
-            <span className="text-lg font-bold tabular-nums">{formatVND(prepayAmount(subtotal, percent))}</span>
+            <span className="text-muted-foreground">Chuyển khoản trước{percent === PREPAY_CUSTOM ? "" : ` (${percent}%)`}</span>
+            <span className="text-lg font-bold tabular-nums">{formatVND(prepayNow)}</span>
           </p>
         </div>
         {serverError && (

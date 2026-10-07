@@ -1,11 +1,12 @@
 /* eslint-disable @next/next/no-img-element -- signed storage URLs expire; next/image would cache them */
-import { Download } from "lucide-react";
+import { Download, ExternalLink } from "lucide-react";
 import { ConfirmActionButton } from "@/components/admin/form-kit";
 import { ApprovalBadge } from "@/components/admin/orders/badges";
-import { RejectDesignForm } from "@/components/admin/orders/order-forms";
-import { setDesignStatus, rejectDesign } from "@/lib/admin/order-actions";
+import { DesignLinkForm, RejectDesignForm } from "@/components/admin/orders/order-forms";
+import { setDesignLink, setDesignStatus, rejectDesign } from "@/lib/admin/order-actions";
 import { TYPE_LABEL } from "@/components/cart/catalog";
 import { formatDate, formatVND } from "@/lib/format";
+import { CUSTOM_KIND_LABEL } from "@/lib/orders/pickup";
 import type { AdminOrderItem } from "@/lib/orders/admin-queries";
 
 /**
@@ -15,6 +16,9 @@ import type { AdminOrderItem } from "@/lib/orders/admin-queries";
 export function ItemCard({ item, code, locked }: { item: AdminOrderItem; code: string; locked: boolean }) {
   const status = item.approvalStatus;
   const canReview = !locked && (status === "PENDING_APPROVAL" || status === "UNDER_REVIEW");
+  // A Drive link instead of print files: "Link Drive" shirts and Workshop "Tự thiết kế".
+  const usesLink = item.type === "CUSTOM" && item.customKind !== "UPLOAD" && item.files.length === 0;
+  const canEditLink = usesLink && !locked && status !== "APPROVED";
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border bg-card p-4 sm:flex-row">
@@ -34,8 +38,8 @@ export function ItemCard({ item, code, locked }: { item: AdminOrderItem; code: s
               <img src={item.previewUrl} alt={`Thiết kế áo ${item.index}`} className="w-full rounded-lg border bg-muted object-contain" />
             </a>
           ) : (
-            <div className="flex aspect-[2/1] items-center justify-center rounded-lg border bg-muted text-xs text-muted-foreground">
-              Không có ảnh xem trước
+            <div className="flex aspect-[2/1] items-center justify-center rounded-lg border bg-muted p-3 text-center text-xs text-muted-foreground">
+              {usesLink ? (item.designLink ? "Thiết kế ở link Drive" : "Chưa có thiết kế") : "Không có ảnh xem trước"}
             </div>
           )}
         </div>
@@ -47,7 +51,7 @@ export function ItemCard({ item, code, locked }: { item: AdminOrderItem; code: s
             <p className="font-semibold">
               #{item.index}: {TYPE_LABEL[item.type]}
               {item.prototype && ` "${item.prototype.name}"`}
-              {item.designSource === "SCAN" && <span className="font-normal text-muted-foreground"> (scan Workshop)</span>}
+              {item.customKind && <span className="font-normal text-muted-foreground"> ({CUSTOM_KIND_LABEL[item.customKind]})</span>}
             </p>
             <p className="text-sm text-muted-foreground">
               {item.type !== "BLINDBOX" && `${item.colorLabel} · Size ${item.size} · `}
@@ -82,6 +86,31 @@ export function ItemCard({ item, code, locked }: { item: AdminOrderItem; code: s
           </div>
         )}
 
+        {usesLink && (
+          <div className="flex flex-col gap-2">
+            {item.printAreaLabel && (
+              <p className="text-sm">
+                Vùng in: <strong>{item.printAreaLabel}</strong>
+              </p>
+            )}
+            {item.designLink ? (
+              <a
+                href={item.designLink}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="inline-flex w-fit max-w-full items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm break-all hover:bg-muted"
+              >
+                <ExternalLink className="size-4 shrink-0" /> {item.designLink}
+              </a>
+            ) : (
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                Chưa có link thiết kế. Liên hệ khách qua Zalo, rồi dán link Drive vào đây và duyệt trước khi in.
+              </p>
+            )}
+            {canEditLink && <DesignLinkForm action={setDesignLink.bind(null, item.id, code)} id={item.id} link={item.designLink} />}
+          </div>
+        )}
+
         {item.assetUrls.length > 0 && (
           <div className="flex flex-col gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Ảnh khách tải lên ({item.assetUrls.length}) – kiểm tra bản quyền, nội dung</span>
@@ -97,7 +126,7 @@ export function ItemCard({ item, code, locked }: { item: AdminOrderItem; code: s
 
         {status === "REJECTED" && (
           <p className="rounded-md bg-red-50 p-2 text-sm text-red-900 dark:bg-red-950 dark:text-red-200">
-            Lý do từ chối: {item.rejectReason}. Đang chờ khách sửa và gửi lại.
+            Lý do từ chối: {item.rejectReason}. {usesLink ? "Cập nhật link thiết kế mới để duyệt lại." : "Đang chờ khách sửa và gửi lại."}
           </p>
         )}
         {item.reviewedAt && (
@@ -119,14 +148,16 @@ export function ItemCard({ item, code, locked }: { item: AdminOrderItem; code: s
                   Trả lại hàng chờ
                 </ConfirmActionButton>
               )}
-              <ConfirmActionButton
-                action={setDesignStatus.bind(null, item.id, code, "APPROVED")}
-                confirmText="Duyệt thiết kế này? Sau khi duyệt, khách không sửa được nữa."
-                successMessage="Đã duyệt thiết kế"
-                variant="default"
-              >
-                Duyệt
-              </ConfirmActionButton>
+              {!(usesLink && !item.designLink) && (
+                <ConfirmActionButton
+                  action={setDesignStatus.bind(null, item.id, code, "APPROVED")}
+                  confirmText="Duyệt thiết kế này? Sau khi duyệt, khách không sửa được nữa."
+                  successMessage="Đã duyệt thiết kế"
+                  variant="default"
+                >
+                  Duyệt
+                </ConfirmActionButton>
+              )}
             </div>
             <RejectDesignForm action={rejectDesign.bind(null, item.id, code)} id={item.id} />
           </div>

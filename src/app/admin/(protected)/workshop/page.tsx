@@ -6,7 +6,7 @@ import { requireRole } from "@/lib/supabase/auth";
 export const metadata: Metadata = { title: "Tạo đơn Workshop" };
 export const dynamic = "force-dynamic";
 
-/** FR16: orders taken at the Campus Workshop, with scanned paper drawings. */
+/** FR16: orders taken at the Campus Workshop. */
 export default async function WorkshopPage() {
   await requireRole();
   const catalog = await loadCatalog();
@@ -15,7 +15,8 @@ export default async function WorkshopPage() {
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold">Tạo đơn Workshop</h1>
         <p className="text-sm text-muted-foreground">
-          Áo custom từ Workshop được duyệt sẵn vì Staff đã xem bản vẽ tại chỗ. Khách trả tiền mặt thì đơn vào thẳng Đã xác nhận.
+          Áo custom có file ảnh hoặc link thiết kế được duyệt sẵn vì Staff đã xem tại chỗ; áo chưa có thiết kế ở trạng thái Chờ
+          duyệt. Tiền mặt: đơn vào thẳng Đã xác nhận. Chuyển khoản: chuyển sang trang QR để khách quét.
         </p>
       </div>
       <WorkshopForm catalog={catalog} />

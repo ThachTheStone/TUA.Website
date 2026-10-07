@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Field } from "@/components/admin/form-kit";
 import { TYPE_LABEL, cartProblems, findPrototype, linePrice, type Catalog, type LineProblem } from "@/components/cart/catalog";
+import { PickupLocationField } from "@/components/order/pickup-location";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,14 +15,19 @@ import { checkWorkshopPromo, prepareScanUpload, submitWorkshopOrder } from "@/li
 import { createBrowserSupabase } from "@/lib/supabase/client";
 import { colorLabel, formatVND } from "@/lib/format";
 import { maxOrderable } from "@/lib/inventory";
+import { addDays, leadDaysFor, todayInVietnam } from "@/lib/orders/checkout-schema";
 import { computeDiscount, promoSummary, type PromoRule } from "@/lib/orders/discounts";
-import { PREPAY_PERCENTS, prepayAmount } from "@/lib/orders/pricing";
+import { CUSTOM_KINDS, CUSTOM_KIND_LABEL, PICKUP_NOTE_LABEL, PICKUP_NOTE_PLACEHOLDER } from "@/lib/orders/pickup";
+import { PREPAY_CUSTOM, PREPAY_PERCENTS, customPrepayIssue, minConfirmAmount, prepayFor } from "@/lib/orders/pricing";
 import { newId } from "@/lib/design/types";
+import type { CustomKind } from "@/types/db";
 
-// FR16: staff enter a Workshop order. Each scan uploads straight to private storage through a
-// one-time signed URL (too big for a server action), then the order is created and the server
-// checks every scan's bytes. Totals shown here are estimates; the server recomputes them.
-// Prototype lines need no scan: the prototype's print files are used (FR16).
+// FR16: staff enter a Workshop order. Each uploaded image goes straight to private storage through
+// a one-time signed URL (too big for a server action), then the order is created and the server
+// checks every file's bytes. Totals shown here are estimates; the server recomputes them.
+// Prototype lines need no file: the prototype's print files are used (FR16). Custom shirts pick
+// a kind: upload now, a Drive link (now or later), or the buyer designs it later.
+// Transfer orders continue to the buyer's QR page, like a website order.
 
 type Line = {
   id: string;
@@ -32,6 +38,9 @@ type Line = {
   area: string;
   scan: File | null;
   prototypeId: string;
+  /** CUSTOM only. */
+  kind: CustomKind;
+  link: string;
 };
 
 const selectClass = "h-9 rounded-md border border-input bg-transparent px-2 text-sm shadow-xs";
@@ -70,11 +79,14 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
     area: catalog.printAreas[0]?.key ?? "",
     scan: null,
     prototypeId: "",
+    kind: "UPLOAD",
+    link: "",
   });
   const prototypes = catalog.prototypes.filter((p) => p.active);
   const [lines, setLines] = useState<Line[]>(() => [newLine()]);
   const [fulfillment, setFulfillment] = useState<"PICKUP" | "DELIVERY">("PICKUP");
   const [percent, setPercent] = useState<number>(100);
+  const [customAmount, setCustomAmount] = useState("");
   const [method, setMethod] = useState<"CASH" | "TRANSFER">("CASH");
   const [codeInput, setCodeInput] = useState("");
   const [promo, setPromo] = useState<PromoRule | null>(null);
@@ -99,7 +111,9 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
     setPromo(null);
     setCodeInput("");
   }
-  const prepay = Math.min(subtotal, prepayAmount(subtotal, percent));
+  const prepay = prepayFor(subtotal, percent, Number(customAmount) || 0);
+  const leadDays = leadDaysFor(lines);
+  const minDate = addDays(todayInVietnam(), leadDays);
 
   // Stock left, checked like the cart (lines of the same colour × size add up). The server re-checks.
   const problems = cartProblems(
@@ -114,25 +128,29 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
     const fd = new FormData(e.currentTarget);
     const get = (k: string) => String(fd.get(k) ?? "");
     setError(null);
-    if (lines.some((l) => l.type === "CUSTOM" && !l.scan)) return setError("Mỗi áo custom cần ảnh scan bản vẽ");
+    if (lines.some((l) => l.type === "CUSTOM" && l.kind === "UPLOAD" && !l.scan)) return setError("Áo custom dạng upload cần chọn file ảnh");
     if (lines.some((l) => l.type === "PROTOTYPE" && !l.prototypeId)) return setError("Vui lòng chọn áo mẫu");
     if (problems.size) return setError("Một số áo không còn đủ hàng. Vui lòng sửa các dòng được đánh dấu.");
+    if (percent === PREPAY_CUSTOM) {
+      const problem = customPrepayIssue(Number(customAmount), subtotal);
+      if (problem) return setError(problem);
+    }
 
     startTransition(async () => {
       try {
         const items = [];
-        const custom = lines.filter((l) => l.type === "CUSTOM").length;
+        const custom = lines.filter((l) => l.type === "CUSTOM" && l.kind === "UPLOAD").length;
         let done = 0;
         for (const l of lines) {
           let scanPath: string | undefined;
-          if (l.type === "CUSTOM" && l.scan) {
-            setProgress(`Đang tải ảnh scan ${++done}/${custom}…`);
+          if (l.type === "CUSTOM" && l.kind === "UPLOAD" && l.scan) {
+            setProgress(`Đang tải file ảnh ${++done}/${custom}…`);
             const slot = await prepareScanUpload({ contentType: l.scan.type, size: l.scan.size });
             if (!slot.ok) throw new Error(slot.error);
             const { error } = await createBrowserSupabase()
               .storage.from("scans")
               .uploadToSignedUrl(slot.data.path, slot.data.token, l.scan, { contentType: l.scan.type });
-            if (error) throw new Error(`Không tải được ảnh scan "${l.scan.name}". Vui lòng thử lại.`);
+            if (error) throw new Error(`Không tải được file ảnh "${l.scan.name}". Vui lòng thử lại.`);
             scanPath = slot.data.path;
           }
           items.push({
@@ -143,6 +161,8 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
             area: l.type === "CUSTOM" ? l.area : undefined,
             scanPath,
             prototypeId: l.type === "PROTOTYPE" ? l.prototypeId : undefined,
+            customKind: l.type === "CUSTOM" ? l.kind : undefined,
+            designLink: l.type === "CUSTOM" && l.kind !== "UPLOAD" ? l.link.trim() : undefined,
           });
         }
         setProgress("Đang tạo đơn…");
@@ -152,17 +172,20 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
           email: get("email"),
           fulfillment,
           address: get("address"),
-          preferred_time: get("preferred_time"),
+          receive_date: get("receive_date"),
+          receive_time: get("receive_time"),
           pickup_location: get("pickup_location"),
           note: get("note"),
           prepay_percent: percent,
+          prepay_custom: percent === PREPAY_CUSTOM ? Number(customAmount) : undefined,
           method,
           promoCode: promo?.code,
           items,
         });
         if (!result.ok) throw new Error(result.error);
         toast.success(`Đã tạo đơn ${result.data.code}`);
-        router.push(`/admin/don-hang/${result.data.code}`);
+        // Chuyển khoản: open the QR page for the buyer to scan, like a website order.
+        router.push(result.data.paymentPath ?? `/admin/don-hang/${result.data.code}`);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Không tạo được đơn. Vui lòng thử lại.");
         setProgress(null);
@@ -261,19 +284,33 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
                   />
                 </label>
                 {l.type === "CUSTOM" && (
+                  <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                    Dạng áo custom
+                    <select className={selectClass} value={l.kind} onChange={(e) => update(l.id, { kind: e.target.value as CustomKind })}>
+                      {CUSTOM_KINDS.map((k) => (
+                        <option key={k} value={k}>
+                          {CUSTOM_KIND_LABEL[k]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {l.type === "CUSTOM" && (
+                  <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                    Vùng in
+                    <select className={selectClass} value={l.area} onChange={(e) => update(l.id, { area: e.target.value })} required>
+                      {catalog.printAreas.map((a) => (
+                        <option key={a.key} value={a.key}>
+                          {a.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {l.type === "CUSTOM" && l.kind === "UPLOAD" && (
                   <>
                     <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                      Vùng in
-                      <select className={selectClass} value={l.area} onChange={(e) => update(l.id, { area: e.target.value })}>
-                        {catalog.printAreas.map((a) => (
-                          <option key={a.key} value={a.key}>
-                            {a.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                      Ảnh scan (JPG/PNG, tối đa 10MB)
+                      File ảnh (JPG/PNG, tối đa 10MB)
                       <input
                         type="file"
                         accept="image/jpeg,image/png"
@@ -282,6 +319,24 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
                       />
                     </label>
                   </>
+                )}
+                {l.type === "CUSTOM" && l.kind === "LINK" && (
+                  <label className="flex min-w-56 flex-1 flex-col gap-1 text-xs text-muted-foreground">
+                    Link Drive thiết kế (có thể thêm sau)
+                    <Input
+                      type="url"
+                      value={l.link}
+                      onChange={(e) => update(l.id, { link: e.target.value })}
+                      maxLength={500}
+                      placeholder="https://drive.google.com/…"
+                      className="h-9"
+                    />
+                  </label>
+                )}
+                {l.type === "CUSTOM" && l.kind !== "UPLOAD" && !l.link.trim() && (
+                  <p className="w-full text-xs text-muted-foreground">
+                    Chưa có thiết kế: áo ở trạng thái Chờ duyệt. Thêm link thiết kế trong trang chi tiết đơn rồi duyệt trước khi in.
+                  </p>
                 )}
                 {lines.length > 1 && (
                   <Button type="button" variant="ghost" size="icon" aria-label="Xóa dòng" onClick={() => setLines((ls) => ls.filter((x) => x.id !== l.id))}>
@@ -314,28 +369,57 @@ export function WorkshopForm({ catalog }: { catalog: Catalog }) {
               </Field>
             ) : (
               <Field label="Địa điểm hẹn" htmlFor="pickup_location">
-                <Input id="pickup_location" name="pickup_location" maxLength={200} required />
+                <PickupLocationField id="pickup_location" name="pickup_location" />
               </Field>
             )}
-            <Field label="Thời gian hẹn/nhận" htmlFor="preferred_time">
-              <Input id="preferred_time" name="preferred_time" maxLength={200} />
+            <Field
+              label={fulfillment === "PICKUP" ? "Thời gian hẹn nhận" : "Thời gian nhận hàng"}
+              htmlFor="receive_date"
+              hint={leadDays > 0 ? `Đơn có áo custom: chọn ngày từ ${minDate.split("-").reverse().join("/")} (ít nhất ${leadDays} ngày).` : undefined}
+            >
+              <div className="grid grid-cols-[1fr_7.5rem] gap-2">
+                <Input id="receive_date" name="receive_date" type="date" min={minDate} required aria-label="Ngày nhận hàng" />
+                <Input id="receive_time" name="receive_time" type="time" step={300} required aria-label="Giờ nhận hàng" />
+              </div>
             </Field>
           </div>
-          <Field label="Ghi chú" htmlFor="note">
-            <Textarea id="note" name="note" rows={2} maxLength={500} />
+          <Field
+            label={fulfillment === "PICKUP" ? `${PICKUP_NOTE_LABEL} (không bắt buộc)` : "Ghi chú"}
+            htmlFor="note"
+          >
+            <Textarea id="note" name="note" rows={2} maxLength={500} placeholder={fulfillment === "PICKUP" ? PICKUP_NOTE_PLACEHOLDER : undefined} />
           </Field>
         </section>
       </fieldset>
 
       <aside className="flex h-fit flex-col gap-4 rounded-xl border bg-card p-4 lg:sticky lg:top-6">
         <h2 className="font-semibold">Thanh toán</h2>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {PREPAY_PERCENTS.map((p) => (
             <Button key={p} type="button" size="sm" variant={percent === p ? "default" : "outline"} onClick={() => setPercent(p)} disabled={pending}>
               {p}%
             </Button>
           ))}
+          <Button type="button" size="sm" variant={percent === PREPAY_CUSTOM ? "default" : "outline"} onClick={() => setPercent(PREPAY_CUSTOM)} disabled={pending}>
+            Khác
+          </Button>
         </div>
+        {percent === PREPAY_CUSTOM && (
+          <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+            Số tiền khách trả trước (đ), từ {formatVND(minConfirmAmount(subtotal))} (50%)
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={minConfirmAmount(subtotal)}
+              max={subtotal}
+              step={1}
+              value={customAmount}
+              onChange={(e) => setCustomAmount(e.target.value)}
+              className="h-9"
+              disabled={pending}
+            />
+          </label>
+        )}
         <div className="flex flex-col gap-2 text-sm">
           {(["CASH", "TRANSFER"] as const).map((m) => (
             <label key={m} className="flex items-start gap-2">
