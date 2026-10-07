@@ -93,7 +93,7 @@ async function buildView(order: OrderRow): Promise<OrderView> {
       .order("id"),
     db
       .from("order_status_history")
-      .select("to_status, changed_at")
+      .select("from_status, to_status, changed_at")
       .eq("order_id", order.id)
       .order("changed_at", { ascending: true }),
   ]);
@@ -128,7 +128,8 @@ async function buildView(order: OrderRow): Promise<OrderView> {
       approvalLabel: i.approval_status ? APPROVAL_LABEL[i.approval_status as ApprovalStatus] : null,
       rejectReason: i.approval_status === "REJECTED" ? i.reject_reason : null,
     })),
-    history: (history.data ?? []).map((h) => ({
+    // Staff edits (from = to) are internal; the buyer sees status changes only.
+    history: (history.data ?? []).filter((h) => h.from_status !== h.to_status).map((h) => ({
       status: h.to_status,
       label: STATUS_LABEL[h.to_status as OrderStatus],
       at: h.changed_at,

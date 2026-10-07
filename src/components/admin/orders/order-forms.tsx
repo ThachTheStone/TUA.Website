@@ -1,7 +1,10 @@
 "use client";
 
+import { createContext, useContext, useEffect, useState } from "react";
 import { FormError, SubmitButton, useAdminForm, type FormAction } from "@/components/admin/form-kit";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatVND } from "@/lib/format";
 
@@ -47,7 +50,7 @@ export function DepositForm({ action, defaultAmount, min, subtotal }: { action: 
             inputMode="numeric"
             min={min}
             max={subtotal - 1}
-            step={1000}
+            step={1}
             defaultValue={defaultAmount}
             required
             className="h-9 w-40"
@@ -118,6 +121,190 @@ export function RejectDesignForm({ action, id }: { action: FormAction; id: strin
         placeholder="Lý do từ chối (khách sẽ thấy trong tài khoản và email)"
       />
       <SubmitButton pending={pending}>Từ chối</SubmitButton>
+    </form>
+  );
+}
+
+/** Closes the surrounding EditableCard after a successful save. */
+const CloseEditor = createContext<() => void>(() => {});
+
+function useCloseOnSuccess(ok: boolean | undefined) {
+  const close = useContext(CloseEditor);
+  useEffect(() => {
+    if (ok) close();
+  }, [ok, close]);
+}
+
+/**
+ * A detail card with an edit button in its header. While editing, `form` replaces the content,
+ * or follows it when `keepContent` (the money card keeps its figures in view).
+ */
+export function EditableCard({
+  title,
+  editLabel,
+  form,
+  keepContent = false,
+  children,
+}: {
+  title: string;
+  editLabel: string;
+  form: React.ReactNode;
+  keepContent?: boolean;
+  children: React.ReactNode;
+}) {
+  const [editing, setEditing] = useState(false);
+  return (
+    <section className="flex flex-col gap-3 rounded-xl border bg-card p-4">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-semibold">{title}</h2>
+        {form && (
+          <Button type="button" variant="outline" size="sm" onClick={() => setEditing((v) => !v)}>
+            {editing ? "Đóng" : editLabel}
+          </Button>
+        )}
+      </div>
+      {(!editing || keepContent) && children}
+      {editing && (
+        <CloseEditor.Provider value={() => setEditing(false)}>
+          <div className={keepContent ? "border-t pt-3" : undefined}>{form}</div>
+        </CloseEditor.Provider>
+      )}
+    </section>
+  );
+}
+
+const paymentPreview = (amount: number, subtotal: number) =>
+  amount <= 0 ? "Chưa thanh toán" : amount >= subtotal ? "Đã thanh toán 100%" : "Đã cọc";
+
+/** Admin: re-enter the total actually received. The server recomputes the payment status. */
+export function AdjustPaidForm({
+  action,
+  paidAmount,
+  subtotal,
+  minDeposit,
+}: {
+  action: FormAction;
+  paidAmount: number;
+  subtotal: number;
+  minDeposit: number;
+}) {
+  const { state, onSubmit, pending, formRef, key } = useAdminForm(action, "Đã sửa số tiền đã nhận");
+  const [amount, setAmount] = useState(paidAmount);
+  useCloseOnSuccess(state?.ok);
+  const valid = Number.isInteger(amount) && amount >= 0 && amount <= subtotal;
+  return (
+    <form
+      key={key}
+      ref={formRef}
+      onSubmit={(e) => {
+        if (!window.confirm(`Sửa số tiền đã nhận từ ${formatVND(paidAmount)} thành ${formatVND(amount)}?`)) return e.preventDefault();
+        onSubmit(e);
+      }}
+      className="flex flex-col gap-3"
+    >
+      <FormError state={state} />
+      <label className="flex flex-col gap-1 text-xs text-muted-foreground" htmlFor="adjust-amount">
+        Tổng số tiền thực tế đã nhận (đ)
+        <Input
+          id="adjust-amount"
+          name="amount"
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={subtotal}
+          step={1}
+          value={Number.isNaN(amount) ? "" : amount}
+          onChange={(e) => setAmount(e.target.valueAsNumber)}
+          required
+          className="h-9 w-44"
+        />
+      </label>
+      <p className="text-xs text-muted-foreground">
+        Gồm cả các lần đã ghi nhận trước. Tổng đơn {formatVND(subtotal)}.
+        {valid && (
+          <>
+            {" "}
+            Trạng thái thanh toán mới: <span className="font-medium text-foreground">{paymentPreview(amount, subtotal)}</span>.
+          </>
+        )}
+      </p>
+      {valid && amount > 0 && amount < minDeposit && (
+        <p className="text-xs text-amber-700 dark:text-amber-400">Thấp hơn mức cọc tối thiểu {formatVND(minDeposit)} (50%, BR02).</p>
+      )}
+      <Textarea name="reason" rows={2} maxLength={300} required placeholder="Lý do sửa (ví dụ: nhập nhầm, khách chuyển thêm…)" />
+      <SubmitButton pending={pending}>Lưu số tiền</SubmitButton>
+    </form>
+  );
+}
+
+export type OrderInfoValues = {
+  customer_name: string;
+  phone: string;
+  email: string | null;
+  fulfillment: "DELIVERY" | "PICKUP";
+  address: string | null;
+  preferred_time: string | null;
+  pickup_location: string | null;
+  note: string | null;
+};
+
+function InfoField({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={id} className="text-xs text-muted-foreground">
+        {label}
+      </Label>
+      {children}
+    </div>
+  );
+}
+
+/** Staff/Admin: buyer contact and delivery details. Items and money are not editable here. */
+export function OrderInfoForm({ action, values }: { action: FormAction; values: OrderInfoValues }) {
+  const { state, onSubmit, pending, formRef, key } = useAdminForm(action, "Đã lưu thông tin đơn");
+  const [fulfillment, setFulfillment] = useState(values.fulfillment);
+  useCloseOnSuccess(state?.ok);
+  return (
+    <form key={key} ref={formRef} onSubmit={onSubmit} className="flex flex-col gap-3">
+      <FormError state={state} />
+      <InfoField id="info-name" label="Họ tên">
+        <Input id="info-name" name="customer_name" defaultValue={values.customer_name} maxLength={100} required className="h-9" />
+      </InfoField>
+      <InfoField id="info-phone" label="Số điện thoại">
+        <Input id="info-phone" name="phone" type="tel" inputMode="tel" defaultValue={values.phone} maxLength={20} required className="h-9" />
+      </InfoField>
+      <InfoField id="info-email" label="Email (không bắt buộc)">
+        <Input id="info-email" name="email" type="email" defaultValue={values.email ?? ""} maxLength={200} className="h-9" />
+      </InfoField>
+      <InfoField id="info-fulfillment" label="Nhận hàng">
+        <select
+          id="info-fulfillment"
+          name="fulfillment"
+          value={fulfillment}
+          onChange={(e) => setFulfillment(e.target.value as OrderInfoValues["fulfillment"])}
+          className={selectClass}
+        >
+          <option value="DELIVERY">Giao hàng</option>
+          <option value="PICKUP">Nhận tại campus</option>
+        </select>
+      </InfoField>
+      {fulfillment === "DELIVERY" ? (
+        <InfoField id="info-address" label="Địa chỉ">
+          <Textarea id="info-address" name="address" rows={2} defaultValue={values.address ?? ""} maxLength={300} required />
+        </InfoField>
+      ) : (
+        <InfoField id="info-location" label="Địa điểm hẹn">
+          <Input id="info-location" name="pickup_location" defaultValue={values.pickup_location ?? ""} maxLength={200} required className="h-9" />
+        </InfoField>
+      )}
+      <InfoField id="info-time" label="Thời gian (không bắt buộc)">
+        <Input id="info-time" name="preferred_time" defaultValue={values.preferred_time ?? ""} maxLength={200} className="h-9" />
+      </InfoField>
+      <InfoField id="info-note" label="Ghi chú (không bắt buộc)">
+        <Textarea id="info-note" name="note" rows={2} defaultValue={values.note ?? ""} maxLength={500} />
+      </InfoField>
+      <p className="text-xs text-muted-foreground">Khách tra cứu đơn bằng mã đơn và số điện thoại, nên báo khách nếu đổi số.</p>
+      <SubmitButton pending={pending}>Lưu thông tin</SubmitButton>
     </form>
   );
 }

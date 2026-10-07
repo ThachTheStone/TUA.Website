@@ -193,6 +193,10 @@ Trang chủ (màn hình S01) gồm các phần theo thứ tự:
 - Mỗi lần bấm ghi một khoản vào `payments` (số tiền, phương thức, người bấm, thời gian) và một dòng lịch sử.
 - Duyệt từng thiết kế custom ngay trong trang chi tiết đơn (FR29).
 - Staff có thể hủy đơn kèm lý do. Nếu khách đã chuyển tiền, đánh dấu cần hoàn tiền (BR06).
+- Mọi ô nhập số tiền (Admin và form quyên góp) nhận số lẻ đến từng đồng, không bắt buộc bội số 1.000đ (từ 07/10/2026).
+- **"Sửa số tiền đã nhận"** (chỉ Admin): dùng khi đã ghi nhận sai hoặc khách chuyển thêm. Admin nhập lại tổng số tiền thực tế đã nhận (0đ đến tổng đơn) và lý do bắt buộc. Trạng thái thanh toán tính lại theo số mới: 0đ → Chưa thanh toán, bằng tổng đơn → Đã thanh toán 100%, còn lại → Đã cọc. Chỉ dùng khi đơn ở Đã xác nhận, Đang in, Kiểm tra chất lượng, Sẵn sàng giao/nhận hoặc Đã giao. Không tạo khoản mới trong `payments`; lịch sử ghi "số cũ → số mới", người sửa, lý do.
+- **"Sửa thông tin đơn"** (Staff và Admin): sửa họ tên, SĐT, email, hình thức nhận hàng, địa chỉ hoặc địa điểm hẹn, thời gian, ghi chú khi đơn chưa Hết hạn/Đã hủy. Không sửa sản phẩm và số tiền. Lịch sử ghi các trường đã đổi (họ tên, SĐT, email, nhận hàng kèm giá trị cũ → mới). Khách tra cứu đơn bằng SĐT mới sau khi đổi.
+- Các dòng chỉnh sửa chỉ hiện trong lịch sử Admin; khách chỉ thấy các lần đổi trạng thái đơn.
 
 **FR15 – Cập nhật trạng thái**
 - Chuyển trạng thái theo sơ đồ ở mục 5. Mỗi lần chuyển được ghi lịch sử (ai, lúc nào, ghi chú).
@@ -339,7 +343,7 @@ PAYMENT_REVIEW → CONFIRMED chỉ xảy ra qua nút "Đã cọc" hoặc "Đã t
 UNPAID       → DEPOSIT_PAID | FULLY_PAID
 DEPOSIT_PAID → FULLY_PAID
 ```
-- Chỉ Staff/Admin đổi được trạng thái thanh toán, bằng các nút trên. Khách bấm "Tôi đã chuyển khoản" chỉ chuyển trạng thái đơn sang Chờ xác nhận thanh toán.
+- Chỉ Staff/Admin đổi được trạng thái thanh toán, bằng các nút trên. Ngoài sơ đồ trên, Admin có thể "Sửa số tiền đã nhận" (FR14); khi đó trạng thái thanh toán được tính lại theo tổng tiền mới, kể cả lùi về Đã cọc hoặc Chưa thanh toán. Khách bấm "Tôi đã chuyển khoản" chỉ chuyển trạng thái đơn sang Chờ xác nhận thanh toán.
 - Đơn Đã giao nhưng thanh toán vẫn là Đã cọc được hiển thị là "Còn nợ" trong Admin.
 
 ### 5.3. Trạng thái duyệt thiết kế (từng áo custom)

@@ -96,7 +96,7 @@ export function DonationForm({ min }: { min: number }) {
               type="number"
               inputMode="numeric"
               min={min}
-              step={1000}
+              step={1}
               placeholder="Nhập số tiền"
               className="h-11 pr-8 text-base tabular-nums"
               {...register("amount")}

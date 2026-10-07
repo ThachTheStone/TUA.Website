@@ -130,6 +130,8 @@ export type AdminOrderItem = {
 
 export type TimelineEntry =
   | { kind: "status"; at: string; by: string | null; to: OrderStatus; note: string | null }
+  /** A history row with from = to: payment correction or info edit (FR15), not a status change. */
+  | { kind: "edit"; at: string; by: string | null; note: string | null }
   | { kind: "payment"; at: string; by: string | null; amount: number; method: PaymentMethod; note: string | null }
   | { kind: "design"; at: string; by: string | null; item: number; to: ApprovalStatus; reason: string | null };
 
@@ -247,13 +249,12 @@ export async function getAdminOrder(code: string): Promise<AdminOrder | null> {
   );
 
   const timeline: TimelineEntry[] = [
-    ...(history.data ?? []).map((h): TimelineEntry => ({
-      kind: "status",
-      at: h.changed_at,
-      by: nameOf(h.changed_by),
-      to: h.to_status as OrderStatus,
-      note: h.note,
-    })),
+    ...(history.data ?? []).map(
+      (h): TimelineEntry =>
+        h.from_status === h.to_status
+          ? { kind: "edit", at: h.changed_at, by: nameOf(h.changed_by), note: h.note }
+          : { kind: "status", at: h.changed_at, by: nameOf(h.changed_by), to: h.to_status as OrderStatus, note: h.note },
+    ),
     ...(payments.data ?? []).map((p): TimelineEntry => ({
       kind: "payment",
       at: p.recorded_at,

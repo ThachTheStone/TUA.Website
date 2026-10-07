@@ -4,12 +4,21 @@ import { notFound } from "next/navigation";
 import { ConfirmActionButton } from "@/components/admin/form-kit";
 import { OrderStatusBadge, PaymentBadge } from "@/components/admin/orders/badges";
 import { ItemCard } from "@/components/admin/orders/item-card";
-import { CancelForm, DepositForm, FullPaymentForm } from "@/components/admin/orders/order-forms";
+import {
+  AdjustPaidForm,
+  CancelForm,
+  DepositForm,
+  EditableCard,
+  FullPaymentForm,
+  OrderInfoForm,
+} from "@/components/admin/orders/order-forms";
 import { OrderTimeline } from "@/components/admin/orders/timeline";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
+  adjustPaid,
   advanceOrder,
   cancelOrder,
+  editOrderInfo,
   markRefunded,
   recordDeposit,
   recordFullPayment,
@@ -17,7 +26,7 @@ import {
 import { formatDate, formatVND } from "@/lib/format";
 import { getAdminOrder } from "@/lib/orders/admin-queries";
 import { minConfirmAmount } from "@/lib/orders/pricing";
-import { ALLOWED, CLOSED_STATUSES } from "@/lib/orders/state-machine";
+import { ALLOWED, CLOSED_STATUSES, PAID_ADJUSTABLE } from "@/lib/orders/state-machine";
 import { requireRole } from "@/lib/supabase/auth";
 import { transferContent } from "@/lib/vietqr";
 import type { OrderStatus } from "@/types/db";
@@ -55,7 +64,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 
 /** FR14/FR15/FR29: everything staff needs to process one order. */
 export default async function AdminOrderPage({ params }: Props) {
-  await requireRole();
+  const staff = await requireRole();
   const { code } = await params;
   const order = await getAdminOrder(code);
   if (!order) notFound();
@@ -66,6 +75,8 @@ export default async function AdminOrderPage({ params }: Props) {
   const unapproved = customItems.filter((i) => i.approvalStatus !== "APPROVED").length;
   const next = ALLOWED[order.status];
   const steps = next.filter((s) => STEP_BUTTON[s]);
+  // "Sửa số tiền đã nhận" is Admin only; the action checks the role again (hard rule 8).
+  const canAdjustPaid = staff.profile.role === "ADMIN" && PAID_ADJUSTABLE.includes(order.status);
   const bind = <A extends unknown[], R>(fn: (id: string, code: string, ...rest: A) => R) => fn.bind(null, order.id, order.code);
 
   return (
@@ -92,7 +103,27 @@ export default async function AdminOrderPage({ params }: Props) {
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
         <div className="flex flex-col gap-6">
           <div className="grid gap-6 md:grid-cols-2">
-            <Card title="Khách hàng">
+            <EditableCard
+              title="Khách hàng"
+              editLabel="Sửa"
+              form={
+                !closed && (
+                  <OrderInfoForm
+                    action={bind(editOrderInfo)}
+                    values={{
+                      customer_name: order.customer_name,
+                      phone: order.phone,
+                      email: order.email,
+                      fulfillment: order.fulfillment,
+                      address: order.address,
+                      preferred_time: order.preferred_time,
+                      pickup_location: order.pickup_location,
+                      note: order.note,
+                    }}
+                  />
+                )
+              }
+            >
               <Row label="Họ tên" value={order.customer_name} />
               <Row label="SĐT" value={<a href={`tel:${order.phone}`}>{order.phone}</a>} />
               <Row label="Email" value={order.email || "—"} />
@@ -101,9 +132,23 @@ export default async function AdminOrderPage({ params }: Props) {
               {order.pickup_location && <Row label="Địa điểm hẹn" value={order.pickup_location} />}
               {order.preferred_time && <Row label="Thời gian" value={order.preferred_time} />}
               {order.note && <Row label="Ghi chú" value={order.note} />}
-            </Card>
+            </EditableCard>
 
-            <Card title="Tiền">
+            <EditableCard
+              title="Tiền"
+              editLabel="Sửa số tiền đã nhận"
+              keepContent
+              form={
+                canAdjustPaid && (
+                  <AdjustPaidForm
+                    action={bind(adjustPaid)}
+                    paidAmount={order.paid_amount}
+                    subtotal={order.subtotal}
+                    minDeposit={minConfirmAmount(order.subtotal)}
+                  />
+                )
+              }
+            >
               {order.discount_amount > 0 && (
                 <>
                   <Row label="Tiền hàng" value={formatVND(order.items_total)} />
@@ -135,7 +180,7 @@ export default async function AdminOrderPage({ params }: Props) {
                   )}
                 </div>
               )}
-            </Card>
+            </EditableCard>
           </div>
 
           <section className="flex flex-col gap-3">

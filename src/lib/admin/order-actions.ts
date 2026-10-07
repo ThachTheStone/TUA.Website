@@ -6,7 +6,8 @@ import { z } from "zod";
 import { OK, fail, optionalText, readForm, requiredText } from "@/lib/admin/form";
 import { reviewDesign } from "@/lib/orders/approval";
 import { notifyOrder } from "@/lib/orders/notify";
-import { confirmPayment } from "@/lib/orders/payments";
+import { orderInfoSchema, updateOrderInfo } from "@/lib/orders/edit-info";
+import { adjustPaidAmount, confirmPayment } from "@/lib/orders/payments";
 import { transitionOrder } from "@/lib/orders/transition";
 import { syncSheetsLater } from "@/lib/sheets";
 import { requireRole } from "@/lib/supabase/auth";
@@ -59,6 +60,39 @@ export async function recordFullPayment(orderId: string, code: string, _prev: Ac
   const result = await confirmPayment(orderId, { kind: "FULL", ...parsed.data, userId: staff.userId });
   if (!result.ok) return result;
   after(() => notifyOrder(orderId, { kind: "FULLY_PAID" }));
+  refresh(code);
+  return OK;
+}
+
+const adjustSchema = z.object({
+  amount: z.coerce.number({ error: "Số tiền không hợp lệ" }).int("Số tiền phải là số nguyên").min(0, "Số tiền không được âm"),
+  reason: requiredText(300, "Lý do sửa"),
+});
+
+/** "Sửa số tiền đã nhận": Admin only, replaces the total received (history keeps old → new). */
+export async function adjustPaid(orderId: string, code: string, _prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const admin = await requireRole(["ADMIN"]);
+  if (!idSchema.safeParse(orderId).success) return fail("Đơn hàng không hợp lệ");
+  const parsed = adjustSchema.safeParse(readForm(formData, ["amount", "reason"]));
+  if (!parsed.success) return fail(parsed.error);
+
+  const result = await adjustPaidAmount(orderId, { ...parsed.data, userId: admin.userId });
+  if (!result.ok) return result;
+  refresh(code);
+  return OK;
+}
+
+/** "Sửa thông tin đơn": buyer contact and delivery details, Staff and Admin. */
+export async function editOrderInfo(orderId: string, code: string, _prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const staff = await requireRole();
+  if (!idSchema.safeParse(orderId).success) return fail("Đơn hàng không hợp lệ");
+  const parsed = orderInfoSchema.safeParse(
+    readForm(formData, ["customer_name", "phone", "email", "fulfillment", "address", "preferred_time", "pickup_location", "note"]),
+  );
+  if (!parsed.success) return fail(parsed.error);
+
+  const result = await updateOrderInfo(orderId, parsed.data, staff.userId);
+  if (!result.ok) return result;
   refresh(code);
   return OK;
 }

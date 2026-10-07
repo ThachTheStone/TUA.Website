@@ -8,6 +8,8 @@ function describe(e: TimelineEntry): { title: string; detail: string | null } {
   switch (e.kind) {
     case "status":
       return { title: `Trạng thái: ${STATUS_LABEL[e.to]}`, detail: e.note };
+    case "edit":
+      return { title: "Chỉnh sửa đơn", detail: e.note };
     case "payment":
       return { title: `Nhận ${formatVND(e.amount)} (${METHOD[e.method]})`, detail: e.note };
     case "design":

@@ -58,7 +58,7 @@ function ComboFields({ combo, prices, startsAt, endsAt }: Omit<Props, "action">)
             name="price"
             type="number"
             min={1000}
-            step={1000}
+            step={1}
             value={price || ""}
             onChange={(e) => setPrice(Number(e.target.value) || 0)}
             required

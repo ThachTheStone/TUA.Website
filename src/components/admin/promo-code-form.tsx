@@ -63,13 +63,13 @@ export function PromoCodeForm({ action, promo, startsAt = "", endsAt = "" }: Pro
         </Field>
         {kind === "PERCENT" && (
           <Field label="Giảm tối đa (đ)" htmlFor={id("max_discount")} hint="Để trống: không giới hạn">
-            <Input id={id("max_discount")} name="max_discount" type="number" min={1000} step={1000} defaultValue={promo?.max_discount ?? ""} />
+            <Input id={id("max_discount")} name="max_discount" type="number" min={1000} step={1} defaultValue={promo?.max_discount ?? ""} />
           </Field>
         )}
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Đơn tối thiểu (đ)" htmlFor={id("min_subtotal")} hint="Tính trên tiền hàng trước giảm. 0 = mọi đơn">
-          <Input id={id("min_subtotal")} name="min_subtotal" type="number" min={0} step={1000} defaultValue={promo?.min_subtotal ?? 0} required />
+          <Input id={id("min_subtotal")} name="min_subtotal" type="number" min={0} step={1} defaultValue={promo?.min_subtotal ?? 0} required />
         </Field>
         <Field label="Tổng số lượt dùng" htmlFor={id("max_uses")} hint="Để trống: không giới hạn. Đơn hủy/hết hạn được trả lượt">
           <Input id={id("max_uses")} name="max_uses" type="number" min={1} defaultValue={promo?.max_uses ?? ""} />

@@ -64,7 +64,7 @@ function MoneyInput({
         id={id}
         type="number"
         min={0}
-        step={1000}
+        step={1}
         required
         value={Number.isFinite(value) ? value : ""}
         onChange={(e) => onChange(num(e))}

@@ -31,7 +31,7 @@ export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
   return ALLOWED[from].includes(to);
 }
 
-/** §5.2: set only by the staff buttons "Đã cọc" / "Đã thanh toán 100%". */
+/** §5.2: set by the staff buttons "Đã cọc" / "Đã thanh toán 100%", or by Admin's "Sửa số tiền đã nhận". */
 export const PAYMENT_ALLOWED: Record<PaymentStatus, PaymentStatus[]> = {
   UNPAID: ["DEPOSIT_PAID", "FULLY_PAID"],
   DEPOSIT_PAID: ["FULLY_PAID"],
@@ -46,6 +46,9 @@ export const PAYMENT_LABEL: Record<PaymentStatus, string> = {
 
 /** Order statuses in which money can no longer be confirmed. */
 export const CLOSED_STATUSES: OrderStatus[] = ["EXPIRED", "CANCELLED"];
+
+/** Statuses in which Admin may correct the total received (a payment was confirmed already). */
+export const PAID_ADJUSTABLE: OrderStatus[] = ["CONFIRMED", "PRINTING", "QC", "READY", "DELIVERED"];
 
 /** §5.3: review steps for one custom shirt. REJECTED → PENDING_APPROVAL is the buyer resubmitting. */
 export const APPROVAL_ALLOWED: Record<ApprovalStatus, ApprovalStatus[]> = {

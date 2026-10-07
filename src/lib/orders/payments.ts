@@ -1,7 +1,7 @@
 import "server-only";
 import { formatVND } from "@/lib/format";
 import { minConfirmAmount } from "@/lib/orders/pricing";
-import { CLOSED_STATUSES, PAYMENT_ALLOWED, PAYMENT_LABEL, STATUS_LABEL } from "@/lib/orders/state-machine";
+import { CLOSED_STATUSES, PAID_ADJUSTABLE, PAYMENT_ALLOWED, PAYMENT_LABEL, STATUS_LABEL } from "@/lib/orders/state-machine";
 import { transitionOrder } from "@/lib/orders/transition";
 import { syncSheetsLater } from "@/lib/sheets";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -94,4 +94,56 @@ export async function confirmPayment(orderId: string, input: ConfirmPaymentInput
 
   syncSheetsLater();
   return { ok: true, data: { amount, paymentStatus: to, statusChanged: nextStatus !== status } };
+}
+
+/** PostgREST answer when an RPC does not exist yet (migration not run). */
+export const MISSING_RPC = "PGRST202";
+
+/**
+ * FR15 "Sửa số tiền đã nhận" (Admin only, checked by the caller): replaces the total received
+ * with what the bank statement really shows. Payment status follows the new total; the old and
+ * new totals and the reason go into the order history in the same RPC.
+ */
+export async function adjustPaidAmount(
+  orderId: string,
+  input: { amount: number; reason: string; userId: string },
+): Promise<ActionResult<{ paymentStatus: PaymentStatus }>> {
+  const db = createServiceClient();
+  const { data: order, error } = await db
+    .from("orders")
+    .select("id, status, subtotal, paid_amount")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (error) return { ok: false, error: "Không đọc được đơn hàng" };
+  if (!order) return { ok: false, error: "Không tìm thấy đơn hàng" };
+
+  const status = order.status as OrderStatus;
+  if (!PAID_ADJUSTABLE.includes(status)) {
+    return { ok: false, error: `Đơn đang ở trạng thái "${STATUS_LABEL[status]}", không sửa số tiền đã nhận được` };
+  }
+  const amount = input.amount;
+  if (!Number.isInteger(amount) || amount < 0) return { ok: false, error: "Số tiền không hợp lệ" };
+  if (amount > order.subtotal) return { ok: false, error: `Số tiền đã nhận không được lớn hơn tổng đơn (${formatVND(order.subtotal)})` };
+  if (amount === order.paid_amount) return { ok: false, error: "Số tiền mới giống số tiền hiện tại" };
+
+  const to: PaymentStatus = amount === 0 ? "UNPAID" : amount >= order.subtotal ? "FULLY_PAID" : "DEPOSIT_PAID";
+  const note = `Sửa số tiền đã nhận: ${formatVND(order.paid_amount)} → ${formatVND(amount)} · ${input.reason}`;
+
+  const { data: changed, error: rpcError } = await db.rpc("adjust_paid_amount", {
+    p_order_id: orderId,
+    p_expected_paid: order.paid_amount,
+    p_new_paid: amount,
+    p_to_payment: to,
+    p_note: note,
+    p_user: input.userId,
+  });
+  if (rpcError) {
+    console.error("[payments] adjust_paid_amount", rpcError.message);
+    if (rpcError.code === MISSING_RPC) return { ok: false, error: "Cơ sở dữ liệu chưa cập nhật (cần chạy migration 0016)." };
+    return { ok: false, error: "Không sửa được số tiền. Vui lòng thử lại." };
+  }
+  if (!changed) return { ok: false, error: "Đơn hàng vừa được cập nhật bởi người khác. Vui lòng tải lại trang." };
+
+  syncSheetsLater();
+  return { ok: true, data: { paymentStatus: to } };
 }
