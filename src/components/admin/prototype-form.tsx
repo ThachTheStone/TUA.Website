@@ -95,8 +95,10 @@ export function PrototypeForm({
   const set = (patch: Partial<ReturnType<typeof initial>>) => setF((prev) => ({ ...prev, ...patch }));
 
   // Release local previews on unmount (removed images are released when removed).
-  const imagesRef = useRef(f.images);
-  imagesRef.current = f.images;
+  const imagesRef = useRef<ImageItem[]>([]);
+  useEffect(() => {
+    imagesRef.current = f.images;
+  }, [f.images]);
   useEffect(() => () => imagesRef.current.forEach((i) => i.file && URL.revokeObjectURL(i.url)), []);
 
   const id = (name: string) => `${prototype?.id ?? "new"}-${name}`;

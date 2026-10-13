@@ -18,28 +18,47 @@ function splitTitle(title: string): [string, string | null] {
  * FR01 §1 (S01): campaign title, short intro, "Tự thiết kế áo" and "Quyên góp" side by side and a
  * link to Cửa hàng. The hero image (if any) fills the red shape. Always shown, even when the block is empty.
  */
-export function HomeHero({ block, goal }: { block?: ContentBlock; goal: number }) {
+export function HomeHero({ block, goal, isSoldOut }: { block?: ContentBlock; goal: number; isSoldOut?: boolean }) {
   const [brand, tagline] = splitTitle(block?.title || FALLBACK_TITLE);
 
   return (
     <section className="overflow-hidden bg-brand-cream">
       <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-12 pb-16 sm:pt-16 lg:grid-cols-[1.1fr_1fr] lg:gap-8 lg:py-24">
         <div className="flex flex-col items-start gap-6">
+          {isSoldOut && (
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary">
+              <span className="size-2 rounded-full bg-primary animate-pulse" />
+              TỰA đã bán hết áo và blindbox – Cảm ơn sự ủng hộ của bạn!
+            </div>
+          )}
           <h1 className="font-display leading-none font-extrabold">
             <span className="block text-7xl text-primary sm:text-8xl xl:text-9xl">{brand}</span>
             {tagline && <span className="mt-4 block text-4xl text-foreground sm:text-5xl xl:text-6xl">{tagline}</span>}
           </h1>
           {block?.body && <p className="max-w-xl text-lg whitespace-pre-line text-foreground/85 sm:text-xl">{block.body}</p>}
           <div className="flex flex-wrap gap-3">
-            <Button asChild size="cta" className="h-12 px-7 text-base">
-              <Link href="/thiet-ke">Tự thiết kế áo</Link>
-            </Button>
-            <Button asChild variant="brand-outline" size="cta" className="h-12 px-7 text-base">
-              <Link href="/quyen-gop">Quyên góp</Link>
-            </Button>
+            {isSoldOut ? (
+              <>
+                <Button asChild size="cta" className="h-12 px-7 text-base">
+                  <Link href="/quyen-gop">Quyên góp cho quỹ</Link>
+                </Button>
+                <Button asChild variant="brand-outline" size="cta" className="h-12 px-7 text-base">
+                  <Link href="/tra-cuu">Tra cứu đơn hàng</Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button asChild size="cta" className="h-12 px-7 text-base">
+                  <Link href="/thiet-ke">Tự thiết kế áo</Link>
+                </Button>
+                <Button asChild variant="brand-outline" size="cta" className="h-12 px-7 text-base">
+                  <Link href="/quyen-gop">Quyên góp</Link>
+                </Button>
+              </>
+            )}
           </div>
           <Link href="/cua-hang" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
-            Hoặc xem tất cả sản phẩm trong Cửa hàng →
+            {isSoldOut ? "Khu vực bán hàng đã đóng – Xem các sản phẩm đã mở bán →" : "Hoặc xem tất cả sản phẩm trong Cửa hàng →"}
           </Link>
         </div>
 

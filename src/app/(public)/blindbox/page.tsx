@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BlindboxBuy } from "@/components/public/blindbox-buy";
 import { ComboSection, combosWith } from "@/components/public/combo-list";
+import { SoldOutBanner } from "@/components/public/sold-out-banner";
 import { BlindboxArt } from "@/components/public/shop/product-art";
 import { Button } from "@/components/ui/button";
 import { getBlindboxStatus } from "@/lib/blindbox";
@@ -30,10 +31,13 @@ export default async function BlindboxPage() {
     );
   }
 
+  const isSoldOut = box.remaining <= 0;
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 py-10">
+      {isSoldOut && <SoldOutBanner product="Blindbox Hot Wheels" />}
       {/* Sold out: the whole product area turns grey. */}
-      <div className={cn("grid gap-8 md:grid-cols-2 lg:gap-12", box.remaining <= 0 && "rounded-2xl bg-neutral-100 p-4 opacity-70 grayscale dark:bg-neutral-900")}>
+      <div className={cn("grid gap-8 md:grid-cols-2 lg:gap-12", isSoldOut && "rounded-2xl bg-neutral-100 p-4 opacity-70 grayscale dark:bg-neutral-900")}>
         <div className="flex items-center justify-center overflow-hidden rounded-2xl border bg-muted p-6">
           <BlindboxArt image={box.image_url} name={box.name} className="max-w-md" />
         </div>
@@ -55,7 +59,7 @@ export default async function BlindboxPage() {
           <BlindboxBuy price={box.price} remaining={box.remaining} />
         </div>
       </div>
-      <ComboSection combos={combosWith(combos, "BLINDBOX")} prices={settings.prices} />
+      {!isSoldOut && <ComboSection combos={combosWith(combos, "BLINDBOX")} prices={settings.prices} />}
     </div>
   );
 }

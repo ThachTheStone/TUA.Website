@@ -11,6 +11,20 @@ export function shirtsLeft(stock: ShirtStock, color: string, size: string): numb
   return stockKey(color, size) in stock ? stock[stockKey(color, size)] : null;
 }
 
+/** True when every available colour × size is tracked and at 0. */
+export function areShirtsSoldOut(
+  stock: ShirtStock,
+  colors: { key: string }[],
+  sizes: string[],
+  disabledSizes: string[] = [],
+): boolean {
+  const onSale = sizes.filter((s) => !disabledSizes.includes(s));
+  return (
+    onSale.length > 0 &&
+    colors.every((c) => onSale.every((s) => (shirtsLeft(stock, c.key, s) ?? 1) <= 0))
+  );
+}
+
 type CartLine = { id: string; type: string; color: string; size: string; quantity: number; prototypeId?: string };
 
 /**

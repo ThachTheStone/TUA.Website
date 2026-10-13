@@ -19,7 +19,9 @@ export function MobileMenu({
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
-  // Close when the route changes (covers links in `children` too).
+  // Close when the route changes (covers links in `children` too). This is intentional for the
+  // mobile nav and is safe in a route-change-driven effect.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setOpen(false), [pathname]);
 
   useEffect(() => {

@@ -7,6 +7,9 @@ import {
   listPromotions,
   listSponsors,
 } from "@/lib/content";
+import { getBlindboxStatus } from "@/lib/blindbox";
+import { areShirtsSoldOut } from "@/lib/inventory";
+import { getShirtStock } from "@/lib/inventory.server";
 import { listCombos } from "@/lib/discounts/queries";
 import { getSettings } from "@/lib/settings";
 import { ContentBlockView } from "@/components/public/sections";
@@ -23,7 +26,7 @@ export const dynamic = "force-dynamic";
  * → Vinh danh → Nhà tài trợ (just above the footer). Áo mẫu are sold offline, so not shown here.
  */
 export default async function HomePage() {
-  const [settings, blocks, artworks, promotions, combos, wall, sponsors] = await Promise.all([
+  const [settings, blocks, artworks, promotions, combos, wall, sponsors, stock, box] = await Promise.all([
     getSettings(),
     getContentBlocks(),
     listArtworks(HOME_ARTWORK_LIMIT),
@@ -31,18 +34,24 @@ export default async function HomePage() {
     listCombos({ liveOnly: true }),
     getDonorWall(HOME_DONATION_LIMIT),
     listSponsors({ activeOnly: true }),
+    getShirtStock(),
+    getBlindboxStatus(),
   ]);
+
+  const isSoldOut =
+    areShirtsSoldOut(stock, settings.colors, settings.sizes, settings.sizes_disabled) &&
+    (!box.is_active || box.remaining <= 0);
 
   return (
     <>
-      <HomeHero block={blocks.hero} goal={settings.donation_goal} />
+      <HomeHero block={blocks.hero} goal={settings.donation_goal} isSoldOut={isSoldOut} />
       <ContentBlockView id="ve-chung-toi" block={blocks.about} fallbackTitle="Về chúng tôi" />
       <StorySection block={blocks.mission} />
       <Highlights
         artworks={artworks}
         event={blocks.event}
         promotions={promotions}
-        combos={combos}
+        combos={isSoldOut ? [] : combos}
         prices={settings.prices}
       />
       <HonorRoll total={wall.total} goal={settings.donation_goal} donations={wall.donations} />

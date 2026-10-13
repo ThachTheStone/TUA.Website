@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { DesignerLoader } from "@/components/canvas/designer-loader";
 import { combosWith } from "@/components/public/combo-list";
+import { SoldOutBanner } from "@/components/public/sold-out-banner";
 import { listCombos } from "@/lib/discounts/queries";
 import { comboSaving } from "@/lib/orders/discounts";
 import { getCustomer } from "@/lib/customers/session";
+import { areShirtsSoldOut } from "@/lib/inventory";
 import { getShirtStock } from "@/lib/inventory.server";
 import { getSettings } from "@/lib/settings";
 
@@ -19,20 +21,28 @@ export default async function DesignPage({ searchParams }: { searchParams: Promi
     getShirtStock(),
     listCombos({ liveOnly: true }),
   ]);
+  const isSoldOut = areShirtsSoldOut(stock, settings.colors, settings.sizes, settings.sizes_disabled);
 
   return (
-    <DesignerLoader
-      printAreas={settings.print_areas}
-      colors={settings.colors}
-      sizes={settings.sizes}
-      disabledSizes={settings.sizes_disabled}
-      price={settings.prices.CUSTOM}
-      prices={settings.prices}
-      combos={combosWith(combos, "CUSTOM").filter((c) => comboSaving(c, settings.prices) > 0)}
-      dpi={settings.export_dpi}
-      editItemId={typeof sua === "string" ? sua : null}
-      signedIn={!!session}
-      stock={stock}
-    />
+    <div className="flex flex-col">
+      {isSoldOut && (
+        <div className="mx-auto w-full max-w-6xl px-4 py-4">
+          <SoldOutBanner product="Áo thiết kế" />
+        </div>
+      )}
+      <DesignerLoader
+        printAreas={settings.print_areas}
+        colors={settings.colors}
+        sizes={settings.sizes}
+        disabledSizes={settings.sizes_disabled}
+        price={settings.prices.CUSTOM}
+        prices={settings.prices}
+        combos={combosWith(combos, "CUSTOM").filter((c) => comboSaving(c, settings.prices) > 0)}
+        dpi={settings.export_dpi}
+        editItemId={typeof sua === "string" ? sua : null}
+        signedIn={!!session}
+        stock={stock}
+      />
+    </div>
   );
 }

@@ -5,8 +5,9 @@ import { ComboSection } from "@/components/public/combo-list";
 import { PageHeader } from "@/components/public/page-header";
 import { BlindboxArt, DesignedShirtArt, ShirtArt } from "@/components/public/shop/product-art";
 import { ProductCard } from "@/components/public/shop/product-card";
+import { SoldOutBanner } from "@/components/public/sold-out-banner";
 import { getBlindboxStatus } from "@/lib/blindbox";
-import { shirtsLeft } from "@/lib/inventory";
+import { areShirtsSoldOut } from "@/lib/inventory";
 import { getShirtStock } from "@/lib/inventory.server";
 import { listCombos } from "@/lib/discounts/queries";
 import { matchesSearch } from "@/lib/search";
@@ -29,11 +30,9 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     searchParams,
     getShirtStock(),
   ]);
-  // Shirts are sold out when every colour × size on sale is tracked and at 0.
-  const sizesOnSale = settings.sizes.filter((s) => !settings.sizes_disabled.includes(s));
-  const shirtsSoldOut =
-    sizesOnSale.length > 0 &&
-    settings.colors.every((c) => sizesOnSale.every((s) => (shirtsLeft(stock, c.key, s) ?? 1) <= 0));
+  const shirtsSoldOut = areShirtsSoldOut(stock, settings.colors, settings.sizes, settings.sizes_disabled);
+  const boxSoldOut = !box.is_active || box.remaining <= 0;
+  const allSoldOut = shirtsSoldOut && boxSoldOut;
   const q = (Array.isArray(params.q) ? params.q[0] : params.q ?? "").trim().slice(0, 100);
   const shirt = settings.colors[0];
   const colorNames = settings.colors.map((c) => c.label.toLowerCase()).join(", ");
@@ -101,6 +100,12 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
         }
       />
 
+      {allSoldOut ? (
+        <SoldOutBanner />
+      ) : shirtsSoldOut ? (
+        <SoldOutBanner product="Áo trơn và Áo thiết kế" />
+      ) : null}
+
       {shown.length > 0 && (
         <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {shown.map(({ card }) => (
@@ -111,7 +116,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
         </ul>
       )}
 
-      <ComboSection combos={combos} prices={settings.prices} />
+      {!shirtsSoldOut && <ComboSection combos={combos} prices={settings.prices} />}
     </div>
   );
 }

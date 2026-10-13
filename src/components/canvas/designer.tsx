@@ -33,7 +33,7 @@ import {
   type TextFont,
 } from "@/lib/design/types";
 import { formatVND } from "@/lib/format";
-import { addToCartProblem, shirtsLeft, type ShirtStock } from "@/lib/inventory";
+import { addToCartProblem, areShirtsSoldOut, shirtsLeft, type ShirtStock } from "@/lib/inventory";
 import type { Prices } from "@/lib/orders/pricing";
 import { cn } from "@/lib/utils";
 import type { Combo } from "@/types/db";
@@ -143,6 +143,7 @@ export function Designer(props: DesignerProps) {
   const consultRef = useRef<HTMLDialogElement>(null);
   const router = useRouter();
   const resubmit = props.resubmit;
+  const allSoldOut = props.stock ? areShirtsSoldOut(props.stock, colors, sizes, props.disabledSizes) : false;
 
   const saveCustom = useCart((s) => s.saveCustom);
   const addConsult = useCart((s) => s.addConsult);
@@ -265,6 +266,10 @@ export function Designer(props: DesignerProps) {
 
   function addToCart() {
     if (!agreed || !hasContent) return;
+    if (allSoldOut) {
+      toast.error("Áo đã hết hàng, hiện không thể đặt thêm");
+      return;
+    }
     if (props.stock) {
       const quantity = cart.find((i) => i.id === editingItemId)?.quantity ?? 1;
       const problem = addToCartProblem(cart, props.stock, { color: shirtColor, size, quantity, replaceId: editingItemId ?? undefined });
@@ -280,6 +285,10 @@ export function Designer(props: DesignerProps) {
 
   /** "Đồng ý": a custom shirt without design goes to the cart, then straight to checkout and the QR. */
   function acceptConsult() {
+    if (allSoldOut) {
+      toast.error("Áo đã hết hàng, hiện không thể đặt thêm");
+      return;
+    }
     if (props.stock) {
       const problem = addToCartProblem(cart, props.stock, { color: shirtColor, size, quantity: 1 });
       if (problem) return toast.error(problem);
@@ -352,8 +361,12 @@ export function Designer(props: DesignerProps) {
                 type="button"
                 variant="outline"
                 className="h-11 border-primary text-primary"
-                onClick={() => consultRef.current?.showModal()}
-                title="Chưa nghĩ ra thiết kế? Tụi mình hỗ trợ bạn qua Zalo"
+                disabled={allSoldOut}
+                onClick={() => {
+                  if (allSoldOut) return toast.error("Áo đã hết hàng");
+                  consultRef.current?.showModal();
+                }}
+                title={allSoldOut ? "Áo đã hết hàng" : "Chưa nghĩ ra thiết kế? Tụi mình hỗ trợ bạn qua Zalo"}
               >
                 <MessageCircle /> Cần tư vấn áo
               </Button>
@@ -502,6 +515,12 @@ export function Designer(props: DesignerProps) {
         )}
 
         <section className="flex flex-col gap-3 border-t pt-4">
+          {allSoldOut && (
+            <div className="rounded-xl border border-amber-600/30 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
+              <strong className="block font-semibold">Toàn bộ áo đã hết hàng</strong>
+              Hệ thống đã tạm đóng nhận đơn đặt áo mới. Bạn vẫn có thể vẽ và xem trước thiết kế.
+            </div>
+          )}
           {!resubmit && (
             <p className="flex items-baseline justify-between">
               <span className="text-sm text-muted-foreground">Áo custom</span>
@@ -514,8 +533,8 @@ export function Designer(props: DesignerProps) {
               {submitting ? <Loader2 className="animate-spin" /> : <Send />} {submitting ? "Đang gửi…" : "Gửi lại thiết kế"}
             </Button>
           ) : (
-            <Button type="button" size="lg" className="h-12" disabled={!hasContent} onClick={openConfirm}>
-              <ShoppingCart /> {editingItemId ? "Cập nhật giỏ hàng" : "Thêm vào giỏ"}
+            <Button type="button" size="lg" className="h-12" disabled={!hasContent || allSoldOut} onClick={openConfirm}>
+              <ShoppingCart /> {allSoldOut ? "Hết hàng" : editingItemId ? "Cập nhật giỏ hàng" : "Thêm vào giỏ"}
             </Button>
           )}
           {!resubmit && props.combos && props.prices && props.combos.length > 0 && (

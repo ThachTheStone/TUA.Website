@@ -25,6 +25,9 @@ export function useAdminForm(action: FormAction, successMessage: string, { reset
     if (!state?.ok) return;
     toast.success(successMessage);
     if (reset) formRef.current?.reset();
+    // This is intentional: the form key must re-mount after a successful action so file inputs
+    // and edit forms re-sync with the current server state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setKey((k) => k + 1);
   }, [state, successMessage, reset]);
 
